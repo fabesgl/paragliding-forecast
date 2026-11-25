@@ -1,7 +1,8 @@
 #!/bin/sh
-# Safe way to commit code from this machine: pull first, then commit and push. Usage: scripts/commit.sh "message"
+# Safe way to commit code from this machine: commit, then pull --rebase (picks up the daily job's commits), then push.
+# Usage: scripts/commit.sh "message"
 set -e
-git pull --rebase
+git pull --rebase --autostash
 git add -A
 git commit -m "$1
 
