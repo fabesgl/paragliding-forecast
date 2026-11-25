@@ -150,14 +150,17 @@ with logf.open("a", newline="") as f:
         lead = (dt.date.fromisoformat(d["date"]) - local_now.date()).days
         w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3"])
 aif = OUT/"predictions"/"ai_log.csv"                 # same keys as log.csv, plus the rule scores, so both can be compared with outcomes
+AI_COLS = ["made_at_utc", "target_date", "lead_days", "model", "xc_call", "acro_call", "xc_rule_pct", "acro_rule_pct", "limit_forced", "reasoning"]
 if ai:
-    newf = not aif.exists()
-    with aif.open("a", newline="") as f:
-        w = csv.writer(f)
-        if newf: w.writerow(["made_at_utc", "target_date", "lead_days", "model", "xc_call", "acro_call", "xc_rule_pct", "acro_rule_pct", "reasoning"])
+    rows_old = []
+    if aif.exists():                                  # older files lack limit_forced: add the column (blank for old rows)
+        with aif.open(newline="") as f: rd = list(csv.DictReader(f))
+        rows_old = [[r.get(c, "") for c in AI_COLS] for r in rd]
+    with aif.open("w", newline="") as f:
+        w = csv.writer(f); w.writerow(AI_COLS); w.writerows(rows_old)
         for d in out_days:
             if d["ai"]: w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], (dt.date.fromisoformat(d["date"]) - local_now.date()).days, ai_opinion.MODEL,
-                                    d["ai"]["xc_call"], d["ai"]["acro_call"], d["xc"], d["acro"], d["ai"]["reasoning"]])
+                                    d["ai"]["xc_call"], d["ai"]["acro_call"], d["xc"], d["acro"], d["ai"].get("forced", ""), d["ai"]["reasoning"]])
 # 4. write the dashboard
 docs = OUT/"docs"; docs.mkdir(parents=True, exist_ok=True)
 (docs/"forecast.json").write_text(json.dumps(dict(updated_local=local_now.strftime("%a %d %b %Y %H:%M %Z"), days=out_days), indent=1))

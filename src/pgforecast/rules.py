@@ -32,6 +32,9 @@ def compass(d): return None if d is None else COMPASS[int(((d % 360) + 11.25) //
 def _smooth(t):                       # 0 -> 0, 1 -> 1, smooth in between
     t = max(0.0, min(1.0, t)); return t * t * (3 - 2 * t)
 
+# Rule limits (km/h and mm). The scoring rules AND the AI second opinion's hard limits both read these, so they can never drift apart.
+LIMITS = {"xc": {"wind": 20, "gust": 25, "w850": 25}, "acro": {"wind": 15, "gust": 20, "w850": 20}, "rain_mm": 0.2}
+
 def below(x, limit, zero):
     """Rule 'x must be under limit'. About 0.9 at the limit, 1 well under it, falls smoothly to 0 at `zero`."""
     if x is None: return None
@@ -85,18 +88,18 @@ def score_day(h, launch_arc=(315, 45), bad_arc=(135, 247), launch_elev=797):
     dtxt = (f"strong {compass(f['d850'])} wind aloft" if syn_bad else f"wind {compass(f['wd'])} at launch" if f["wd"] is not None else "no data")
     u = lambda x, unit, nd=0: "n/a" if x is None else f"{x:.{nd}f}{unit}"
     shared = [("direction", "Wind direction", (None, "", 0, dtxt), direction)]
-    rain = ("rain", "Rain in window", (f["rain"], " mm", 1, " (want none)"), below(f["rain"], 0.2, 2.0))
+    rain = ("rain", "Rain in window", (f["rain"], " mm", 1, " (want none)"), below(f["rain"], LIMITS["rain_mm"], 2.0))
     xc = shared + [
-        ("wind", "Launch wind", (f["ws"], " km/h", 0, " (want <20)"), below(f["ws"], 20, 32)),
-        ("gust", "Gusts", (f["gust"], " km/h", 0, " (want <25)"), below(f["gust"], 25, 40)),
-        ("w850", "850 hPa wind", (f["w850"], " km/h", 0, " (want <25)"), below(f["w850"], 25, 45)),
+        ("wind", "Launch wind", (f["ws"], " km/h", 0, f" (want <{LIMITS['xc']['wind']})"), below(f["ws"], LIMITS["xc"]["wind"], 32)),
+        ("gust", "Gusts", (f["gust"], " km/h", 0, f" (want <{LIMITS['xc']['gust']})"), below(f["gust"], LIMITS["xc"]["gust"], 40)),
+        ("w850", "850 hPa wind", (f["w850"], " km/h", 0, f" (want <{LIMITS['xc']['w850']})"), below(f["w850"], LIMITS["xc"]["w850"], 45)),
         ("ceiling", "Cloud base / thermal top", (f["ceiling"], " m ASL", 0, " (want >2000)"), above(f["ceiling"], 2000, 1300)),
         ("thermals", "Thermal strength (est.)", (f["therm"], " m/s", 1, " (want >1.5)"), above(f["therm"], 1.5, 0.5)),
         ("cape", "CAPE (overdevelopment)", (f["cape"], "", 0, " (want <800)"), below(f["cape"], 800, 1800)), rain]
     acro = shared + [
-        ("wind", "Launch wind", (f["ws"], " km/h", 0, " (want <15)"), below(f["ws"], 15, 25)),
-        ("gust", "Gusts", (f["gust"], " km/h", 0, " (want <20)"), below(f["gust"], 20, 32)),
-        ("w850", "850 hPa wind", (f["w850"], " km/h", 0, " (want <20)"), below(f["w850"], 20, 38)),
+        ("wind", "Launch wind", (f["ws"], " km/h", 0, f" (want <{LIMITS['acro']['wind']})"), below(f["ws"], LIMITS["acro"]["wind"], 25)),
+        ("gust", "Gusts", (f["gust"], " km/h", 0, f" (want <{LIMITS['acro']['gust']})"), below(f["gust"], LIMITS["acro"]["gust"], 32)),
+        ("w850", "850 hPa wind", (f["w850"], " km/h", 0, f" (want <{LIMITS['acro']['w850']})"), below(f["w850"], LIMITS["acro"]["w850"], 38)),
         ("shear", "Wind shear 10 m to 850 hPa", (f["shear"], " km/h", 0, " (want <15)"), below(f["shear"], 15, 35)),
         ("cape", "CAPE (overdevelopment)", (f["cape"], "", 0, " (want <800)"), below(f["cape"], 800, 1800)), rain]
     def total(rules):
