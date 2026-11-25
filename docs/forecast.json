@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 14:53 AEDT",
+ "updated_local": "Wed 25 Nov 2026 14:58 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -452,9 +452,10 @@
     }
    ],
    "ai": {
-    "xc_call": "marginal",
-    "acro_call": "marginal",
-    "reasoning": "Northerly launch wind (9 km/h) and a ~2,336 m ceiling suit a valley flight, but models strongly disagree (ECMWF 2%, GFS 93%), so confidence is low. Gusts near 28 km/h and 1,000 to 2,000 m wind speeds of 17 to 31 km/h add turbulence and shear risk."
+    "xc_call": "poor",
+    "acro_call": "poor",
+    "reasoning": "Hard limits breached: gusts of 28 km/h exceed both XC (25) and acro (20) limits, and 850 hPa wind of 20 km/h exceeds the acro limit. Models strongly disagree (GFS favourable, ECMWF and ICON near zero), so confidence is low.",
+    "forced": ""
    },
    "summary": {
     "xc": "Flyable, but gusts near 28 km/h. Best window 3\u20136pm.",
@@ -914,9 +915,10 @@
     }
    ],
    "ai": {
-    "xc_call": "marginal",
-    "acro_call": "marginal",
-    "reasoning": "Launch wind is light northerly and thermals (~1.6 m/s) reach ~2,300 m, but models strongly disagree (ECMWF 20 vs GFS 97), so confidence is low. Gusts near 26 km/h and wind rising to 15\u201324 km/h at 2,000 m add risk."
+    "xc_call": "poor",
+    "acro_call": "poor",
+    "reasoning": "Hard limit breached: forecast gusts of 26 km/h exceed both the XC (25) and acro (20) limits. Models disagree strongly (XC 20% to 97%, ECMWF near zero), and the 1,500 m to 2,000 m wind profile is uncertain, so confidence is low.",
+    "forced": ""
    },
    "summary": {
     "xc": "Flyable, but gusts near 26 km/h. Best window 11am\u20136pm.",
@@ -1377,8 +1379,9 @@
    ],
    "ai": {
     "xc_call": "poor",
-    "acro_call": "marginal",
-    "reasoning": "Weak thermals (0.8 m/s) and a low ceiling near 1130 m ASL, with rain signal and cloud base only ~435 m AGL, rule out useful XC. Launch wind is light northerly, but strong N winds aloft (36 km/h at 850 hPa, shear ~34 km/h) and 27 km/h gusts make acro turbulent."
+    "acro_call": "poor",
+    "reasoning": "Hard limits breached for both disciplines: 4.8 mm rain forecast in the window, gusts 27 km/h, and 850 hPa wind 36 km/h. Cloud base near 1130 m ASL and weak 0.8 m/s thermals also rule out useful XC; the models agree on these breaches.",
+    "forced": ""
    },
    "summary": {
     "xc": "Unlikely: thermals topping out near 1,100 m and weak thermals (about 0.8 m/s).",
@@ -1839,8 +1842,9 @@
    ],
    "ai": {
     "xc_call": "poor",
-    "acro_call": "marginal",
-    "reasoning": "Thermal top near 938 m ASL with weak 0.6 m/s thermals and 79% low cloud gives no usable XC height, and 11 mm rain is forecast. Launch wind is light NW, but gusts near 26 km/h and 18 km/h shear make acro marginal at best."
+    "acro_call": "poor",
+    "reasoning": "Hard limits breached: 11.1 mm rain forecast in the window, gusts 26 km/h, and 850 hPa wind 22 km/h. Thermals are weak (0.6 m/s) with a ceiling near 938 m ASL and low cloud at 79%, so no realistic XC prospects.",
+    "forced": ""
    },
    "summary": {
     "xc": "Unlikely: thermals topping out near 900 m and 11.1 mm of rain.",
@@ -2300,9 +2304,10 @@
     }
    ],
    "ai": {
-    "xc_call": "marginal",
-    "acro_call": "marginal",
-    "reasoning": "Launch NW wind is within the valley-wind window, and thermals (~1.7 m/s, ~2400 m ceiling) are workable, but gusts near 26 km/h and models disagree sharply (GFS strong, ECMWF and ICON near zero). Acro is held back by the gusts and 850 hPa wind, so I'd call it marginal."
+    "xc_call": "poor",
+    "acro_call": "poor",
+    "reasoning": "Hard limit breached: gusts of 26 km/h exceed both XC (25) and acro (20) limits. Rain of 0.2 mm is also at the threshold, and models disagree sharply (GFS 97% vs ECMWF 14% and ICON 0% for XC), so confidence is low; ceiling near 2,400 m is only marginal for XC.",
+    "forced": ""
    },
    "summary": {
     "xc": "Flyable, but gusts near 26 km/h and wind NW at launch. Best window 11am\u20134pm.",
