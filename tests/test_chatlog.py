@@ -1,0 +1,97 @@
+"""Run: .venv/bin/python -m unittest tests.test_chatlog -v   (uses synthetic chats and a fake local model; no real data)"""
+import json, re, sqlite3, sys, tempfile, threading, unittest
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src")); sys.path.insert(0, str(ROOT / "scripts"))
+from pgforecast.chatlog import parsers, store, extract
+from pgforecast.chatlog.llm import LocalLLM
+import import_chats
+
+NAMES = ["Zebediah Quill", "Marguerite Ostrowski"]            # fake names that must never reach the database
+WA_IOS = f"""[22/11/2026, 18:02:11] {NAMES[0]}: Mystic was epic yesterday, strong thermals, smooth, flew 2 hours
+[22/11/2026, 18:03:40] {NAMES[1]}: Agree, wind was light from the north and
+the restitution was good till sunset
+[22/11/2026, 18:05:00] {NAMES[1]}: <Media omitted>
+[22/11/2026, 18:06:00] Messages and calls are end-to-end encrypted.
+[23/11/2026, 07:10:00] {NAMES[0]}: anyone keen for pizza tonight? call me on +61 400 123 456
+[24/11/2026, 09:00:00] {NAMES[1]}: Too windy today at Bright, blown out, nobody flew. Rotor everywhere
+"""
+WA_ANDROID = f"""25/11/2026, 2:03 pm - {NAMES[0]}: Mystic today was bumpy, only a 2 out of 5, wind strong from the south
+"""
+TG = {"name": "x", "messages": [
+    {"id": 1, "type": "service", "date": "2026-11-20T10:00:00", "text": ""},
+    {"id": 2, "type": "message", "date": "2026-11-21T19:30:00", "from": NAMES[0], "text": ["Bright was ", {"type": "bold", "text": "great"}, " yesterday, 4/5, weak thermals, no turbulence, flew"]},
+    {"id": 3, "type": "message", "date": "2026-11-21T19:31:00", "from": NAMES[1], "text": "forecast looks good for tomorrow, will fly"}]}
+
+def fake_model(user):
+    """Stands in for a local LLM: a few keyword rules that return the JSON the real prompt asks for."""
+    last = user.split("Last message:", 1)[1].lower()
+    if "pizza" in last or "forecast looks" in last or "agree" in last and "restitution" not in last: return json.dumps({"is_report": False})
+    j = dict(is_report=True, site="bright" if ("mystic" in last or "bright" in last) else "unknown", date=None, flown="yes", wind_speed="unknown", wind_dir="unknown",
+             turbulence="unknown", thermals="unknown", restitution="unknown", rating=None, confidence=0.8)
+    if "epic" in last: j.update(rating=5, thermals="strong", turbulence="none", date="2026-11-21")
+    if "restitution was good" in last: j.update(restitution="good", wind_speed="light", wind_dir="N", date="2026-11-21")
+    if "blown out" in last: j.update(flown="no", wind_speed="strong", turbulence="strong")
+    if "bumpy" in last: j.update(rating=2, turbulence="moderate", wind_speed="strong", wind_dir="S")
+    if "great" in last: j.update(rating=4, thermals="weak", turbulence="none", date="2026-11-20")
+    return json.dumps(j)
+
+class Fake:
+    model = "fake"
+    def complete(self, system, user, schema): return fake_model(user)
+
+class Handler(BaseHTTPRequestHandler):                          # fake Ollama server so the real HTTP client is exercised
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        out = json.dumps({"message": {"content": fake_model(body["messages"][1]["content"])}}).encode()
+        self.send_response(200); self.send_header("Content-Length", str(len(out))); self.end_headers(); self.wfile.write(out)
+    def log_message(self, *a): pass
+
+class T(unittest.TestCase):
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp()); (self.d / "ios.txt").write_text(WA_IOS); (self.d / "and.txt").write_text(WA_ANDROID)
+        (self.d / "tg.json").write_text(json.dumps(TG))
+
+    def test_parsers(self):
+        a = parsers.parse_whatsapp(self.d / "ios.txt"); self.assertEqual(len(a), 4)          # media, system message dropped; multi-line joined
+        self.assertIn("restitution was good till sunset", a[1].text); self.assertEqual(a[0].ts.day, 22)
+        b = parsers.parse_whatsapp(self.d / "and.txt"); self.assertEqual(b[0].ts.hour, 14)
+        c = parsers.parse_telegram(self.d / "tg.json"); self.assertEqual(len(c), 2); self.assertIn("great yesterday", c[0].text)
+        for m in a + b + c: self.assertNotIn("Quill", m.text)
+
+    def test_scrub(self):
+        self.assertEqual(extract.scrub("call +61 400 123 456 or @bob see https://x.com/a"), "call [number] or [person] see [link]")
+
+    def test_pipeline_stores_only_labels(self):
+        db = store.connect(self.d / "labels.sqlite")
+        s = import_chats.run([self.d / "ios.txt", self.d / "and.txt", self.d / "tg.json"], Fake(), db, "salt", {"bright": ["bright", "mystic"]}, default_site="bright", out=lambda *_: None)
+        rows = db.execute("SELECT site_id,date,date_source,flown,wind_speed,wind_dir,turbulence,thermals,restitution,rating,evidence,confidence_tier,weight FROM chat_label ORDER BY date,id").fetchall()
+        self.assertEqual(len(rows), 5, rows); self.assertEqual(s["kept"], 5)
+        self.assertTrue(all(r[10] == "chat_llm" and r[11] == "low" and r[12] == 0.3 for r in rows))
+        epic = [r for r in rows if r[9] == 5][0]; self.assertEqual(epic[:9], ("bright", "2026-11-21", "stated", "yes", "unknown", "unknown", "none", "strong", "unknown"))
+        self.assertTrue(any(r[3] == "no" and r[6] == "strong" for r in rows))
+        rest = [r for r in rows if r[8] == "good"][0]; self.assertEqual((rest[4], rest[5]), ("light", "N"))
+        db.close()
+        raw = (self.d / "labels.sqlite").read_bytes()
+        for secret in NAMES + ["Quill", "pizza", "epic yesterday", "400 123", "rotor everywhere", "blown out"]: self.assertNotIn(secret.encode(), raw)
+        db = store.connect(self.d / "labels.sqlite")
+        s2 = import_chats.run([self.d / "ios.txt"], Fake(), db, "salt", {"bright": ["bright"]}, default_site="bright", out=lambda *_: None)   # resume: nothing new
+        self.assertEqual(s2["sent_to_model"], 0); self.assertEqual(db.execute("SELECT COUNT(*) FROM chat_label").fetchone()[0], 5)
+
+    def test_http_client_and_local_only(self):
+        srv = HTTPServer(("127.0.0.1", 0), Handler); threading.Thread(target=srv.serve_forever, daemon=True).start()
+        llm = LocalLLM("fake", "ollama", f"http://127.0.0.1:{srv.server_port}")
+        db = store.connect(self.d / "l2.sqlite")
+        s = import_chats.run([self.d / "tg.json"], llm, db, "salt", {"bright": ["bright"]}, out=lambda *_: None); srv.shutdown()
+        self.assertEqual(s["kept"], 1)
+        with self.assertRaises(SystemExit): LocalLLM("m", "ollama", "http://example.com:11434")
+
+    def test_bad_model_output_rejected(self):
+        ts = parsers.datetime(2026, 11, 25, 12, 0)
+        self.assertIsNone(extract.validate("not json", ts, {"bright"}, "bright"))
+        j = json.dumps(dict(is_report=True, site="bright", date="2019-01-01", flown="yes", rating=9, wind_speed="hurricane", confidence=3))
+        v = extract.validate(j, ts, {"bright"}, None)
+        self.assertEqual((v["date"], v["date_source"], v["rating"], v["wind_speed"], v["llm_confidence"]), ("2026-11-25", "message", None, "unknown", 1.0))
+
+if __name__ == "__main__": unittest.main()

@@ -13,3 +13,7 @@ raw_html/
 igc/
 pilot_notes/
 data/
+
+chat_exports/
+*.sqlite
+data/chat_salt

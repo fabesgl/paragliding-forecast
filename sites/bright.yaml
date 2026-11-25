@@ -30,5 +30,6 @@ bom_stations:                        # BOM half-hourly feed IDV60801.<id>.json (
   94884: Benalla
   94908: Omeo
 # Note: no Bright or Mt Buffalo station exists in the standard BOM Victoria feed.
+chat_aliases: [bright, mystic, mystic park, ovens valley, tawonga]   # words that mean this site in pilot chats
 xcontest_launch_names: []            # Phase 2 (later)
 grading: {}                          # Phase 5
