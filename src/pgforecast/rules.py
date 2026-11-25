@@ -29,54 +29,82 @@ def _vec_mean_dir(speeds, dirs):
 COMPASS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
 def compass(d): return None if d is None else COMPASS[int(((d % 360) + 11.25) // 22.5) % 16]
 
-def weighted(parts):
-    """parts: list of (weight, value or None). Missing values are skipped and weights renormalised."""
-    got = [(w, v) for w, v in parts if v is not None]
-    return sum(w * v for w, v in got) / sum(w for w, _ in got) if got else None
+def _smooth(t):                       # 0 -> 0, 1 -> 1, smooth in between
+    t = max(0.0, min(1.0, t)); return t * t * (3 - 2 * t)
 
-def score_day(h, launch_arc=(315, 45), bad_arc=(135, 247)):
-    """h: dict of variable -> list of hourly values for the flying window (11:00-16:00 local)."""
-    ws, wd, gust = _mean(h["wind_speed_10m"]), _vec_mean_dir(h["wind_speed_10m"], h["wind_direction_10m"]), max([g for g in h["wind_gusts_10m"] if g is not None], default=None)
-    w850, d850 = _mean(h.get("wind_speed_850hPa", [])), _vec_mean_dir(h.get("wind_speed_850hPa", []), h.get("wind_direction_850hPa", []))
-    w700 = _mean(h.get("wind_speed_700hPa", []))
-    t, td = _mean(h["temperature_2m"]), _mean(h["dew_point_2m"])
-    cloudbase = 125 * (t - td) if t is not None and td is not None else None   # m above ground
-    blh, sw = _mean(h.get("boundary_layer_height", [])), _mean(h.get("shortwave_radiation", []))
-    cape, low = _mean(h.get("cape", [])), _mean(h.get("cloud_cover_low", []))
-    rain = sum(x for x in h["precipitation"] if x is not None) if any(x is not None for x in h["precipitation"]) else None
+def below(x, limit, zero):
+    """Rule 'x must be under limit'. About 0.9 at the limit, 1 well under it, falls smoothly to 0 at `zero`."""
+    if x is None: return None
+    a = limit - 0.25 * (zero - limit)
+    return 1 - _smooth((x - a) / (zero - a))
 
-    # direction: share of window hours with 10 m wind inside the launchable arc
-    pairs = [(s, d) for s, d in zip(h["wind_speed_10m"], h["wind_direction_10m"]) if d is not None and s is not None]
-    in_arc = _mean([1.0 if (_in_arc(d, launch_arc) or s < 6) else 0.0 for s, d in pairs])
-    # strong synoptic wind from S/SE/SW at 850 hPa kills the day
-    synoptic_bad = 0.0 if (w850 is not None and d850 is not None and _in_arc(d850, bad_arc) and w850 > 25) else 1.0
-    launch = (in_arc if in_arc is not None else 0.5) * synoptic_bad
-    comfort = _band(ws, 2, 8, 20, 32)
-    gustf = 1 - (_ramp(gust, 30, 50) or 0)
-    upper = 1 - (_ramp(w700, 30, 55) or 0) if w700 is not None else None
-    base = _ramp(cloudbase, 800, 2200)
-    thermal = weighted([(2, _ramp(blh, 600, 2200)), (1, _ramp(sw, 250, 750))])
-    sun = None if low is None else 1 - _ramp(low, 30, 90)
-    wet = 1.0 if rain is None else 1 - _ramp(rain, 0.3, 3.0)
-    storm = 1 - 0.4 * (_ramp(cape, 1000, 2500) or 0)
+def above(x, thr, zero):
+    """Rule 'x must be above thr'. About 0.9 at thr, 1 well above it, falls smoothly to 0 at `zero`."""
+    if x is None: return None
+    b = thr + 0.25 * (thr - zero)
+    return _smooth((x - zero) / (b - zero))
 
-    xc = weighted([(0.30, thermal), (0.25, base), (0.15, comfort), (0.10, upper), (0.10, sun), (0.10, gustf)])
-    xc = None if xc is None else xc * launch * wet * storm
-    calm_air = None if thermal is None else 1 - 0.7 * thermal
-    smooth = weighted([(0.35, _band(ws, 4, 10, 20, 28)), (0.25, gustf), (0.20, calm_air), (0.10, upper), (0.10, comfort)])
-    acro = None if smooth is None else smooth * launch * wet * storm
+def _hourly(h, name): return h.get(name) or []
 
-    why = []
-    if synoptic_bad == 0: why.append(f"Strong {compass(d850)} wind aloft ({w850:.0f} km/h at 850 hPa): unflyable")
-    elif in_arc is not None and in_arc < 0.5: why.append(f"Wind {compass(wd)} at launch: wrong direction for Mystic")
-    elif ws is not None: why.append(f"Launch wind {compass(wd)} {ws:.0f} km/h, gusts to {gust:.0f}" if gust is not None else f"Launch wind {compass(wd)} {ws:.0f} km/h")
-    if rain is not None and rain >= 0.3: why.append(f"Rain {rain:.1f} mm in the flying window")
-    if cloudbase is not None: why.append(f"Cloud base ~{cloudbase:.0f} m above ground ({'good' if cloudbase > 1700 else 'low' if cloudbase < 1200 else 'ok'})")
-    if blh is not None: why.append(f"Boundary layer ~{blh:.0f} m ({'strong' if blh > 1800 else 'weak' if blh < 1000 else 'moderate'} thermals)")
-    elif sw is not None: why.append(f"Sunshine {sw:.0f} W/m2 ({'strong' if sw > 600 else 'weak'} heating)")
-    if cape is not None and cape > 1500: why.append(f"CAPE {cape:.0f}: overdevelopment risk")
-    if gust is not None and gust > 35: why.append(f"Gusty ({gust:.0f} km/h)")
-    key = dict(wind_kmh=ws, wind_dir=compass(wd), gust_kmh=gust, wind850_kmh=w850, wind850_dir=compass(d850),
-               wind700_kmh=w700, cloudbase_agl_m=cloudbase, blh_m=blh, sw_wm2=sw, cape=cape, rain_mm=rain, low_cloud_pct=low)
+def _window_features(h, launch_elev):
+    n = len(h["wind_speed_10m"])
+    def col(name): 
+        c = _hourly(h, name); return c if len(c) == n else [None] * n
+    ws, wd, gu = col("wind_speed_10m"), col("wind_direction_10m"), col("wind_gusts_10m")
+    w8, d8, w7 = col("wind_speed_850hPa"), col("wind_direction_850hPa"), col("wind_speed_700hPa")
+    t, td, blh, sw = col("temperature_2m"), col("dew_point_2m"), col("boundary_layer_height"), col("shortwave_radiation")
+    shear, ceil, therm = [], [], []
+    for i in range(n):
+        if None not in (ws[i], wd[i], w8[i], d8[i]):          # vector wind difference, 10 m vs 850 hPa
+            u1, v1 = -ws[i]*math.sin(math.radians(wd[i])), -ws[i]*math.cos(math.radians(wd[i]))
+            u2, v2 = -w8[i]*math.sin(math.radians(d8[i])), -w8[i]*math.cos(math.radians(d8[i]))
+            shear.append(math.hypot(u2 - u1, v2 - v1))
+        cb = 125 * (t[i] - td[i]) if None not in (t[i], td[i]) else None          # cloud base, m above ground
+        if cb is not None:
+            top = cb if blh[i] is None else min(cb, blh[i])                       # dry thermal top if lower than cloud
+            ceil.append(launch_elev + top)
+        if sw[i] is not None and (blh[i] is not None or cb is not None):
+            zi = blh[i] if blh[i] is not None else min(cb, 2500)
+            H = 0.3 * max(sw[i], 0) / 1200.0                                      # sensible heat flux, K m/s (rough: 30% of sunshine)
+            therm.append(0.7 * (9.81 / 300.0 * H * max(zi, 0)) ** (1 / 3))        # typical climb ~ 0.7 x Deardorff w*
+    return dict(ws=_mean(ws), wd=_vec_mean_dir(ws, wd), gust=max([g for g in gu if g is not None], default=None),
+                w850=_mean(w8), d850=_vec_mean_dir(w8, d8), w700=_mean(w7), shear=_mean(shear),
+                cb=_mean([125*(a-b) for a, b in zip(t, td) if a is not None and b is not None]),
+                ceiling=_mean(ceil), blh=_mean(blh), sw=_mean(sw), therm=_mean(therm),
+                cape=_mean(col("cape")), low=_mean(col("cloud_cover_low")),
+                rain=(sum(x for x in col("precipitation") if x is not None) if any(x is not None for x in col("precipitation")) else None),
+                pairs=[(s_, d_) for s_, d_ in zip(ws, wd) if s_ is not None and d_ is not None])
+
+def score_day(h, launch_arc=(315, 45), bad_arc=(135, 247), launch_elev=797):
+    """h: dict of variable -> hourly list for the flying window. Returns XC %, acro %, and the rule factors.
+    Every rule gives a factor from 0 to 1; the score is 100 x the product of all factors (so every rule has to be met)."""
+    f = _window_features(h, launch_elev)
+    in_arc = _mean([1.0 if (_in_arc(d, launch_arc) or s < 6) else 0.0 for s, d in f["pairs"]])
+    syn_bad = f["w850"] is not None and f["d850"] is not None and _in_arc(f["d850"], bad_arc) and f["w850"] > 25
+    direction = 0.0 if syn_bad else (in_arc if in_arc is not None else 1.0)
+    dtxt = (f"strong {compass(f['d850'])} wind aloft" if syn_bad else f"wind {compass(f['wd'])} at launch" if f["wd"] is not None else "no data")
+    u = lambda x, unit, nd=0: "n/a" if x is None else f"{x:.{nd}f}{unit}"
+    shared = [("direction", "Wind direction", (None, "", 0, dtxt), direction)]
+    rain = ("rain", "Rain in window", (f["rain"], " mm", 1, " (want none)"), below(f["rain"], 0.2, 2.0))
+    xc = shared + [
+        ("wind", "Launch wind", (f["ws"], " km/h", 0, " (want <20)"), below(f["ws"], 20, 32)),
+        ("gust", "Gusts", (f["gust"], " km/h", 0, " (want <25)"), below(f["gust"], 25, 40)),
+        ("w850", "850 hPa wind", (f["w850"], " km/h", 0, " (want <25)"), below(f["w850"], 25, 45)),
+        ("ceiling", "Cloud base / thermal top", (f["ceiling"], " m ASL", 0, " (want >2000)"), above(f["ceiling"], 2000, 1300)),
+        ("thermals", "Thermal strength (est.)", (f["therm"], " m/s", 1, " (want >1.5)"), above(f["therm"], 1.5, 0.5)),
+        ("cape", "CAPE (overdevelopment)", (f["cape"], "", 0, " (want <800)"), below(f["cape"], 800, 1800)), rain]
+    acro = shared + [
+        ("wind", "Launch wind", (f["ws"], " km/h", 0, " (want <15)"), below(f["ws"], 15, 25)),
+        ("gust", "Gusts", (f["gust"], " km/h", 0, " (want <20)"), below(f["gust"], 20, 32)),
+        ("w850", "850 hPa wind", (f["w850"], " km/h", 0, " (want <20)"), below(f["w850"], 20, 38)),
+        ("shear", "Wind shear 10 m to 850 hPa", (f["shear"], " km/h", 0, " (want <15)"), below(f["shear"], 15, 35)),
+        ("cape", "CAPE (overdevelopment)", (f["cape"], "", 0, " (want <800)"), below(f["cape"], 800, 1800)), rain]
+    def total(rules):
+        got = [r[3] for r in rules if r[3] is not None]
+        return None if not got else math.prod(got)
     pct = lambda x: None if x is None else round(100 * max(0, min(1, x)))
-    return dict(xc=pct(xc), acro=pct(acro), key=key, why=why[:4])
+    pack = lambda rules: [dict(key=k, label=l, num=v[0], unit=v[1], nd=v[2], want=v[3], factor=None if x is None else round(x, 3)) for k, l, v, x in rules]
+    key = dict(wind_kmh=f["ws"], wind_dir=compass(f["wd"]), gust_kmh=f["gust"], wind850_kmh=f["w850"], wind850_dir=compass(f["d850"]),
+               wind700_kmh=f["w700"], shear_kmh=f["shear"], ceiling_asl_m=f["ceiling"], cloudbase_agl_m=f["cb"], blh_m=f["blh"],
+               thermal_ms=f["therm"], sw_wm2=f["sw"], cape=f["cape"], rain_mm=f["rain"], low_cloud_pct=f["low"])
+    return dict(xc=pct(total(xc)), acro=pct(total(acro)), key=key, xc_rules=pack(xc), acro_rules=pack(acro))

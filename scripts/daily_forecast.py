@@ -38,20 +38,51 @@ times = mystic["time"]; win = cfg.get("flying_window_local", ["11:00", "16:00"])
 days = sorted({t[:10] for t in times})
 today = local_now.date().isoformat()
 out_days = []
+def fill(day_idx, v, m):
+    """Model m's hourly values for variable v; gaps are filled with the mean of the other models (e.g. ECMWF has no boundary-layer height)."""
+    own = mystic.get(f"{v}_{m}", [None] * len(times))
+    others = [mystic.get(f"{v}_{o}", [None] * len(times)) for o in MODELS if o != m]
+    out = []
+    for i in day_idx:
+        x = own[i]
+        if x is None:
+            vals = [o[i] for o in others if o[i] is not None]
+            x = sum(vals) / len(vals) if vals else None
+        out.append(x)
+    return out
+def mean_key(per_model, best):
+    """Key numbers shown on the page: average over models (directions come from the best model)."""
+    if not best: return {}
+    out = dict(best["key"])
+    for k, v in best["key"].items():
+        if isinstance(v, (int, float)):
+            vs = [p["key"][k] for p in per_model.values() if p["key"].get(k) is not None]
+            out[k] = sum(vs) / len(vs) if vs else None
+    return out
 for day in [d for d in days if d >= today][:5]:
     per_model = {}
     for m in MODELS:
         idx = [i for i, t in enumerate(times) if t[:10] == day and win[0] <= t[11:16] <= win[1]]
-        h = {v: [mystic.get(f"{v}_{m}", [None]*len(times))[i] for i in idx] for v in VARS}
-        if all(x is None for x in h["wind_speed_10m"]): continue
-        per_model[m] = score_day(h, tuple(cfg["launch_wind_directions_deg"][0]), tuple(cfg["unflyable_synoptic_deg"][0]))
+        if all(mystic.get(f"wind_speed_10m_{m}", [None])[i] is None for i in idx): continue   # model has no data (e.g. BOM ACCESS-G)
+        h = {v: fill(idx, v, m) for v in VARS}
+        per_model[m] = score_day(h, tuple(cfg["launch_wind_directions_deg"][0]), tuple(cfg["unflyable_synoptic_deg"][0]), cfg["launch_height_m"])
     def avg(k):
         v = [p[k] for p in per_model.values() if p[k] is not None]; return round(sum(v)/len(v)) if v else None
-    best = per_model.get("gfs_seamless") or next(iter(per_model.values()), None)   # GFS has the most variables
-    out_days.append(dict(date=day, xc=avg("xc"), acro=avg("acro"),
-        xc_range=[min([p["xc"] for p in per_model.values() if p["xc"] is not None], default=None), max([p["xc"] for p in per_model.values() if p["xc"] is not None], default=None)],
+    best = per_model.get("gfs_seamless") or next(iter(per_model.values()), None)
+    def merged(rk):                      # average each rule's factor across models; keep the wording from the best model
+        out = []
+        for r in (best[rk] if best else []):
+            fs = [q["factor"] for p in per_model.values() for q in p[rk] if q["key"] == r["key"] and q["factor"] is not None]
+            ns = [q["num"] for p in per_model.values() for q in p[rk] if q["key"] == r["key"] and q["num"] is not None]
+            r = {**r, "num": sum(ns)/len(ns) if ns else r["num"], "factor": round(sum(fs)/len(fs), 3) if fs else None}
+            r["value"] = (r["want"] if r["num"] is None and r["unit"] == "" and r["nd"] == 0 and r["key"] == "direction" else
+                          ("n/a" if r["num"] is None else f'{r["num"]:.{r["nd"]}f}{r["unit"]}') + r["want"])
+            out.append(r)
+        return out
+    xcs = [p["xc"] for p in per_model.values() if p["xc"] is not None]
+    out_days.append(dict(date=day, xc=avg("xc"), acro=avg("acro"), xc_range=[min(xcs, default=None), max(xcs, default=None)],
         models={m: {"xc": p["xc"], "acro": p["acro"]} for m, p in per_model.items()},
-        key=({**best["key"], "gust_kmh": max(best["key"]["gust_kmh"] or 0, best["key"]["wind_kmh"] or 0)} if best else {}), why=best["why"] if best else []))
+        key=mean_key(per_model, best), xc_rules=merged("xc_rules"), acro_rules=merged("acro_rules")))
 # 3. log predictions (track record)
 logf = ROOT/"predictions"/"log.csv"; logf.parent.mkdir(exist_ok=True)
 new = not logf.exists()
@@ -66,6 +97,12 @@ docs = ROOT/"docs"; docs.mkdir(exist_ok=True)
 (docs/"forecast.json").write_text(json.dumps(dict(updated_local=local_now.strftime("%a %d %b %Y %H:%M %Z"), days=out_days), indent=1))
 def color(p): return "#9aa0a6" if p is None else "#c62828" if p < 25 else "#ef6c00" if p < 45 else "#f9a825" if p < 65 else "#2e7d32"
 def f1(x, u=""): return "n/a" if x is None else f"{x:.0f}{u}"
+def pulled(rules, name):
+    """Rules that cost the score the most. Each shows how much of the score that rule alone removes."""
+    bad = sorted([r for r in rules if r["factor"] is not None and r["factor"] < 0.9], key=lambda r: r["factor"])
+    if not bad: return f'<p class="pd ok"><b>{name}:</b> no rule pulled it down</p>'
+    lis = "".join(f'<li>{html.escape(r["label"])}: {html.escape(r["value"])} <b>-{round(100*(1-r["factor"]))}%</b></li>' for r in bad[:4])
+    return f'<p class="pd"><b>{name} pulled down by:</b></p><ul class="why">{lis}</ul>'
 cards = []
 for d in out_days:
     k = d["key"]; dn = dt.date.fromisoformat(d["date"]).strftime("%a %d %b")
@@ -73,12 +110,13 @@ for d in out_days:
     cards.append(f"""<section class="card"><h2>{dn}</h2><div class="scores">
 <div class="s" style="border-color:{color(d['xc'])}"><b>{f1(d['xc'])}%</b><span>XC</span><small>models {spread}</small></div>
 <div class="s" style="border-color:{color(d['acro'])}"><b>{f1(d['acro'])}%</b><span>Acro</span><small>experimental</small></div></div>
-<ul class="why">{''.join(f'<li>{html.escape(x)}</li>' for x in d['why'])}</ul>
+{pulled(d['xc_rules'], 'XC')}{pulled(d['acro_rules'], 'Acro')}
 <table><tr><td>Launch wind</td><td>{k.get('wind_dir') or ''} {f1(k.get('wind_kmh'),' km/h')} (gust {f1(k.get('gust_kmh'))})</td></tr>
 <tr><td>850 hPa wind</td><td>{k.get('wind850_dir') or ''} {f1(k.get('wind850_kmh'),' km/h')}</td></tr>
 <tr><td>700 hPa wind</td><td>{f1(k.get('wind700_kmh'),' km/h')}</td></tr>
-<tr><td>Cloud base</td><td>{f1(k.get('cloudbase_agl_m'),' m AGL')}</td></tr>
-<tr><td>Thermals</td><td>BL {f1(k.get('blh_m'),' m')} / sun {f1(k.get('sw_wm2'),' W/m²')}</td></tr>
+<tr><td>Cloud base / thermal top</td><td>{f1(k.get('ceiling_asl_m'),' m ASL')}</td></tr>
+<tr><td>Wind shear to 850</td><td>{f1(k.get('shear_kmh'),' km/h')}</td></tr>
+<tr><td>Thermals (est.)</td><td>{f1(k.get('thermal_ms'),' m/s')} (BL {f1(k.get('blh_m'),' m')})</td></tr>
 <tr><td>CAPE / rain</td><td>{f1(k.get('cape'))} / {f1(k.get('rain_mm'))} mm</td></tr></table></section>""")
 rows = []
 if logf.exists():
@@ -94,10 +132,10 @@ h1{{font-size:20px;margin:4px 0}} .upd{{color:#5f6368;font-size:13px;margin-bott
 .scores{{display:flex;gap:10px}} .s{{flex:1;border:3px solid;border-radius:10px;padding:8px;text-align:center}}
 .s b{{font-size:28px;display:block}} .s span{{font-weight:600}} .s small{{display:block;color:#5f6368;font-size:11px}}
 .why{{padding-left:18px;margin:8px 0}} table{{width:100%;border-collapse:collapse;font-size:13px}} td{{padding:3px 0;border-top:1px solid #eee}} td:first-child{{color:#5f6368;width:38%}}
-.note{{font-size:12px;color:#5f6368}}</style></head><body>
+.note{{font-size:12px;color:#5f6368}} .pd{{margin:8px 0 2px;font-size:13px}} .pd.ok{{color:#2e7d32}} .why li{{font-size:13px}}</style></head><body>
 <h1>Mystic, Bright: flying forecast</h1><div class="upd">Updated {local_now.strftime('%a %d %b %H:%M %Z')} · window 11:00-16:00 · average of {len(out_days[0]['models']) if out_days else 0} models ({', '.join(out_days[0]['models']) if out_days else ''})</div>
 {''.join(cards)}
 <section class="card"><h2>Track record</h2>{'<table><tr><td>Day</td><td>XC</td><td>Acro</td><td>Lead</td></tr>'+''.join(rows)+'</table>' if rows else '<p class="note">Predictions are being logged daily. Outcomes will be compared here once flight data or pilot notes are added.</p>'}</section>
-<p class="note">Scores come from simple hand-written rules (wind direction and strength, cloud base, thermals, rain), not yet learned from flights or calibrated, so read them as a rough guide. Acro is experimental. Forecast data: Open-Meteo.</p></body></html>"""
+<p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% (smoothly) and the score is all of them multiplied, so a % beside a rule is how much that rule alone cuts the score. Thermal strength is an estimate from sunshine and boundary-layer depth. Read it as a rough guide. Acro is experimental. Forecast data: Open-Meteo.</p></body></html>"""
 (docs/"index.html").write_text(page)
 print("ok", [(d["date"], d["xc"], d["acro"]) for d in out_days])
