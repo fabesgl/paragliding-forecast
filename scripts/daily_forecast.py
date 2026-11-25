@@ -1,9 +1,11 @@
 """Fetch today's forecasts, archive the raw response, score the next 5 days, write docs/ (dashboard).
 Usage: python scripts/daily_forecast.py [site_id]"""
-import csv, datetime as dt, gzip, html, json, sys, time, requests, yaml
+import csv, datetime as dt, gzip, html, json, os, sys, time, requests, yaml
 from pathlib import Path
 from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent.parent
+# Only the GitHub job writes into the repo (docs/, forecast_archive/, predictions/). Local test runs go to data/local_out/ (git-ignored).
+OUT = ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out"
 sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.rules import score_day
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
@@ -29,7 +31,7 @@ for attempt in range(6):
 if r is None or r.status_code != 200: sys.exit("Open-Meteo unavailable after retries")
 raw = r.json()
 # 1. archive the raw forecast (this is the real, honest forecast-by-lead record we train on later)
-arch = ROOT/"forecast_archive"; arch.mkdir(exist_ok=True)
+arch = OUT/"forecast_archive"; arch.mkdir(parents=True, exist_ok=True)
 with gzip.open(arch/f"{now:%Y-%m-%dT%H%MZ}.json.gz", "wt") as f:
     json.dump({"fetched_utc": now.isoformat(), "points": keys, "response": raw}, f, separators=(",", ":"))
 # 2. score Mystic for each model and day
@@ -84,7 +86,7 @@ for day in [d for d in days if d >= today][:5]:
         models={m: {"xc": p["xc"], "acro": p["acro"]} for m, p in per_model.items()},
         key=mean_key(per_model, best), xc_rules=merged("xc_rules"), acro_rules=merged("acro_rules")))
 # 3. log predictions (track record)
-logf = ROOT/"predictions"/"log.csv"; logf.parent.mkdir(exist_ok=True)
+logf = OUT/"predictions"/"log.csv"; logf.parent.mkdir(parents=True, exist_ok=True)
 new = not logf.exists()
 with logf.open("a", newline="") as f:
     w = csv.writer(f)
@@ -93,7 +95,7 @@ with logf.open("a", newline="") as f:
         lead = (dt.date.fromisoformat(d["date"]) - local_now.date()).days
         w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3"])
 # 4. write the dashboard
-docs = ROOT/"docs"; docs.mkdir(exist_ok=True)
+docs = OUT/"docs"; docs.mkdir(parents=True, exist_ok=True)
 (docs/"forecast.json").write_text(json.dumps(dict(updated_local=local_now.strftime("%a %d %b %Y %H:%M %Z"), days=out_days), indent=1))
 def color(p): return "#9aa0a6" if p is None else "#c62828" if p < 25 else "#ef6c00" if p < 45 else "#f9a825" if p < 65 else "#2e7d32"
 def f1(x, u=""): return "n/a" if x is None else f"{x:.0f}{u}"
