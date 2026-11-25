@@ -113,4 +113,45 @@ class Alias(unittest.TestCase):
         rep = lambda i, site: dict(id=i, site=site, date="2026-11-24", flown="yes", wind_speed="unknown", wind_dir="unknown", turbulence="unknown", thermals="unknown", restitution="unknown", rating=None, confidence=0.7)
         got = extract.validate_batch(json.dumps({"reports": [rep(1, "Mystic"), rep(2, "tawonga")], "not_reports": []}), items, {"bright"}, "bright", SITES)
         self.assertEqual(got[1]["site_id"], "bright"); self.assertIsNone(got[2])               # a place that is not one of ours is dropped, never guessed
+
+class Live(unittest.TestCase):
+    TS = __import__("datetime").datetime(2026, 11, 25, 13, 30)
+    def v(self, **o):
+        base = dict(is_report=True, site="bright", kind="live", date=None, flown="yes", wind_speed="unknown", wind_dir="unknown", turbulence="unknown", thermals="unknown", restitution="unknown", rating=None, confidence=0.8)
+        base.update(o); return extract.validate(json.dumps(base), self.TS, {"bright"}, "bright")
+
+    def test_live_messages_are_kept_and_belong_to_the_day_written(self):
+        a = self.v(flown="yes", thermals="moderate", date="2026-11-01"); self.assertEqual((a["kind"], a["date"], a["date_source"], a["flown"]), ("live", "2026-11-25", "message", "yes"))   # any date the model gives is ignored
+        self.assertEqual(self.v(flown="going")["flown"], "going")                                         # 'heading up now', 'on launch'
+        b = self.v(flown="no", wind_speed="strong"); self.assertEqual((b["flown"], b["wind_speed"]), ("no", "strong"))   # 'blown out'
+        self.assertEqual(self.v(flown="unknown", turbulence="strong")["turbulence"], "strong")              # 'rough today': conditions alone are enough
+        self.assertIsNone(self.v(flown="unknown"))                                                         # nothing useful: dropped
+        self.assertIsNone(self.v(is_report=False)); self.assertIsNone(self.v(site="other"))
+
+    def test_past_reports_still_use_the_stated_date(self):
+        p = self.v(kind="past", date="2026-11-23"); self.assertEqual((p["kind"], p["date"], p["date_source"]), ("past", "2026-11-23", "stated"))
+        self.assertEqual(self.v(kind="past", date="2019-01-01")["date_source"], "message")
+        self.assertEqual(extract.validate(json.dumps(dict(is_report=True, site="bright", date=None, flown="yes", rating=4)), self.TS, {"bright"}, "bright")["kind"], "past")   # old-style answers still work
+
+    def test_batch_schema_and_prompt_know_live_and_planning(self):
+        p = extract.batch_system_prompt(SITES)
+        for w in ("on launch", "in the air", "it's working", "heading up now", "blown out", "packed up", "rough today", "anyone flying tomorrow?"): self.assertIn(w, p)
+        props = extract.batch_schema(["bright"])["properties"]["reports"]["items"]["properties"]; self.assertEqual(props["kind"]["enum"], ["past", "live"]); self.assertIn("going", props["flown"]["enum"])
+        self.assertEqual(extract.PROMPT_VERSION, "chat-v3")
+
+    def test_old_answers_are_redone_and_stale_labels_removed(self):
+        db = store.connect(Path(tempfile.mkdtemp()) / "l.sqlite")
+        lab = dict(site_id="bright", kind="past", date="2026-11-24", date_source="stated", flown="yes", wind_speed="unknown", wind_dir="unknown", turbulence="unknown", thermals="unknown", restitution="unknown", rating=None, llm_confidence=0.5)
+        store.save(db, "k1", "whatsapp", lab, "m", "chat-v2"); self.assertTrue(store.seen(db, "k1")); self.assertFalse(store.seen(db, "k1", "chat-v3")); self.assertTrue(store.seen(db, "k1", "chat-v2"))
+        store.save(db, "k1", "whatsapp", None, "m", "chat-v3")                                             # new rules say: not a report
+        self.assertEqual(db.execute("SELECT COUNT(*) FROM chat_label").fetchone()[0], 0); self.assertTrue(store.seen(db, "k1", "chat-v3"))
+
+    def test_daily_activity_counts_only(self):
+        d = Path(tempfile.mkdtemp()); (d / "c.txt").write_text("[22/11/2026, 09:00:00] A B: hi\n[22/11/2026, 09:05:00] C D: morning\n[22/11/2026, 10:00:00] A B: up\n[23/11/2026, 09:00:00] A B: x\n")
+        act = batch.activity([d / "c.txt"], "salt", None); vals = sorted(act.values()); self.assertEqual(vals, [(1, 1), (3, 2)])
+        db = store.connect(d / "l.sqlite"); store.save_activity(db, act); store.save_activity(db, {k: (1, 1) for k in act})           # a smaller second export never lowers a count
+        self.assertEqual(sorted(db.execute("SELECT n_messages, n_senders FROM chat_day_activity").fetchall()), [(1, 1), (3, 2)]); db.close()
+        raw = (d / "l.sqlite").read_bytes(); self.assertNotIn(b"hi", b""); 
+        for secret in (b"A B", b"C D", b"morning"): self.assertNotIn(secret, raw)
+
 if __name__ == "__main__": unittest.main()

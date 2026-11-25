@@ -2,12 +2,14 @@
 import json, re, unicodedata
 from datetime import date, timedelta
 
-PROMPT_VERSION = "chat-v2"
+PROMPT_VERSION = "chat-v3"                     # v3: same-day "live" messages count, not only reports of a past day
 SPEED = ["calm", "light", "moderate", "strong", "unknown"]
 DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "unknown"]
 LEVEL4 = ["none", "light", "moderate", "strong", "unknown"]
 THERM = ["none", "weak", "moderate", "strong", "unknown"]
 RESTIT = ["none", "weak", "good", "unknown"]
+FLOWN = ["yes", "no", "going", "unknown"]       # going = about to fly right now (heading up, on launch)
+KINDS = ["past", "live"]
 
 def fold(t):
     """Lower-case and strip accents, so 'Organyà', 'organya' and 'ORGANYÀ' all match, and 'térmicas' = 'termicas'."""
@@ -19,36 +21,48 @@ _ES = r"volar|volamos|volaron|volado|volamos|vuelo|vuelos|despeg\w*|aterriz\w*|t
 _CA = r"volat|volem|vols?|enlair\w*|aterrat\w*|termiques|vent|turbulent\w*|restitucio|base de nuvols|cancel\w*lat|ratxes?|ascendencies|sense vent|volarem|he volat|hem volat"
 KEYWORDS = re.compile(rf"\b({_EN}|{_ES}|{_CA})\b", re.I)    # run on fold(text)
 
+# Words that make a message LIKELY to be a live same-day signal (again only for picking a quality-check sample).
+LIVE_CUES = re.compile(r"\b(on launch|at launch|in the air|up now|heading up|going up|driving up|walking up|it'?s working|its working|working well|blown out|packed up|packing up|cancel+ed|too windy|rough today|rowdy|booming|soaring|launching|just launched|cooking)\b", re.I)
+
 # Words that make a message LIKELY to be a report of a past day (used only to pick a more informative trial sample, never to decide what is kept).
 REPORT_CUES = re.compile(r"\b(flew|flown|launched|landed|yesterday|last (weekend|saturday|sunday)|cloud ?base|xc|km flight|(was|were) (a |an )?(epic|great|good|amazing|awesome|sick|fun|rowdy|bumpy|smooth|strong|light|booming|dead|blown|cooking|glass)"
                          r"|hours? (in the air|airtime)|volamos|vam volar|he volat|hem volat|ayer|ahir)\b", re.I)
 
 def schema(site_ids):
     return {"type": "object", "additionalProperties": False,
-        "required": ["is_report", "site", "date", "flown", "wind_speed", "wind_dir", "turbulence", "thermals", "restitution", "rating", "confidence"],
+        "required": ["is_report", "site", "kind", "date", "flown", "wind_speed", "wind_dir", "turbulence", "thermals", "restitution", "rating", "confidence"],
         "properties": {
             "is_report": {"type": "boolean"}, "site": {"enum": list(site_ids) + ["other", "unknown"]},
-            "date": {"type": ["string", "null"]}, "flown": {"enum": ["yes", "no", "unknown"]},
+            "kind": {"enum": KINDS}, "date": {"type": ["string", "null"]}, "flown": {"enum": FLOWN},
             "wind_speed": {"enum": SPEED}, "wind_dir": {"enum": DIRS}, "turbulence": {"enum": LEVEL4},
             "thermals": {"enum": THERM}, "restitution": {"enum": RESTIT},
             "rating": {"type": ["integer", "null"], "minimum": 1, "maximum": 5}, "confidence": {"type": "number"}}}
+
+REPORT_DEF = """A REPORT is a message that tells how flying went, or is going, at the site. Two kinds:
+- kind 'past': how an EARLIER day was (yesterday, a named weekday, last weekend).
+- kind 'live': anything about the message's OWN day, happening now or just happened (landed, 'was a great day'), e.g. 'on launch', 'in the air', 'it's working', 'heading up now', 'blown out', 'packed up', 'cancelled, too windy', 'rough today', 'thermals are going off'.
+Also live: 'landed' anywhere (a flight just happened, so flown 'yes'; the landing spot does not change the site), 'at the LZ now, heading up in 10', 'I'm up on launch', and a statement of conditions right now ('windy up the top now', 'it's perfect at the top').
+NOT a report: planning or forecasts about a future day or a later time ('anyone flying tomorrow?', 'looks good for Saturday', 'I'll head up at 10:30'), questions on their own ('anyone on launch?', 'is it worth heading up?', 'anyone heading up for an arvo fly?'), lifts and car shuffles, retrieve logistics, club notices, general chat, gear, banter, and photos or links with no statement about the flying. A question that ALSO states the current conditions counts only for that statement."""
+FIELDS = """- site: where the flying took place or launched from: one of [{names}], or 'other' ONLY when the message itself names a different launch site (e.g. Tawonga Gap, Mt Buffalo, Falls Creek, Hotham), otherwise 'unknown'. This chat is about Bright, so a message that names no place is 'unknown', never 'other'. A landing spot, a retrieve location or a cross-country destination ('landed at Mt Beauty', 'landed Porepunkah') is NOT the site: answer 'unknown' for those.
+- kind: 'past' or 'live' (see above).
+- date: for 'past', the day being reported as YYYY-MM-DD, worked out from the message date; null if unclear. For 'live', the message's own date.
+- flown: 'yes' if the writer or the group flew or is flying now (including 'in the air', 'it's working', 'landed'); NOT just because someone is on launch or the conditions are good; 'going' if they are about to fly right now ('heading up now', 'on launch'); 'no' if flying did not happen or has stopped ('blown out', 'packed up', 'cancelled', too windy, rain); else 'unknown'.
+- wind_speed: calm, light, moderate, strong or unknown ('blown out' or 'too windy' = strong). wind_dir: compass point the wind came from, or unknown.
+- turbulence: none, light, moderate, strong, unknown ('rough today' = at least moderate). thermals: none, weak, moderate, strong, unknown ('it's working' = at least moderate).
+- restitution: evening lift when slopes release stored heat late in the day: none, weak, good, unknown.
+- rating: 1 (awful) to 5 (epic) for the flying quality (convert other scales, e.g. 8/10 -> 4; 'perfect', 'epic', 'crazy base' are 4-5), or null if not stated or implied.
+- confidence: 0 to 1, how sure you are of these labels."""
 
 def system_prompt(sites):
     names = "; ".join(f"{sid} = {', '.join(a)}" for sid, a in sites.items())
     return f"""You label paragliding chat messages. Read the LAST message only; earlier messages are context.
 Messages may be in English, Spanish or Catalan (or a mix): understand them, but answer in the English values below. Resolve relative days (yesterday/ayer/ahir, today/hoy/avui, the day before yesterday/anteayer/abans d'ahir, weekday names such as sabado/dissabte) from the message date.
 Output ONE JSON object and nothing else. Never output names, quotes or any message text: only the allowed values.
+%s
 Fields:
-- is_report: true only if the message reports how a past day (today, yesterday, a named weekday) was for flying or not flying. Questions, forecasts, plans, banter and 'will fly tomorrow' are false.
-- site: one of [{names}], or 'other' if it is a different place, or 'unknown' if not stated.
-- date: the day being reported as YYYY-MM-DD, worked out from the message date given. null if unclear.
-- flown: 'yes' if the writer or the group flew, 'no' if it was not flown (too windy, rain, cancelled), else 'unknown'.
-- wind_speed: calm, light, moderate, strong or unknown. wind_dir: compass point the wind came from, or unknown.
-- turbulence: none, light, moderate, strong, unknown. thermals: none, weak, moderate, strong, unknown.
-- restitution: evening lift when slopes release stored heat late in the day: none, weak, good, unknown.
-- rating: 1 (awful) to 5 (epic) for the flying quality of the day (convert other scales, e.g. 8/10 -> 4), or null if not stated or implied.
-- confidence: 0 to 1, how sure you are of these labels.
-If is_report is false, set the other fields to unknown/null."""
+- is_report: true only for a report as defined above.
+%s
+If is_report is false, set the other fields to unknown/null.""" % (REPORT_DEF, FIELDS.format(names=names))
 
 def user_prompt(ctx, ts, text):
     c = "\n".join(f"- {t}" for t in ctx) or "- (none)"
@@ -69,18 +83,20 @@ def validate(raw, ts, site_ids, default_site):
     site = j.get("site")
     site = site if site in site_ids else (default_site if site == "unknown" and default_site else None)
     if site is None: return None                                   # other place, or no site and no default
-    flown = pick("flown", ["yes", "no", "unknown"])
-    if flown == "unknown" and not isinstance(j.get("rating"), int): return None   # nothing useful in it
-    d, src = None, "message"
-    try:
-        dd = date.fromisoformat(str(j.get("date"))[:10])
-        if ts.date() - timedelta(days=21) <= dd <= ts.date(): d, src = dd, "stated"
-    except ValueError: pass
-    if d is None: d = ts.date()                                    # fall back to the day it was written, flagged as such
+    kind = pick("kind", KINDS); kind = "past" if kind == "unknown" else kind
+    flown = pick("flown", FLOWN); wind_speed, wind_dir = pick("wind_speed", SPEED), pick("wind_dir", DIRS)
+    turb, therm, rest = pick("turbulence", LEVEL4), pick("thermals", THERM), pick("restitution", RESTIT)
     r = j.get("rating"); r = r if isinstance(r, int) and 1 <= r <= 5 else None
+    if flown == "unknown" and r is None and {wind_speed, wind_dir, turb, therm, rest} == {"unknown"}: return None   # nothing useful in it
+    d, src = ts.date(), "message"                                  # a live message is about the day it was written
+    if kind == "past":
+        try:
+            dd = date.fromisoformat(str(j.get("date"))[:10])
+            if ts.date() - timedelta(days=21) <= dd <= ts.date(): d, src = dd, "stated"
+        except ValueError: pass                                    # no usable date: the day it was written, flagged as such
     c = j.get("confidence"); c = max(0.0, min(1.0, float(c))) if isinstance(c, (int, float)) else 0.5
-    return dict(site_id=site, date=d.isoformat(), date_source=src, flown=flown, wind_speed=pick("wind_speed", SPEED), wind_dir=pick("wind_dir", DIRS),
-                turbulence=pick("turbulence", LEVEL4), thermals=pick("thermals", THERM), restitution=pick("restitution", RESTIT), rating=r, llm_confidence=round(c, 2))
+    return dict(site_id=site, kind=kind, date=d.isoformat(), date_source=src, flown=flown, wind_speed=wind_speed, wind_dir=wind_dir,
+                turbulence=turb, thermals=therm, restitution=rest, rating=r, llm_confidence=round(c, 2))
 
 
 # ---- batches: about 20 numbered messages per call ---------------------------------------------------------------------------------------
@@ -96,17 +112,10 @@ def batch_system_prompt(sites):
     names = "; ".join(f"{sid} = {', '.join(a)}" for sid, a in sites.items())
     return f"""You label paragliding chat messages. You receive several numbered messages; the 'ctx' lines under a message are earlier messages shown only for context and are never labelled.
 Messages may be in English, Spanish or Catalan (or a mix): understand them, but answer in the English values below. Resolve relative days (yesterday/ayer/ahir, today/hoy/avui, the day before yesterday/anteayer/abans d'ahir, weekday names such as sabado/dissabte) from each message's own date.
-Decide for EACH numbered message. A message is a REPORT only if it says how a past day (today, yesterday, a named weekday) was for flying or not flying. Questions, forecasts, plans, banter and 'will fly tomorrow' are NOT reports.
-Put the id of every message that is not a report in `not_reports`. Add a full entry to `reports` for every report. Every id must appear exactly once. Never output names, quotes or any message text: only ids and the allowed values.
+%s
+Decide for EACH numbered message. Put the id of every message that is not a report in `not_reports`. Add a full entry to `reports` for every report. Every id must appear exactly once. Never output names, quotes or any message text: only ids and the allowed values.
 Fields of a report entry:
-- site: one of [{names}], or 'other' if it is a different place, or 'unknown' if not stated.
-- date: the day being reported as YYYY-MM-DD, worked out from the message date. null if unclear.
-- flown: 'yes' if the writer or the group flew, 'no' if it was not flown (too windy, rain, cancelled), else 'unknown'.
-- wind_speed: calm, light, moderate, strong or unknown. wind_dir: compass point the wind came from, or unknown.
-- turbulence: none, light, moderate, strong, unknown. thermals: none, weak, moderate, strong, unknown.
-- restitution: evening lift when slopes release stored heat late in the day: none, weak, good, unknown.
-- rating: 1 (awful) to 5 (epic) for the flying quality of the day (convert other scales, e.g. 8/10 -> 4), or null if not stated or implied.
-- confidence: 0 to 1, how sure you are of these labels."""
+%s""" % (REPORT_DEF, FIELDS.format(names=names))
 
 def batch_user_prompt(items):
     """items: list of dict(id, ts, text, ctx) with text already scrubbed."""

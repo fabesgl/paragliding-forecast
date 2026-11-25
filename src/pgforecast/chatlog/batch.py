@@ -15,12 +15,23 @@ def collect(files, salt_, sites, chat_names=None, date_order="auto", db=None, pr
         alias = (chat_names or {}).get(path) or Path(path).stem; chat_h = store.chat_hash(salt_, alias); c["messages"] += len(msgs)
         for i, m in enumerate(msgs):
             sender_h = store.sender_hash(salt_, alias, m.sender); key = store.msg_key(salt_, m.ts, m.text, sender_h)
-            if db is not None and store.seen(db, key): c["skipped_seen"] += 1; continue
+            if db is not None and store.seen(db, key, extract.PROMPT_VERSION): c["skipped_seen"] += 1; continue
             f = extract.fold(m.text)
             if prefilter and not (extract.KEYWORDS.search(f) or alias_rx.search(f)): c["skipped_irrelevant"] += 1; continue
             ctx = [extract.scrub(x.text)[:300] for x in msgs[max(0, i - 2):i] if 0 <= (m.ts - x.ts).total_seconds() <= 6 * 3600]
             targets.append(dict(key=key, src=src, chat_h=chat_h, sender_h=sender_h, ts=m.ts, text=extract.scrub(m.text), ctx=ctx))
     return targets, c
+
+def activity(files, salt_, chat_names=None, date_order="auto"):
+    """Weak activity signal: for each chat and local day, how many messages and how many different people (counts only; no text, no names)."""
+    out = {}
+    for path in files:
+        alias = (chat_names or {}).get(path) or Path(path).stem; chat_h = store.chat_hash(salt_, alias); days = {}
+        for m in parsers.parse_any(path, date_order):
+            n, who = days.setdefault(m.ts.date().isoformat(), [0, set()]); days[m.ts.date().isoformat()][0] += 1
+            if m.sender: days[m.ts.date().isoformat()][1].add(store.sender_hash(salt_, alias, m.sender))
+        out.update({(chat_h, d): (v[0], len(v[1])) for d, v in days.items()})
+    return out
 
 def estimate(targets, batch_size=20, parallel=4, sys_tokens=1400, secs_per_call=8.0, price=(0.10, 0.50), report_share=0.2):
     """Rough size, time and cost before spending anything: ~3.5 characters per token; the reply costs ~3 tokens per non-report and ~75 per report

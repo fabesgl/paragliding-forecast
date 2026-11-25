@@ -32,7 +32,7 @@ def run(files, llm, db, salt_, sites, chat_names=None, default_site=None, date_o
         for i, m in enumerate(msgs):
             sender_h = store.sender_hash(salt_, alias, m.sender)
             key = store.msg_key(salt_, m.ts, m.text, sender_h)
-            if db is not None and store.seen(db, key): stats["skipped_seen"] += 1; continue
+            if db is not None and store.seen(db, key, extract.PROMPT_VERSION): stats["skipped_seen"] += 1; continue
             if prefilter and not (extract.KEYWORDS.search(extract.fold(m.text)) or alias_rx.search(extract.fold(m.text))): stats["skipped_irrelevant"] += 1; continue
             if dry: stats["sent_to_model"] += 1; continue
             if limit and stats["sent_to_model"] >= limit: out("limit reached"); return stats
@@ -93,6 +93,7 @@ if __name__ == "__main__":
         print(f"{c['messages']:,} messages read; {c['skipped_seen']:,} already done, {c['skipped_irrelevant']:,} skipped as not about flying; {est['messages']:,} to send in {est['calls']:,} calls of up to {a.batch_size}")
         print(f"estimate: ~{est['input_tokens']:,} input + {est['output_tokens']:,} output tokens, ~${est['usd']:.2f}, ~{est['minutes']:.0f} min with {a.parallel} calls at once (rough: refine after a trial)")
         if a.dry_run: sys.exit(0)
+        act = batch.activity(a.files, salt_, names, a.date_order); store.save_activity(db, act); print(f"activity counts saved for {len(act):,} chat-days")
         stop = threading.Event(); signal.signal(signal.SIGTERM, lambda *_: stop.set())
         st = batch.run_batched(targets, llm, db, sites, a.default_site, a.batch_size, a.parallel, None, stop)
         print(", ".join(f"{k}={v}" for k, v in st.items())); print(llm.report())
