@@ -33,6 +33,10 @@ details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-
 .more{margin:10px 12px;background:var(--card);border-radius:14px;padding:12px 14px}.more summary{font-weight:600;display:flex;justify-content:space-between}
 .more h4{margin:14px 0 4px;font-size:13px}.note{color:var(--mu);font-size:12px}.tbl{width:100%;border-collapse:collapse;font-size:12px}.tbl td,.tbl th{padding:4px 2px;border-top:.5px solid var(--ln);text-align:left;vertical-align:top}.tbl th{color:var(--mu);font-weight:500;border:0}
 @media(max-width:400px){.row{grid-template-columns:84px repeat(3,1fr);font-size:12.5px}.cell{gap:3px}.cell svg{width:15px;height:15px}.cd{margin:10px 8px;padding:12px}.more{margin:10px 8px}}
+@media(min-width:900px){body{max-width:1300px;font-size:15px}header{height:120px}header div{padding:22px 24px}h1{font-size:22px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0 4px;align-items:start;padding:0 8px}.dials svg{width:124px;height:124px}.dials div div{font-size:14px}
+.sum{font-size:14px}.row{grid-template-columns:108px repeat(3,1fr);font-size:14px;padding:7px 0}.cell svg{width:20px;height:20px}.strip{height:42px}.more{margin:10px 20px}}
+@media(min-width:2000px){body{max-width:1500px}.grid{grid-template-columns:repeat(3,1fr)}.row{grid-template-columns:100px repeat(3,1fr);font-size:14px}}
 .row>*{min-width:0}.tbl small{display:block;color:var(--mu)}.on{background:#173404}.off{background:#412402}
 """
 SPARK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z"/></svg>'
@@ -51,9 +55,9 @@ def dial(p, name):
 
 BAR = {"good": "#639922", "marginal": "#ba7517"}           # hourly-strip bar colours; anything else is grey
 
-def strip(hourly):
-    bars = "".join(f'<i title="{S._h(x["h"])} {x["xc"]}%" style="height:{max(8, x["xc"] or 0)}%;background:{BAR.get(S.label(x["xc"] or 0), "#5f5e5a")}"></i>' for x in hourly)
-    return f'<h3>Through the day (XC)</h3><div class="strip" role="img" aria-label="Hourly XC score, 9am to 6pm">{bars}</div><div class="ticks mu"><span>9am</span><span>12</span><span>3pm</span><span>6pm</span></div>'
+def strip(hourly, key="xc", name="XC"):
+    bars = "".join(f'<i title="{S._h(x["h"])} {x.get(key)}%" style="height:{max(8, x.get(key) or 0)}%;background:{BAR.get(S.label(x.get(key) or 0), "#5f5e5a")}"></i>' for x in hourly)
+    return f'<h3>Through the day ({name})</h3><div class="strip" role="img" aria-label="Hourly {name} score, 9am to 6pm">{bars}</div><div class="ticks mu"><span>9am</span><span>12</span><span>3pm</span><span>6pm</span></div>'
 
 def arrow(deg, kmh):
     col = "#97c459" if kmh < 20 else "#ef9f27" if kmh < 33 else "#e24b4a"
@@ -82,7 +86,7 @@ def card_body(d, cfg, ai_status):
             f'<p class="sum"><b style="color:{TONE[S.label(d["xc"])][1]}">XC:</b> {E(S.xc_text(d))}</p>'
             f'<p class="sum" style="margin-top:0"><b style="color:{TONE[S.label(d["acro"])][1]}">Acro:</b> {E(S.acro_text(d))}</p>'
             f'<div class="pull mu">{DOWN}<span>{("Pulled down by: " + E(pull)) if pull else "Nothing is pulling it down"}</span></div>'
-            f'{strip(d["hourly"])}{ladder(d["winds"], cfg["launch_height_m"])}{ai_box(d.get("ai"), ai_status)}')
+            f'{strip(d["hourly"])}{strip(d["hourly"], "acro", "acro") if any(x.get("acro") is not None for x in d["hourly"]) else ""}{ladder(d["winds"], cfg["launch_height_m"])}{ai_box(d.get("ai"), ai_status)}')
 
 def pill(n, p):
     lab = S.label(p); return f'<span class="pill" style="background:{TONE[lab][2]};color:{TONE[lab][3]}">{n} {"n/a" if p is None else f"{p}%"}</span>'
@@ -153,8 +157,8 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
 <title>Mystic forecast</title><style>{CSS}</style></head><body>
 <div id="net" role="status" hidden></div>
 <header>{MOUNTAIN}<div><h1>Mystic, Bright</h1><div class="mu">Updated {upd} · {cfg["launch_height_m"]} m · faces {faces}</div></div></header>
-{"".join(cards)}
+<div class="grid">{"".join(cards)}</div>
 <details class="more"><summary>Forecast corrections {CHEV}</summary>{corrections_block(cstate, cfg, calib)}</details>
 <details class="more"><summary>Track record {CHEV}</summary>{track}</details>
-<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strip shows the XC score for each hour. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
+<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strips show the XC and acro scores for each hour. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
 {JS}</body></html>"""

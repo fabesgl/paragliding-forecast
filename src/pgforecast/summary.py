@@ -33,9 +33,9 @@ def limiters(rules, below=None):
 def _h(h):
     return "12pm" if h == 12 else f"{h}am" if h < 12 else f"{h - 12}pm"
 
-def best_window(hourly):
-    """Longest run of hours near the day's peak XC score, e.g. '12-3pm'. None if the day never gets going."""
-    pts = [(x["h"], x["xc"]) for x in hourly if x["xc"] is not None]
+def best_window(hourly, key="xc"):
+    """Longest run of hours near the day's peak score (XC or acro), e.g. '12-3pm'. None if the day never gets going."""
+    pts = [(x["h"], x[key]) for x in hourly if x.get(key) is not None]
     if not pts: return None
     peak = max(s for _, s in pts)
     if peak < 35: return None
@@ -81,9 +81,11 @@ def acro_text(day):
     k, lab = day["key"], label(day["acro"]); aloft = aloft_phrase(day)
     lim = [r for r in limiters(day["acro_rules"]) if not (aloft and r["key"] in ("west_aloft", "north_aloft"))]      # already said in the aloft phrase
     head = (aloft[0].upper() + aloft[1:] + ". ") if aloft else ""
-    calm = f"launch wind {k['wind_kmh']:.0f} km/h, gusts to {k['gust_kmh']:.0f}" if k.get("wind_kmh") is not None and k.get("gust_kmh") is not None else "light wind"
-    if lab == "good": return head + f"Smooth, steady air expected: {calm}" + (f", shear {k['shear_kmh']:.0f} km/h aloft." if k.get("shear_kmh") is not None else ".")
-    if lab == "marginal": return head + f"{calm[0].upper() + calm[1:]}, but " + (phrase(lim[0]) if lim else "some turbulence is possible") + "."
+    gust_limits = bool(lim) and lim[0]["key"] == "gust"          # the limiter phrase already states the gust speed
+    calm = (f"launch wind {k['wind_kmh']:.0f} km/h" + ("" if gust_limits else f", gusts to {k['gust_kmh']:.0f}")) if k.get("wind_kmh") is not None and k.get("gust_kmh") is not None else "light wind"
+    w = best_window(day["hourly"], "acro"); win = f" Best acro window {w}." if w else ""
+    if lab == "good": return head + f"Smooth, steady air expected: {calm}" + (f", shear {k['shear_kmh']:.0f} km/h aloft." if k.get("shear_kmh") is not None else ".") + win
+    if lab == "marginal": return head + f"{calm[0].upper() + calm[1:]}, but " + (phrase(lim[0]) if lim else "some turbulence is possible") + "." + win
     if lab == "poor": return head + "Rough or unflyable: " + (" and ".join(phrase(r) for r in lim[:2]) if lim else "conditions are weak overall") + "."
     return "No data."
 

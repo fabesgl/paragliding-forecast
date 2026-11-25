@@ -131,9 +131,9 @@ for day in [d for d in days if d >= today][:5]:
     hourly = []                                   # the XC rules applied to each hour on its own, 9am-6pm, averaged over models
     for hh in range(9, 18):
         i = next((i for i, t in enumerate(times) if t == f"{day}T{hh:02d}:00"), None)
-        vals = [] if i is None else [score_day({v: fill([i], v, m) for v in VARS}, cfg["rules"], cfg["launch_height_m"])["xc"] for m in per_model]
-        vals = [v for v in vals if v is not None]
-        hourly.append(dict(h=hh, xc=round(sum(vals) / len(vals)) if vals else None))
+        sc = [] if i is None else [score_day({v: fill([i], v, m) for v in VARS}, cfg["rules"], cfg["launch_height_m"]) for m in per_model]
+        mean = lambda k: (lambda vals: round(sum(vals) / len(vals)) if vals else None)([x[k] for x in sc if x[k] is not None])
+        hourly.append(dict(h=hh, xc=mean("xc"), acro=mean("acro")))
     xcs = [p["xc"] for p in per_model.values() if p["xc"] is not None]
     out_days.append(dict(date=day, xc=avg("xc"), acro=avg("acro"), xc_range=[min(xcs, default=None), max(xcs, default=None)],
         models={m: {"xc": p["xc"], "acro": p["acro"]} for m, p in per_model.items()},
