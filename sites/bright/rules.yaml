@@ -39,7 +39,7 @@ xc:                              # Cross-country rules. XC needs light wind, a h
     min_ms: 1.5                  # Want thermals at least this strong (metres per second).
     zero_at_ms: 0.5              # Score reaches 0% at this climb rate.
 
-acro:                            # Acro rules. Acro needs smooth, steady air: lighter wind limits, and no wind shear. Thermal strength is not limited.
+acro:                            # Acro rules. Acro needs smooth, steady air and wind aloft that keeps you over the acro box (north side of Mystic). Local knowledge: see notes.md.
   launch_wind:                   # Average 10 m wind at launch over the flying window.
     limit_kmh: 15                # Want launch wind under this. Also the AI second opinion's hard limit for acro.
     zero_at_kmh: 25              # Score reaches 0% at this wind speed.
@@ -52,6 +52,27 @@ acro:                            # Acro rules. Acro needs smooth, steady air: li
   shear:                         # Wind shear = how much the wind changes between launch and 850 hPa (a turbulence signal).
     limit_kmh: 15                # Want the wind difference between launch height and 850 hPa under this.
     zero_at_kmh: 35              # Score reaches 0% at this difference.
+  aloft:                         # The "acro height" wind: where pilots climb in thermals and fly into the box to do acro (about 1,000-2,000 m up).
+    levels_hpa: [900, 850, 800]  # Pressure levels averaged for that wind: 900 = about 1,000 m, 850 = about 1,500 m, 800 = about 2,000 m (ASL).
+  northerly_aloft:               # Wind from the north at acro height drifts you back towards the hill, so you cannot train as low. A MILD penalty, never a no-go.
+    limit_kmh: 5                 # Northerly wind (km/h, the part of the wind blowing towards the south) up to this costs nothing.
+    strong_kmh: 20               # Northerly wind at or above this gets the full penalty.
+    max_penalty: 0.30            # Biggest score loss from this rule alone (0.30 = -30%), reached in strong northerly with low climbs. It can never reach 0%.
+    low_climb_above_launch_m: 600   # Climbs reaching only this far above launch (or less) get the full penalty: little working height to spare.
+    high_climb_above_launch_m: 1800 # Climbs reaching this far above launch (or more) get the smallest penalty: plenty of height to train higher.
+    penalty_share_when_high: 0.33   # Share of the penalty kept when climbs are high (0.33 = a third, so at most about -10%).
+  westerly_aloft:                # Westerly wind at acro height brings turbulence off Mt Buffalo (roughly WNW of Mystic). Flyable but rough: a clear penalty, not a no-go.
+    weights: {WSW: 0.5, W: 1.0, WNW: 1.0}   # How much each wind-from direction counts (0 to 1). Other compass points count 0; weights blend smoothly between points. Launch wind is NOT counted.
+    limit_kmh: 8                 # Weighted westerly wind aloft (km/h) up to this costs nothing.
+    zero_at_kmh: 25              # The penalty is at its deepest (the floor below) from this weighted speed.
+    floor: 0.30                  # Lowest this rule can score (0.30 = 30%): rough, but never a no-go on its own.
+  strong_thermals:               # Smooth air between thermals is ideal for acro. Thermic air is fine, but very strong or rough thermals are not as good. Mild penalty.
+    limit_ms: 2.5                # Estimated climb rate (m/s) up to this costs nothing.
+    zero_at_ms: 4.0              # The penalty is at its deepest from this climb rate.
+    floor: 0.60                  # Lowest this rule can score (0.60 = 60%): mild, never a no-go.
+  height:                        # More height is better. Days where climbs stay low score down.
+    min_above_launch_m: 1400     # Want the thermal top / cloud base at least this far above launch (about 2,200 m ASL at Mystic).
+    zero_at_above_launch_m: 400  # Score reaches 0% when climbs reach only this far above launch.
 
 smoothing:                       # How gently a rule's score fades from 100% to 0%.
   full_score_margin: 0.25        # The score stays 100% until the forecast is this fraction of the limit-to-zero distance on the good side of the limit.

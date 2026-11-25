@@ -15,11 +15,12 @@ cfg = yaml.safe_load((ROOT/"sites"/f"{site}.yaml").read_text())
 tz = ZoneInfo(cfg["timezone"]); now = dt.datetime.now(dt.UTC); local_now = now.astimezone(tz)
 MODELS = ["gfs_seamless", "ecmwf_ifs025", "icon_seamless", "bom_access_global"]   # BOM ACCESS-G is skipped automatically while Open-Meteo returns no data for it
 VARS = ["wind_speed_10m","wind_direction_10m","wind_gusts_10m","wind_speed_850hPa","wind_direction_850hPa",
- "wind_speed_700hPa","wind_direction_700hPa","temperature_2m","dew_point_2m","temperature_850hPa","temperature_700hPa",
+ "wind_speed_900hPa","wind_direction_900hPa","wind_speed_800hPa","wind_direction_800hPa","wind_speed_700hPa","wind_direction_700hPa","temperature_2m","dew_point_2m","temperature_850hPa","temperature_700hPa",
  "cloud_cover_low","cloud_cover_mid","cloud_cover_high","cape","lifted_index","convective_inhibition",
  "boundary_layer_height","shortwave_radiation","precipitation","pressure_msl"]
 LEVELS = [("~1,000 m", 900), ("~1,500 m", 850), ("~2,000 m", 800), ("~3,000 m", 700)]   # nominal height ASL, pressure level
 LEVEL_VARS = [f"{a}_{l}hPa" for _, l in LEVELS for a in ("wind_speed", "wind_direction", "geopotential_height")]
+cfg["notes"] = (ROOT / "sites" / site / "notes.md").read_text() if (ROOT / "sites" / site / "notes.md").exists() else ""   # local pilot knowledge for the AI second opinion
 cfg["rules"] = load_rules(site)                         # sites/<site>/rules.yaml: every rule threshold lives there
 from pgforecast import summary as _summary
 _summary.configure(cfg["rules"])

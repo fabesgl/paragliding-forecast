@@ -36,6 +36,7 @@ def enforce(res, breaches):
     return res
 
 def system_prompt(cfg):
+    notes = (cfg.get("notes") or "").strip(); NOTES = ("LOCAL KNOWLEDGE from experienced pilots (use it to judge the data; the hard limits above still win):\n" + notes + "\n") if notes else ""
     LIMITS = _limits(cfg["rules"]); CEIL = f"{cfg['rules']['xc']['ceiling']['min_asl_m']:,.0f}"
     return f"""You are an experienced paragliding forecaster giving a second opinion for {cfg['name']}.
 Site facts: the launch faces north at {cfg['launch_height_m']} m ASL, {cfg['launch_above_landing_m']} m above the landing. It is launchable in northerly valley wind
@@ -45,7 +46,7 @@ HARD LIMITS (these override your judgement): rate a discipline "poor" if ANY of 
 XC: rain forecast in the flying window ({LIMITS['rain_mm']} mm or more); launch wind over {LIMITS['xc']['wind']} km/h; gusts over {LIMITS['xc']['gust']} km/h; 850 hPa wind over {LIMITS['xc']['w850']} km/h.
 Acro: rain forecast in the flying window ({LIMITS['rain_mm']} mm or more); launch wind over {LIMITS['acro']['wind']} km/h; gusts over {LIMITS['acro']['gust']} km/h; 850 hPa wind over {LIMITS['acro']['w850']} km/h.
 The data lists any breaches under hard_limit_breaches. Inside these limits you are free to disagree with the rule scores, either way.
-Give your OWN judgement from the data. The rule scores are one input and are untested; disagree with them when the data says so.
+{NOTES}Give your OWN judgement from the data. The rule scores are one input and are untested; disagree with them when the data says so.
 Calls: XC (cross-country) good = a realistic chance of long flights (usable thermals above ~{CEIL} m ASL, manageable wind and gusts, no rain);
 marginal = flyable but with a clear problem; poor = unlikely. Acro: good = smooth, light and steady air (low wind, low gusts, little shear), marginal = some turbulence risk, poor = rough or unflyable.
 Reasoning: at most 2 short sentences (under 60 words in total) naming the deciding factors, and say so if the models disagree. Use only the data given; do not invent numbers."""

@@ -1,4 +1,5 @@
 """Plain-language text for each day, written from the numbers (no AI involved)."""
+import math
 
 GOOD_MIN, MARGINAL_MIN, PULLED_BELOW = 65, 35, 0.9     # defaults; replaced from the site's rules.yaml by configure()
 
@@ -21,7 +22,9 @@ def phrase(r):
     if n is None: return r["label"].lower()
     return {"wind": f"launch wind {n:.0f} km/h", "gust": f"gusts near {n:.0f} km/h", "w850": f"{n:.0f} km/h wind at 850 hPa",
             "shear": f"{n:.0f} km/h of wind shear up to 850 hPa", "ceiling": f"thermals topping out near {round(n, -2):,.0f} m",
-            "thermals": f"weak thermals (about {n:.1f} m/s)", "cape": f"overdevelopment risk (CAPE {n:.0f})", "rain": f"{n:.1f} mm of rain"}.get(k, r["label"].lower())
+            "thermals": f"weak thermals (about {n:.1f} m/s)", "cape": f"overdevelopment risk (CAPE {n:.0f})", "rain": f"{n:.1f} mm of rain",
+            "north_aloft": f"northerly wind aloft ({n:.0f} km/h)", "west_aloft": f"westerly wind aloft ({n:.0f} km/h, rough off Buffalo)",
+            "thermals_strong": f"very strong thermals (about {n:.1f} m/s)", "height": f"climbs reaching about {n:,.0f} m above launch"}.get(k, r["label"].lower())
 
 def limiters(rules, below=None):
     below = PULLED_BELOW if below is None else below
@@ -59,12 +62,29 @@ def xc_text(day):
         return "Unlikely: " + (" and ".join(phrase(r) for r in lim[:2]) if lim else "conditions are weak overall") + "."
     return "No data."
 
+_COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+
+def aloft_phrase(day):
+    """The wind at acro height (about 1,000-2,000 m) in words: where it pushes you relative to the acro box (north side of Mystic)."""
+    k = day["key"]; u, v = k.get("aloft_u"), k.get("aloft_v")
+    if u is None or v is None: return None
+    spd = math.hypot(u, v); rules = {r["key"]: r for r in day["acro_rules"]}
+    d = _COMPASS[int((math.degrees(math.atan2(-u, -v)) % 360 + 11.25) // 22.5) % 16] if spd >= 1 else None
+    w, n = rules.get("west_aloft"), rules.get("north_aloft")
+    if w and w["factor"] is not None and w["factor"] < PULLED_BELOW: return f"{d or 'W'} aloft, rough off Buffalo"
+    if n and n["factor"] is not None and n["factor"] < 0.97: return f"{d or 'N'} aloft: train higher, you'll drift towards the hill"
+    if spd < 3: return "Nil wind aloft, stays over the box"
+    if d in ("SE", "SSE", "S", "SSW", "SW") and spd <= 10: return f"Light {d} aloft, good for the box"
+    return f"{d} aloft at {spd:.0f} km/h"
+
 def acro_text(day):
-    k, lab, lim = day["key"], label(day["acro"]), limiters(day["acro_rules"])
+    k, lab = day["key"], label(day["acro"]); aloft = aloft_phrase(day)
+    lim = [r for r in limiters(day["acro_rules"]) if not (aloft and r["key"] in ("west_aloft", "north_aloft"))]      # already said in the aloft phrase
+    head = (aloft[0].upper() + aloft[1:] + ". ") if aloft else ""
     calm = f"launch wind {k['wind_kmh']:.0f} km/h, gusts to {k['gust_kmh']:.0f}" if k.get("wind_kmh") is not None and k.get("gust_kmh") is not None else "light wind"
-    if lab == "good": return f"Smooth, steady air expected: {calm}" + (f", shear {k['shear_kmh']:.0f} km/h aloft." if k.get("shear_kmh") is not None else ".")
-    if lab == "marginal": return f"{calm[0].upper() + calm[1:]}, but " + (phrase(lim[0]) if lim else "some turbulence is possible") + "."
-    if lab == "poor": return "Rough or unflyable: " + (" and ".join(phrase(r) for r in lim[:2]) if lim else "conditions are weak overall") + "."
+    if lab == "good": return head + f"Smooth, steady air expected: {calm}" + (f", shear {k['shear_kmh']:.0f} km/h aloft." if k.get("shear_kmh") is not None else ".")
+    if lab == "marginal": return head + f"{calm[0].upper() + calm[1:]}, but " + (phrase(lim[0]) if lim else "some turbulence is possible") + "."
+    if lab == "poor": return head + "Rough or unflyable: " + (" and ".join(phrase(r) for r in lim[:2]) if lim else "conditions are weak overall") + "."
     return "No data."
 
 def pulled_text(day):

@@ -44,6 +44,38 @@ def above(x, thr, zero, margin=0.25):
     b = thr + margin * (thr - zero)
     return _smooth((x - zero) / (b - zero))
 
+COMPASS16 = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+
+def west_weight(deg, weights):
+    """How much a wind FROM `deg` counts as 'Buffalo turbulence' (0-1). The 16 compass points carry the configured weights (others 0);
+    in between, the weight blends smoothly, so there is no cliff edge."""
+    pts = [float(weights.get(c, 0.0)) for c in COMPASS16]; x = (deg % 360) / 22.5; i = int(x) % 16; f = x - int(x)
+    return pts[i] * (1 - f) + pts[(i + 1) % 16] * f
+
+def north_factor(n_kmh, gain_m, c):
+    """Mild penalty for wind from the north at acro height (it drifts you back towards the hill). c = acro.northerly_aloft settings.
+    Never below 1 - max_penalty. Bigger when climbs are low, smaller when there is plenty of working height."""
+    if n_kmh is None: return None
+    strength = _smooth((n_kmh - c["limit_kmh"]) / (c["strong_kmh"] - c["limit_kmh"]))
+    share = 1.0 if gain_m is None else 1 - (1 - c["penalty_share_when_high"]) * _smooth((gain_m - c["low_climb_above_launch_m"]) / (c["high_climb_above_launch_m"] - c["low_climb_above_launch_m"]))
+    return 1 - c["max_penalty"] * strength * share
+
+def _aloft(h, levels, weights):
+    """Wind at acro height from the configured pressure levels: per hour, the average wind vector (for the northerly part) and the worst
+    weighted westerly level. Launch (10 m) wind is NOT used. Returns window averages, or Nones when no level has data."""
+    n = len(h["wind_speed_10m"]); norths, wests, us, vs = [], [], [], []
+    for i in range(n):
+        lv = []
+        for L in levels:
+            sp, dr = _hourly(h, f"wind_speed_{L}hPa"), _hourly(h, f"wind_direction_{L}hPa")
+            if len(sp) == n and len(dr) == n and sp[i] is not None and dr[i] is not None: lv.append((sp[i], dr[i]))
+        if not lv: continue
+        u = sum(-s_ * math.sin(math.radians(d_)) for s_, d_ in lv) / len(lv); v = sum(-s_ * math.cos(math.radians(d_)) for s_, d_ in lv) / len(lv)
+        us.append(u); vs.append(v); norths.append(max(0.0, -v)); wests.append(max(s_ * west_weight(d_, weights) for s_, d_ in lv))
+    if not us: return dict(north=None, west=None, u=None, v=None, speed=None)
+    u, v = _mean(us), _mean(vs)
+    return dict(north=_mean(norths), west=_mean(wests), u=u, v=v, speed=math.hypot(u, v))
+
 def _hourly(h, name): return h.get(name) or []
 
 def _window_features(h, launch_elev, est):
@@ -100,9 +132,17 @@ def score_day(h, rules, launch_elev):
         ("ceiling", "Cloud base / thermal top", (f["ceiling"], " m ASL", 0, f" (want >{g(ce['min_asl_m'])})"), above(f["ceiling"], ce["min_asl_m"], ce["zero_at_asl_m"], mg)),
         ("thermals", "Thermal strength (est.)", (f["therm"], " m/s", 1, f" (want >{g(th['min_ms'])})"), above(f["therm"], th["min_ms"], th["zero_at_ms"], mg)),
         cape, rain]
+    an, aw, ast, ah = ar["northerly_aloft"], ar["westerly_aloft"], ar["strong_thermals"], ar["height"]
+    al = _aloft(h, ar["aloft"]["levels_hpa"], aw["weights"]); gain = None if f["ceiling"] is None else f["ceiling"] - launch_elev
+    soft = lambda x, lim, zero, fl: None if x is None else max(fl, below(x, lim, zero, mg))
     acro = shared + [
         kmh("wind", "Launch wind", f["ws"], ar, "launch_wind"), kmh("gust", "Gusts", f["gust"], ar, "gusts"), kmh("w850", "850 hPa wind", f["w850"], ar, "wind_850"),
-        kmh("shear", "Wind shear 10 m to 850 hPa", f["shear"], ar, "shear"), cape, rain]
+        kmh("shear", "Wind shear 10 m to 850 hPa", f["shear"], ar, "shear"),
+        ("north_aloft", "Northerly wind aloft", (al["north"], " km/h", 0, f" (mild penalty above {g(an['limit_kmh'])})"), north_factor(al["north"], gain, an)),
+        ("west_aloft", "Westerly wind aloft (Buffalo)", (al["west"], " km/h", 0, f" (want <{g(aw['limit_kmh'])})"), soft(al["west"], aw["limit_kmh"], aw["zero_at_kmh"], aw["floor"])),
+        ("thermals_strong", "Very strong thermals (est.)", (f["therm"], " m/s", 1, f" (want <{g(ast['limit_ms'])})"), soft(f["therm"], ast["limit_ms"], ast["zero_at_ms"], ast["floor"])),
+        ("height", "Climb height above launch", (gain, " m", 0, f" (want >{g(ah['min_above_launch_m'])})"), above(gain, ah["min_above_launch_m"], ah["zero_at_above_launch_m"], mg)),
+        cape, rain]
     def total(rs):
         got = [r[3] for r in rs if r[3] is not None]
         return None if not got else min(got)
@@ -110,5 +150,6 @@ def score_day(h, rules, launch_elev):
     pack = lambda rs: [dict(key=k, label=l, num=v[0], unit=v[1], nd=v[2], want=v[3], factor=None if x is None else round(x, 3)) for k, l, v, x in rs]
     key = dict(wind_kmh=f["ws"], wind_dir=compass(f["wd"]), gust_kmh=f["gust"], wind850_kmh=f["w850"], wind850_dir=compass(f["d850"]),
                wind700_kmh=f["w700"], shear_kmh=f["shear"], ceiling_asl_m=f["ceiling"], cloudbase_agl_m=f["cb"], blh_m=f["blh"],
-               thermal_ms=f["therm"], sw_wm2=f["sw"], cape=f["cape"], rain_mm=f["rain"], low_cloud_pct=f["low"])
+               thermal_ms=f["therm"], sw_wm2=f["sw"], cape=f["cape"], rain_mm=f["rain"], low_cloud_pct=f["low"],
+               aloft_kmh=al["speed"], aloft_u=al["u"], aloft_v=al["v"], north_aloft_kmh=al["north"], west_aloft_kmh=al["west"], climb_gain_m=gain)
     return dict(xc=pct(total(xc)), acro=pct(total(acro)), key=key, xc_rules=pack(xc), acro_rules=pack(acro))

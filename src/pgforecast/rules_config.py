@@ -3,6 +3,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+COMPASS16 = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
 
 def _num(r, path, f):
     cur = r
@@ -30,6 +31,25 @@ def validate(r, f="rules.yaml"):
     for b, lim, zero in (("ceiling", "min_asl_m", "zero_at_asl_m"), ("thermals", "min_ms", "zero_at_ms")):   # "stay over": zero point must be lower
         l, z = _num(r, ("xc", b, lim), f), _num(r, ("xc", b, zero), f)
         if not z < l: raise ValueError(f"{f}: xc.{b}.{zero} ({z}) must be lower than {lim} ({l})")
+    a = r["acro"]
+    lv = a.get("aloft", {}).get("levels_hpa") if isinstance(a.get("aloft"), dict) else None
+    if not (isinstance(lv, list) and lv and all(isinstance(x, int) and 500 <= x <= 1000 for x in lv)): raise ValueError(f"{f}: acro.aloft.levels_hpa must be a list of pressure levels such as [900, 850, 800]")
+    n = "acro", "northerly_aloft"
+    nl, ns, mp, lo, hi, sh = (_num(r, (*n, k), f) for k in ("limit_kmh", "strong_kmh", "max_penalty", "low_climb_above_launch_m", "high_climb_above_launch_m", "penalty_share_when_high"))
+    if not ns > nl: raise ValueError(f"{f}: acro.northerly_aloft.strong_kmh ({ns}) must be higher than limit_kmh ({nl})")
+    if not 0 <= mp < 1: raise ValueError(f"{f}: acro.northerly_aloft.max_penalty must be from 0 up to (not including) 1, so it can never reach 0%")
+    if not hi > lo: raise ValueError(f"{f}: acro.northerly_aloft.high_climb_above_launch_m ({hi}) must be higher than low_climb_above_launch_m ({lo})")
+    if not 0 <= sh <= 1: raise ValueError(f"{f}: acro.northerly_aloft.penalty_share_when_high must be from 0 to 1")
+    w = a.get("westerly_aloft", {}).get("weights") if isinstance(a.get("westerly_aloft"), dict) else None
+    if not (isinstance(w, dict) and w and all(k in COMPASS16 and isinstance(v, (int, float)) and 0 <= v <= 1 for k, v in w.items())): raise ValueError(f"{f}: acro.westerly_aloft.weights must map compass points (N, NNE, ... NNW) to weights from 0 to 1")
+    wl, wz, wf = (_num(r, ("acro", "westerly_aloft", k), f) for k in ("limit_kmh", "zero_at_kmh", "floor"))
+    if not wz > wl: raise ValueError(f"{f}: acro.westerly_aloft.zero_at_kmh ({wz}) must be higher than limit_kmh ({wl})")
+    tl, tz, tf = (_num(r, ("acro", "strong_thermals", k), f) for k in ("limit_ms", "zero_at_ms", "floor"))
+    if not tz > tl: raise ValueError(f"{f}: acro.strong_thermals.zero_at_ms ({tz}) must be higher than limit_ms ({tl})")
+    for nm, fl in (("westerly_aloft", wf), ("strong_thermals", tf)):
+        if not 0 <= fl <= 1: raise ValueError(f"{f}: acro.{nm}.floor must be from 0 to 1")
+    hm, hz = _num(r, ("acro", "height", "min_above_launch_m"), f), _num(r, ("acro", "height", "zero_at_above_launch_m"), f)
+    if not hz < hm: raise ValueError(f"{f}: acro.height.zero_at_above_launch_m ({hz}) must be lower than min_above_launch_m ({hm})")
     m = _num(r, ("smoothing", "full_score_margin"), f)
     if not 0 <= m < 1: raise ValueError(f"{f}: smoothing.full_score_margin must be from 0 up to (not including) 1")
     for k in ("cloud_base_m_per_degC", "thermal_heat_fraction", "thermal_climb_fraction", "thermal_depth_cap_m"):
