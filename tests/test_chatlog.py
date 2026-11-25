@@ -94,4 +94,65 @@ class T(unittest.TestCase):
         v = extract.validate(j, ts, {"bright"}, None)
         self.assertEqual((v["date"], v["date_source"], v["rating"], v["wind_speed"], v["llm_confidence"]), ("2026-11-25", "message", None, "unknown", 1.0))
 
+
+ES_IOS = """[25/11/26 14:03:21] Jordi Puig: Ayer en Organyà fue brutal, térmicas fuertes, volamos 3 horas, un 5
+[25/11/26 14:05:00] Jordi Puig: Y la restitución buenísima hasta el atardecer
+[25/11/26 14:06:10] Núria Vidal: <Multimedia omitido>
+[25/11/26 14:07:00] Núria Vidal: ¿Quién viene a cenar el viernes?
+"""
+CA_ANDROID = """26/11/26, 8:15 p. m. - Núria Vidal: Avui a Organyà no hem volat, massa vent, rotors per tot arreu
+26/11/26, 8:16 p. m. - Núria Vidal: <Multimèdia omès>
+26/11/26, 8:20 p. m. - Jordi Puig: Qui ve a sopar divendres?
+"""
+ORG = {"organya": ["Organyà", "organya"]}
+
+def fake_es_ca(user):
+    last = user.split("Last message:", 1)[1].lower()
+    j = dict(is_report=True, site="organya", date=None, flown="yes", wind_speed="unknown", wind_dir="unknown", turbulence="unknown", thermals="unknown",
+             restitution="unknown", rating=None, confidence=0.8)
+    if "ayer en organy" in last: j.update(date="2026-11-24", thermals="strong", rating=5)
+    elif "restitución" in last: j.update(date="2026-11-24", restitution="good")
+    elif "no hem volat" in last: j.update(date="2026-11-26", flown="no", wind_speed="strong", turbulence="strong")
+    else: j = dict(is_report=False)
+    return json.dumps(j)
+
+class FakeEsCa:
+    model = "fake"
+    def complete(self, system, user, schema): return fake_es_ca(user)
+
+class T2(unittest.TestCase):
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp()); (self.d / "es.txt").write_text(ES_IOS); (self.d / "ca.txt").write_text(CA_ANDROID)
+
+    def test_spanish_catalan_parsing(self):
+        es = parsers.parse_whatsapp(self.d / "es.txt"); ca = parsers.parse_whatsapp(self.d / "ca.txt")
+        self.assertEqual([m.text.startswith(("Ayer", "Y la", "¿Quién")) for m in es], [True] * 3)       # '<Multimedia omitido>' dropped
+        self.assertEqual(len(ca), 2); self.assertEqual((ca[0].ts.year, ca[0].ts.hour, ca[0].ts.minute), (2026, 20, 15))   # '8:15 p. m.' = 20:15
+        self.assertEqual(es[0].sender, "Jordi Puig")
+
+    def test_prefilter_accents_and_languages(self):
+        f = extract.fold
+        for t in ["Ayer fue brutal, térmicas fuertes", "Avui no hem volat, massa vent", "restitución buenísima", "Organyà ayer"]:
+            self.assertTrue(extract.KEYWORDS.search(f(t)) or "organya" in f(t), t)
+        self.assertFalse(extract.KEYWORDS.search(f("¿Quién viene a cenar el viernes?")))
+        self.assertEqual(f("ORGANYÀ"), "organya")
+
+    def test_sender_hash_groups_repeat_reports_without_names(self):
+        db = store.connect(self.d / "l.sqlite")
+        s = import_chats.run([self.d / "es.txt", self.d / "ca.txt"], FakeEsCa(), db, "salt", ORG, chat_names={self.d / "es.txt": "club", self.d / "ca.txt": "club"}, out=lambda *_: None)
+        self.assertEqual(s["kept"], 3)
+        rows = db.execute("SELECT site_id,date,flown,restitution,rating,sender_hash,chat_hash FROM chat_label ORDER BY id").fetchall()
+        jordi1, jordi2, nuria = rows
+        self.assertEqual(jordi1[5], jordi2[5]); self.assertNotEqual(jordi1[5], nuria[5]); self.assertEqual(jordi1[6], nuria[6])   # same person -> same id, same chat
+        self.assertEqual((jordi1[0], jordi1[1], jordi1[4], jordi2[3], nuria[2]), ("organya", "2026-11-24", 5, "good", "no"))
+        w = dict(db.execute("SELECT date || ':' || COALESCE(rating,0) || ':' || restitution, effective_weight FROM chat_label_weighted").fetchall())
+        self.assertAlmostEqual(w["2026-11-24:5:unknown"], 0.15); self.assertAlmostEqual(w["2026-11-24:0:good"], 0.15)   # Jordi's two reports share one 0.3
+        self.assertAlmostEqual(w["2026-11-26:0:unknown"], 0.3)
+        self.assertNotEqual(store.sender_hash("salt", "other chat", "Jordi Puig"), jordi1[5])                  # different chat -> different id
+        self.assertEqual(store.sender_hash("salt", " CLUB ", " jordi puig "), jordi1[5])                       # tolerant of case and spacing
+        self.assertNotEqual(store.sender_hash("other salt", "club", "Jordi Puig"), jordi1[5])
+        db.close(); raw = (self.d / "l.sqlite").read_bytes()
+        for secret in ["Jordi", "Puig", "Vidal", "Núria", "N\u00faria", "brutal", "rotors", "cenar", "sopar"]: self.assertNotIn(secret.encode(), raw)
+        self.assertIsNone(store.sender_hash("salt", "club", ""))
+
 if __name__ == "__main__": unittest.main()

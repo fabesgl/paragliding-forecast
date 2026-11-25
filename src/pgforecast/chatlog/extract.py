@@ -1,15 +1,23 @@
 """Turn one chat message into a small label record. Only enum values, a date, and numbers can come out."""
-import json, re
+import json, re, unicodedata
 from datetime import date, timedelta
 
-PROMPT_VERSION = "chat-v1"
+PROMPT_VERSION = "chat-v2"
 SPEED = ["calm", "light", "moderate", "strong", "unknown"]
 DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "unknown"]
 LEVEL4 = ["none", "light", "moderate", "strong", "unknown"]
 THERM = ["none", "weak", "moderate", "strong", "unknown"]
 RESTIT = ["none", "weak", "good", "unknown"]
 
-KEYWORDS = re.compile(r"\b(fly|flew|flown|flying|flight|launch\w*|land\w*|wind\w*|thermal\w*|lift|sink|rotor|turbulen\w*|bump\w*|smooth|glass\w*|soar\w*|xc|cloud\s?base|restitution|epic|sled|blown out|cancel\w*|booming|booked|stuffed|dead|gusty|gust\w*|nuking|cross.?country|ridge|ridges|hike\w*|walked up|drive up|shuttle)\b", re.I)
+def fold(t):
+    """Lower-case and strip accents, so 'Organyà', 'organya' and 'ORGANYÀ' all match, and 'térmicas' = 'termicas'."""
+    return "".join(c for c in unicodedata.normalize("NFKD", t.casefold()) if not unicodedata.combining(c))
+
+# Words that suggest a message might be about flying. All accent-free (text is folded first). English, Spanish, Catalan.
+_EN = r"fly|flew|flown|flying|flight|launch\w*|land\w*|wind\w*|thermal\w*|lift|sink|rotor|turbulen\w*|bump\w*|smooth|glass\w*|soar\w*|xc|cloud\s?base|restitution|epic|sled|blown out|cancel\w*|booming|gusty|gust\w*|nuking|cross.?country|ridge|hike\w*|shuttle"
+_ES = r"volar|volamos|volaron|volado|volamos|vuelo|vuelos|despeg\w*|aterriz\w*|termic\w*|ascendenc\w*|ascendent\w*|viento|calma|brisa|turbulenc\w*|turbulent\w*|restitucion|base de nubes|cancelad\w*|rachas?|racheado|sin viento"
+_CA = r"volat|volem|vols?|enlair\w*|aterrat\w*|termiques|vent|turbulent\w*|restitucio|base de nuvols|cancel\w*lat|ratxes?|ascendencies|sense vent|volarem|he volat|hem volat"
+KEYWORDS = re.compile(rf"\b({_EN}|{_ES}|{_CA})\b", re.I)    # run on fold(text)
 
 def schema(site_ids):
     return {"type": "object", "additionalProperties": False,
@@ -24,6 +32,7 @@ def schema(site_ids):
 def system_prompt(sites):
     names = "; ".join(f"{sid} = {', '.join(a)}" for sid, a in sites.items())
     return f"""You label paragliding chat messages. Read the LAST message only; earlier messages are context.
+Messages may be in English, Spanish or Catalan (or a mix): understand them, but answer in the English values below. Resolve relative days (yesterday/ayer/ahir, today/hoy/avui, the day before yesterday/anteayer/abans d'ahir, weekday names such as sabado/dissabte) from the message date.
 Output ONE JSON object and nothing else. Never output names, quotes or any message text: only the allowed values.
 Fields:
 - is_report: true only if the message reports how a past day (today, yesterday, a named weekday) was for flying or not flying. Questions, forecasts, plans, banter and 'will fly tomorrow' are false.
@@ -33,7 +42,7 @@ Fields:
 - wind_speed: calm, light, moderate, strong or unknown. wind_dir: compass point the wind came from, or unknown.
 - turbulence: none, light, moderate, strong, unknown. thermals: none, weak, moderate, strong, unknown.
 - restitution: evening lift when slopes release stored heat late in the day: none, weak, good, unknown.
-- rating: 1 (awful) to 5 (epic) for the flying quality of the day, or null if not stated or implied.
+- rating: 1 (awful) to 5 (epic) for the flying quality of the day (convert other scales, e.g. 8/10 -> 4), or null if not stated or implied.
 - confidence: 0 to 1, how sure you are of these labels.
 If is_report is false, set the other fields to unknown/null."""
 
