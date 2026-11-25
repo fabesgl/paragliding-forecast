@@ -91,7 +91,7 @@ with logf.open("a", newline="") as f:
     if new: w.writerow(["made_at_utc", "target_date", "lead_days", "xc_pct", "acro_pct", "method"])
     for d in out_days:
         lead = (dt.date.fromisoformat(d["date"]) - local_now.date()).days
-        w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v1"])
+        w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v2"])
 # 4. write the dashboard
 docs = ROOT/"docs"; docs.mkdir(exist_ok=True)
 (docs/"forecast.json").write_text(json.dumps(dict(updated_local=local_now.strftime("%a %d %b %Y %H:%M %Z"), days=out_days), indent=1))
