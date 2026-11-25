@@ -25,25 +25,36 @@ cfg["rules"] = load_rules(site)                         # sites/<site>/rules.yam
 from pgforecast import summary as _summary
 _summary.configure(cfg["rules"])
 keys = list(cfg["points"]); pts = cfg["points"]
-r = None
-for attempt in range(6):
-    try:
-        r = requests.get("https://api.open-meteo.com/v1/forecast", timeout=60, params=dict(
-            latitude=",".join(str(pts[k]["lat"]) for k in keys), longitude=",".join(str(pts[k]["lon"]) for k in keys),
-            hourly=",".join(VARS + [v for v in LEVEL_VARS if v not in VARS]), models=",".join(MODELS), forecast_days=7, timezone=cfg["timezone"], wind_speed_unit="kmh"))
-        if r.status_code == 200: break
-        print("Open-Meteo HTTP", r.status_code, r.text[:150])
-    except requests.RequestException as e:
-        print("Open-Meteo error:", type(e).__name__)
-    time.sleep(20 * (attempt + 1))
-if r is None or r.status_code != 200: sys.exit("Open-Meteo unavailable after retries")
-raw = r.json()
+HOURLY = ",".join(VARS + [v for v in LEVEL_VARS if v not in VARS])
+def fetch_model(m):
+    """One model's forecast for all points, with every variable renamed to <name>_<model> (Open-Meteo leaves the suffix off when only one model is asked for). None if it still fails after retries."""
+    for attempt in range(4):
+        try:
+            r = requests.get("https://api.open-meteo.com/v1/forecast", timeout=60, params=dict(
+                latitude=",".join(str(pts[k]["lat"]) for k in keys), longitude=",".join(str(pts[k]["lon"]) for k in keys),
+                hourly=HOURLY, models=m, forecast_days=7, timezone=cfg["timezone"], wind_speed_unit="kmh"))
+            if r.status_code == 200:
+                res = r.json(); res = res if isinstance(res, list) else [res]
+                for p in res: p["hourly"] = {(k if k == "time" or k.endswith(f"_{m}") else f"{k}_{m}"): v for k, v in p["hourly"].items()}
+                return res
+            print(f"Open-Meteo {m}: HTTP", r.status_code, r.text[:100])
+        except (requests.RequestException, ValueError) as e:
+            print(f"Open-Meteo {m}: error", type(e).__name__)
+        if attempt < 3: time.sleep(10 * (attempt + 1))
+    return None
+got = {m: fetch_model(m) for m in MODELS}
+ok_models = [m for m in MODELS if got[m]]; failed_models = [m for m in MODELS if not got[m]]
+if not ok_models: sys.exit("Open-Meteo unavailable after retries: every model failed")
+if failed_models: print("MODELS UNAVAILABLE this update:", failed_models, "- carrying on with", ok_models)
+raw = [dict(got[ok_models[0]][i], hourly={"time": got[ok_models[0]][i]["hourly"]["time"]}) for i in range(len(keys))]      # one entry per point, all models merged
+for m in ok_models:
+    for i in range(len(keys)): raw[i]["hourly"].update({k: v for k, v in got[m][i]["hourly"].items() if k != "time"})
 # 1. archive the raw forecast (this is the real, honest forecast-by-lead record we train on later)
 mr = OUT/"model_runs"/"latest.json"
 runs = json.loads(mr.read_text()) if mr.exists() else {}       # which model run each forecast comes from (written by wait_for_models.py)
 arch = OUT/"forecast_archive"; arch.mkdir(parents=True, exist_ok=True)
 with gzip.open(arch/f"{now:%Y-%m-%dT%H%MZ}.json.gz", "wt") as f:
-    json.dump({"fetched_utc": now.isoformat(), "model_runs": runs, "points": keys, "response": raw}, f, separators=(",", ":"))
+    json.dump({"fetched_utc": now.isoformat(), "model_runs": runs, "models_ok": ok_models, "models_failed": failed_models, "points": keys, "response": raw}, f, separators=(",", ":"))
 # 1b. apply the bias corrections (the archive above keeps the raw, uncorrected forecast)
 cf = OUT/"corrections"/"corrections.json"
 cstate = json.loads(cf.read_text()) if cf.exists() else corr.new_state()
@@ -105,14 +116,14 @@ def wind_table(day):
             sp, dr = vec_avg(pairs); used.update(ms)
             cells.append(dict(kmh=round(sp), deg=round(dr), compass=compass(dr), arrow=ARROWS[int(((dr % 360) + 22.5) // 45) % 8], models=ms))
         table.append(dict(label=lab, height_m=round(sum(heights) / len(heights)) if heights else None, cells=cells, models=sorted(used)))
-    have = {m for m in MODELS if any(mystic.get(f"wind_speed_10m_{m}", [None])[i] is not None for i in range(len(times)) if times[i][:10] == day)}
+    have = {m for m in MODELS if any(mystic.get(f"wind_speed_10m_{m}", [None] * len(times))[i] is not None for i in range(len(times)) if times[i][:10] == day)}
     for r in table: r["partial"] = bool(r["models"]) and set(r["models"]) != have
     return table
 for day in [d for d in days if d >= today][:6]:
     per_model = {}
     for m in MODELS:
         idx = [i for i, t in enumerate(times) if t[:10] == day and win[0] <= t[11:16] <= win[1]]
-        if all(mystic.get(f"wind_speed_10m_{m}", [None])[i] is None for i in idx): continue   # model has no data (e.g. BOM ACCESS-G)
+        if all(mystic.get(f"wind_speed_10m_{m}", [None] * len(times))[i] is None for i in idx): continue   # model has no data (e.g. BOM ACCESS-G)
         h = {v: fill(idx, v, m) for v in VARS}
         per_model[m] = score_day(h, cfg["rules"], cfg["launch_height_m"])
     def avg(k):
@@ -147,13 +158,15 @@ print("AI opinion:", ai_status)
 for d in out_days: d["ai"] = ai.get(d["date"])
 # 3. log predictions (track record)
 logf = OUT/"predictions"/"log.csv"; logf.parent.mkdir(parents=True, exist_ok=True)
-new = not logf.exists()
-with logf.open("a", newline="") as f:
-    w = csv.writer(f)
-    if new: w.writerow(["made_at_utc", "target_date", "lead_days", "xc_pct", "acro_pct", "method"])
-    for d in out_days:
+LOG_COLS = ["made_at_utc", "target_date", "lead_days", "xc_pct", "acro_pct", "method", "models"]
+old_rows = []
+if logf.exists():                                    # older files lack the models column: add it (blank for old rows)
+    with logf.open(newline="") as f: old_rows = [[r.get(c, "") for c in LOG_COLS] for r in csv.DictReader(f)]
+with logf.open("w", newline="") as f:
+    w = csv.writer(f); w.writerow(LOG_COLS); w.writerows(old_rows)
+    for d in out_days:                               # models = the ones that actually went into the scores (a model that failed to download or had no data is left out)
         lead = (dt.date.fromisoformat(d["date"]) - local_now.date()).days
-        w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3"])
+        w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3", "+".join(d["models"])])
 aif = OUT/"predictions"/"ai_log.csv"                 # same keys as log.csv, plus the rule scores, so both can be compared with outcomes
 AI_COLS = ["made_at_utc", "target_date", "lead_days", "model", "xc_call", "acro_call", "xc_rule_pct", "acro_rule_pct", "limit_forced", "reasoning"]
 if ai:
@@ -178,7 +191,7 @@ if logf.exists():
     for r_ in csv.DictReader(logf.open()):
         if r_["target_date"] < today: seen[r_["target_date"]] = r_   # last prediction made for each past day
     track_rows = [f'<tr><td>{d}</td><td>{r_["xc_pct"]}%</td><td>{r_["acro_pct"]}%</td><td>{r_["lead_days"]} d</td></tr>' for d, r_ in sorted(seen.items())[-14:]]
-(docs/"index.html").write_text(render.render_page(out_days, cfg, local_now, local_now.date(), cstate, runs, ai_status, track_rows, generated_utc=now, calib=(json.loads((OUT/"corrections"/"valley_wind_calibration.json").read_text()) if (OUT/"corrections"/"valley_wind_calibration.json").exists() else None)))
+(docs/"index.html").write_text(render.render_page(out_days, cfg, local_now, local_now.date(), cstate, runs, ai_status, track_rows, generated_utc=now, failed_models=failed_models, calib=(json.loads((OUT/"corrections"/"valley_wind_calibration.json").read_text()) if (OUT/"corrections"/"valley_wind_calibration.json").exists() else None)))
 import shutil
 shutil.copytree(ROOT/"pwa", docs, dirs_exist_ok=True)     # app manifest, service worker and icons (kept in pwa/ and published with the page)
 print("ok", [(d["date"], d["xc"], d["acro"]) for d in out_days])
