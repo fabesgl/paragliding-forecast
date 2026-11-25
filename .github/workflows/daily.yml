@@ -11,9 +11,8 @@ concurrency: daily-update
 jobs:
   update:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      fc: ${{ steps.fc.outcome }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -34,12 +33,20 @@ jobs:
           git add observations forecast_archive predictions docs
           git diff --cached --quiet || git commit -m "Daily update $(date -u +%F)"
           git pull --rebase -q && git push
-      - uses: actions/upload-pages-artifact@v4
-        if: steps.fc.outcome == 'success'
-        with: { path: docs }
-      - uses: actions/deploy-pages@v4
-        id: deploy
-        if: steps.fc.outcome == 'success'
       - name: Fail the run if a step failed
         if: steps.bom.outcome == 'failure' || steps.fc.outcome == 'failure'
         run: exit 1
+  deploy:
+    needs: update
+    if: always() && needs.update.outputs.fc == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+        with: { ref: main }
+      - uses: actions/upload-pages-artifact@v4
+        with: { path: docs }
+      - uses: actions/deploy-pages@v4
+        id: deploy
