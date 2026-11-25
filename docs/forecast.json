@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 16:41 AEDT",
+ "updated_local": "Wed 25 Nov 2026 17:02 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -500,7 +500,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits apply: gusts of 28 km/h breach both XC (25) and acro (20) limits, and 850 hPa wind of 21 km/h breaches the acro limit (20). Models strongly disagree (GFS XC 95% vs ECMWF 2%), so confidence is low.",
+    "reasoning": "Hard limits apply: gusts 28 km/h breach both XC (25) and acro (20) limits, and 850 hPa wind of 21 km/h breaches the acro limit. Models disagree strongly (GFS good, ECMWF near zero), so confidence is low.",
     "forced": ""
    },
    "summary": {
@@ -1009,7 +1009,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Gusts of 25.4 km/h breach the XC limit (25) and acro limit (20), so both are poor under the hard rules. Models disagree widely (XC 20 to 96; ECMWF near zero), so confidence is low even though launch wind and thermals look decent.",
+    "reasoning": "Gusts of 25.4 km/h breach both hard limits (XC 25, acro 20), forcing poor calls. Models disagree strongly (ECMWF near zero, GFS high), so confidence is low; launch wind is light northerly and thermals are modest (1.6 m/s).",
     "forced": ""
    },
    "summary": {
@@ -1518,7 +1518,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached for both disciplines: 5.4 mm rain in the window, gusts 32 km/h and 850 hPa wind 38 km/h. Thermals are weak (0.4 m/s), cloud base only about 890 m ASL, and strong northerly wind aloft would push acro pilots back over the hill.",
+    "reasoning": "Hard limits breached for both disciplines: 5.4 mm rain in the window, gusts about 32 km/h and 850 hPa wind about 38 km/h. Thermals are weak (0.4 m/s), cloud base sits near 890 m ASL, and strong northerly aloft would push acro pilots back over the hill.",
     "forced": ""
    },
    "summary": {
@@ -2027,7 +2027,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached for both: 11.2 mm rain forecast in the window, gusts 26 km/h, and 850 hPa wind 22 km/h. Thermals are weak (0.6 m/s), cloud base about 905 m ASL, and strong westerly aloft (27 km/h) brings Buffalo turbulence.",
+    "reasoning": "Hard limits breached for both: 11.2 mm rain forecast in the window, gusts 26 km/h, and 850 hPa wind 22 km/h. Thermals are weak (0.6 m/s), cloud tops sit near 905 m ASL, and strong WNW flow aloft brings Buffalo turbulence.",
     "forced": ""
    },
    "summary": {
@@ -2536,7 +2536,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Gusts of 26 km/h breach both hard limits, so both disciplines are poor. The models disagree strongly (GFS favours flying, ECMWF and ICON do not), and the westerly aloft (WNW 16 km/h at 1,000\u20132,000 m) would add Buffalo turbulence for acro.",
+    "reasoning": "Gusts of 26 km/h breach both hard limits, so both disciplines are poor. The models strongly disagree (GFS xc 95 vs ECMWF 14 and ICON 0), and westerly aloft around 16 km/h at Buffalo adds acro turbulence.",
     "forced": ""
    },
    "summary": {
