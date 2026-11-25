@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 20:27 AEDT",
+ "updated_local": "Wed 25 Nov 2026 20:29 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -462,50 +462,59 @@
    "hourly": [
     {
      "h": 9,
-     "xc": 0
+     "xc": 0,
+     "acro": 1
     },
     {
      "h": 10,
-     "xc": 3
+     "xc": 3,
+     "acro": 6
     },
     {
      "h": 11,
-     "xc": 12
+     "xc": 12,
+     "acro": 8
     },
     {
      "h": 12,
-     "xc": 43
+     "xc": 43,
+     "acro": 43
     },
     {
      "h": 13,
-     "xc": 51
+     "xc": 51,
+     "acro": 48
     },
     {
      "h": 14,
-     "xc": 60
+     "xc": 60,
+     "acro": 57
     },
     {
      "h": 15,
-     "xc": 68
+     "xc": 68,
+     "acro": 65
     },
     {
      "h": 16,
-     "xc": 74
+     "xc": 74,
+     "acro": 71
     },
     {
      "h": 17,
-     "xc": 81
+     "xc": 81,
+     "acro": 77
     }
    ],
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached: gusts of 29 km/h exceed 25 km/h for both disciplines, and 850 hPa wind of 21 km/h exceeds the acro 20 km/h limit. Models strongly disagree (ECMWF near zero, GFS high), so confidence is low; northerly aloft would also hurt acro.",
+    "reasoning": "Hard limits breached: gusts 29 km/h exceed 25 km/h for both disciplines, and 850 hPa wind 21 km/h exceeds the acro limit of 20. Models strongly disagree (GFS xc 95% vs ECMWF 2%), so confidence is low.",
     "forced": ""
    },
    "summary": {
     "xc": "Flyable, but gusts near 29 km/h. Best window 3\u20136pm.",
-    "acro": "N aloft: train higher, you'll drift towards the hill. Launch wind 10 km/h, gusts to 29, but gusts near 29 km/h.",
+    "acro": "N aloft: train higher, you'll drift towards the hill. Launch wind 10 km/h, but gusts near 29 km/h. Best acro window 3\u20136pm.",
     "pulled": "gusts near 29 km/h (-55%)",
     "agreement": "models disagree"
    }
@@ -971,50 +980,59 @@
    "hourly": [
     {
      "h": 9,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 10,
-     "xc": 46
+     "xc": 46,
+     "acro": 40
     },
     {
      "h": 11,
-     "xc": 61
+     "xc": 61,
+     "acro": 53
     },
     {
      "h": 12,
-     "xc": 80
+     "xc": 80,
+     "acro": 68
     },
     {
      "h": 13,
-     "xc": 87
+     "xc": 87,
+     "acro": 79
     },
     {
      "h": 14,
-     "xc": 91
+     "xc": 91,
+     "acro": 88
     },
     {
      "h": 15,
-     "xc": 89
+     "xc": 89,
+     "acro": 88
     },
     {
      "h": 16,
-     "xc": 94
+     "xc": 94,
+     "acro": 93
     },
     {
      "h": 17,
-     "xc": 59
+     "xc": 59,
+     "acro": 85
     }
    ],
    "ai": {
     "xc_call": "marginal",
     "acro_call": "marginal",
-    "reasoning": "Light northerly launch wind (7 km/h), no hard-limit breaches, and decent thermals (1.6 m/s) with a ~2190 m ceiling. Models disagree widely (XC 59 to 96), and the 0.2 mm rain and northerly aloft (11 km/h) pull acro down, while XC is held back by the modest ceiling.",
+    "reasoning": "Launch is a light northerly valley wind (7 km/h) with no hard-limit breaches, but models disagree widely (XC 59 to 96). Northerly aloft (~11 km/h) pushes acro pilots south, and climbs reach only about 1,400 m above launch, so acro is rated marginal; XC is held back by the modest thermal strength and model spread.",
     "forced": ""
    },
    "summary": {
     "xc": "Thermals reaching about 2,200 m at about 1.6 m/s. Best window 12\u20135pm. Watch gusts near 23 km/h.",
-    "acro": "N aloft: train higher, you'll drift towards the hill. Smooth, steady air expected: launch wind 7 km/h, gusts to 23, shear 8 km/h aloft.",
+    "acro": "N aloft: train higher, you'll drift towards the hill. Smooth, steady air expected: launch wind 7 km/h, shear 8 km/h aloft. Best acro window 1\u20136pm.",
     "pulled": "gusts near 23 km/h (-19%)",
     "agreement": "models differ"
    }
@@ -1480,45 +1498,54 @@
    "hourly": [
     {
      "h": 9,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 10,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 11,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 12,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 13,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 14,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 15,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 16,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 17,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     }
    ],
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached for both: 4.2 mm rain in the window, gusts 29 km/h, and 850 hPa wind about 40 km/h. Thermals are weak (0.4 m/s) with cloud base near 889 m ASL, so there is little height to work with.",
+    "reasoning": "Hard limits breached for both: 4.2 mm rain in the window, gusts 29 km/h, and 850 hPa wind about 40 km/h. Thermals are weak (0.4 m/s, cloud base about 889 m ASL) and northerly wind aloft would push acro pilots off the box; the models agree on this.",
     "forced": ""
    },
    "summary": {
@@ -1989,45 +2016,54 @@
    "hourly": [
     {
      "h": 9,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 10,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 11,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 12,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 13,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 14,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 15,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 16,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 17,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     }
    ],
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached for both: 9.9 mm rain forecast in the window, and 850 hPa wind of 21 km/h (acro limit 20). Weak thermals (0.6 m/s), cloud base near 896 m ASL and a westerly flow aloft (Buffalo turbulence) add to the poor outlook.",
+    "reasoning": "Rain of 9.9 mm is forecast in the window, a hard limit for both disciplines; acro also breaches the 850 hPa limit (21 km/h). Thermals are weak (0.6 m/s), cloud base about 896 m ASL and climbs only about 99 m, with a westerly aloft that adds Buffalo turbulence.",
     "forced": ""
    },
    "summary": {
@@ -2498,45 +2534,54 @@
    "hourly": [
     {
      "h": 9,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     },
     {
      "h": 10,
-     "xc": 10
+     "xc": 10,
+     "acro": 11
     },
     {
      "h": 11,
-     "xc": 19
+     "xc": 19,
+     "acro": 16
     },
     {
      "h": 12,
-     "xc": 59
+     "xc": 59,
+     "acro": 33
     },
     {
      "h": 13,
-     "xc": 65
+     "xc": 65,
+     "acro": 34
     },
     {
      "h": 14,
-     "xc": 61
+     "xc": 61,
+     "acro": 38
     },
     {
      "h": 15,
-     "xc": 50
+     "xc": 50,
+     "acro": 38
     },
     {
      "h": 16,
-     "xc": 35
+     "xc": 35,
+     "acro": 33
     },
     {
      "h": 17,
-     "xc": 0
+     "xc": 0,
+     "acro": 0
     }
    ],
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Gusts of 26 km/h breach the 25 km/h hard limit for both disciplines, so both are poor. Models disagree sharply (GFS strong, ECMWF and ICON weak), and the westerly aloft (about 15 km/h, WNW to W at 1,500-2,000 m) adds Buffalo turbulence for acro.",
+    "reasoning": "Gusts of 26 km/h breach the 25 km/h hard limit for both disciplines, so both are poor. Models strongly disagree (GFS XC 95 vs ECMWF 14 and ICON 0), and the WNW wind at 1,500-2,000 m plus Buffalo westerly aloft would make acro rough even without the breach.",
     "forced": ""
    },
    "summary": {
