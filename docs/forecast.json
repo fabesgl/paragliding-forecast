@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 13:12 AEDT",
+ "updated_local": "Wed 25 Nov 2026 13:19 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -26,7 +26,7 @@
    "key": {
     "wind_kmh": 9.172222222222222,
     "wind_dir": "N",
-    "gust_kmh": 28.933333333333334,
+    "gust_kmh": 28.433333333333334,
     "wind850_kmh": 20.07777777777778,
     "wind850_dir": "N",
     "wind700_kmh": 28.894444444444446,
@@ -36,7 +36,7 @@
     "blh_m": 1696.6666666666667,
     "thermal_ms": 1.546973412315486,
     "sw_wm2": 820.3333333333334,
-    "cape": 8.333333333333334,
+    "cape": 7.222222222222222,
     "rain_mm": 0.0,
     "low_cloud_pct": 36.888888888888886
    },
@@ -64,12 +64,12 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 28.933333333333334,
+     "num": 28.433333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
      "factor": 0.449,
-     "value": "29 km/h (want <25)"
+     "value": "28 km/h (want <25)"
     },
     {
      "key": "w850",
@@ -104,12 +104,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 8.333333333333334,
+     "num": 7.222222222222222,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "8 (want <800)"
+     "value": "7 (want <800)"
     },
     {
      "key": "rain",
@@ -146,12 +146,12 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 28.933333333333334,
+     "num": 28.433333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 0.333,
-     "value": "29 km/h (want <20)"
+     "value": "28 km/h (want <20)"
     },
     {
      "key": "w850",
@@ -176,12 +176,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 8.333333333333334,
+     "num": 7.222222222222222,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "8 (want <800)"
+     "value": "7 (want <800)"
     },
     {
      "key": "rain",
@@ -230,7 +230,7 @@
     "blh_m": 1952.5,
     "thermal_ms": 1.6174884827875644,
     "sw_wm2": 790.5,
-    "cape": 76.66666666666667,
+    "cape": 95.55555555555556,
     "rain_mm": 0.03333333333333333,
     "low_cloud_pct": 17.833333333333332
    },
@@ -298,12 +298,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 76.66666666666667,
+     "num": 95.55555555555556,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "77 (want <800)"
+     "value": "96 (want <800)"
     },
     {
      "key": "rain",
@@ -370,12 +370,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 76.66666666666667,
+     "num": 95.55555555555556,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "77 (want <800)"
+     "value": "96 (want <800)"
     },
     {
      "key": "rain",
@@ -414,7 +414,7 @@
    "key": {
     "wind_kmh": 3.766666666666666,
     "wind_dir": "N",
-    "gust_kmh": 29.633333333333336,
+    "gust_kmh": 27.0,
     "wind850_kmh": 36.31111111111111,
     "wind850_dir": "N",
     "wind700_kmh": 52.21666666666667,
@@ -424,7 +424,7 @@
     "blh_m": 631.6666666666666,
     "thermal_ms": 0.7660147548747719,
     "sw_wm2": 344.5555555555555,
-    "cape": 130.0,
+    "cape": 220.55555555555554,
     "rain_mm": 4.766666666666667,
     "low_cloud_pct": 55.944444444444436
    },
@@ -452,12 +452,12 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 29.633333333333336,
+     "num": 27.0,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.575,
-     "value": "30 km/h (want <25)"
+     "factor": 0.683,
+     "value": "27 km/h (want <25)"
     },
     {
      "key": "w850",
@@ -492,12 +492,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 130.0,
+     "num": 220.55555555555554,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "130 (want <800)"
+     "value": "221 (want <800)"
     },
     {
      "key": "rain",
@@ -534,12 +534,12 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 29.633333333333336,
+     "num": 27.0,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.156,
-     "value": "30 km/h (want <20)"
+     "factor": 0.395,
+     "value": "27 km/h (want <20)"
     },
     {
      "key": "w850",
@@ -564,12 +564,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 130.0,
+     "num": 220.55555555555554,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "130 (want <800)"
+     "value": "221 (want <800)"
     },
     {
      "key": "rain",
@@ -608,7 +608,7 @@
    "key": {
     "wind_kmh": 5.3500000000000005,
     "wind_dir": "NW",
-    "gust_kmh": 36.333333333333336,
+    "gust_kmh": 25.900000000000002,
     "wind850_kmh": 21.63888888888889,
     "wind850_dir": "WNW",
     "wind700_kmh": 45.09444444444444,
@@ -618,7 +618,7 @@
     "blh_m": 335.0,
     "thermal_ms": 0.6225369027610727,
     "sw_wm2": 302.11111111111114,
-    "cape": 561.1111111111111,
+    "cape": 578.8888888888888,
     "rain_mm": 11.1,
     "low_cloud_pct": 79.33333333333333
    },
@@ -646,12 +646,12 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 36.333333333333336,
+     "num": 25.900000000000002,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.301,
-     "value": "36 km/h (want <25)"
+     "factor": 0.634,
+     "value": "26 km/h (want <25)"
     },
     {
      "key": "w850",
@@ -686,12 +686,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 561.1111111111111,
+     "num": 578.8888888888888,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 0.905,
-     "value": "561 (want <800)"
+     "value": "579 (want <800)"
     },
     {
      "key": "rain",
@@ -728,12 +728,12 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 36.333333333333336,
+     "num": 25.900000000000002,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.048,
-     "value": "36 km/h (want <20)"
+     "factor": 0.382,
+     "value": "26 km/h (want <20)"
     },
     {
      "key": "w850",
@@ -758,12 +758,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 561.1111111111111,
+     "num": 578.8888888888888,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 0.905,
-     "value": "561 (want <800)"
+     "value": "579 (want <800)"
     },
     {
      "key": "rain",
@@ -802,7 +802,7 @@
    "key": {
     "wind_kmh": 10.055555555555557,
     "wind_dir": "NW",
-    "gust_kmh": 23.96666666666667,
+    "gust_kmh": 25.900000000000002,
     "wind850_kmh": 17.438888888888886,
     "wind850_dir": "WNW",
     "wind700_kmh": 35.08888888888889,
@@ -812,7 +812,7 @@
     "blh_m": 1982.5,
     "thermal_ms": 1.691568442485255,
     "sw_wm2": 877.6666666666666,
-    "cape": 117.22222222222223,
+    "cape": 66.66666666666667,
     "rain_mm": 0.16666666666666666,
     "low_cloud_pct": 22.222222222222218
    },
@@ -840,12 +840,12 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 23.96666666666667,
+     "num": 25.900000000000002,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
      "factor": 0.528,
-     "value": "24 km/h (want <25)"
+     "value": "26 km/h (want <25)"
     },
     {
      "key": "w850",
@@ -880,12 +880,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 117.22222222222223,
+     "num": 66.66666666666667,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "117 (want <800)"
+     "value": "67 (want <800)"
     },
     {
      "key": "rain",
@@ -922,12 +922,12 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 23.96666666666667,
+     "num": 25.900000000000002,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 0.335,
-     "value": "24 km/h (want <20)"
+     "value": "26 km/h (want <20)"
     },
     {
      "key": "w850",
@@ -952,12 +952,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 117.22222222222223,
+     "num": 66.66666666666667,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "117 (want <800)"
+     "value": "67 (want <800)"
     },
     {
      "key": "rain",
