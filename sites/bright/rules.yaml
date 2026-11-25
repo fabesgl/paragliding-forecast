@@ -47,9 +47,9 @@ acro:                            # Acro rules. Acro needs smooth, steady air and
   launch_wind:                   # Average 10 m wind at launch over the flying window.
     limit_kmh: 15                # Want launch wind under this. Also the AI second opinion's hard limit for acro.
     zero_at_kmh: 25              # Score reaches 0% at this wind speed.
-  gusts:                         # Strongest gust forecast in the flying window.
-    limit_kmh: 20                # Want gusts under this. Also the AI second opinion's hard limit for acro.
-    zero_at_kmh: 32              # Score reaches 0% at this gust speed.
+  gusts:                         # Strongest gust forecast at launch in the flying window. Same limit as XC: it is a launch limit; turbulence in the air is covered by the shear and westerly rules.
+    limit_kmh: 25                # Want gusts under this. Also the AI second opinion's hard limit for acro.
+    zero_at_kmh: 40              # Score reaches 0% at this gust speed.
   wind_850:                      # Wind at 850 hPa (about 1,500 m up).
     limit_kmh: 20                # Want the 850 hPa wind under this. Also the AI second opinion's hard limit for acro.
     zero_at_kmh: 38              # Score reaches 0% at this speed.

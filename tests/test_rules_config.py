@@ -275,12 +275,13 @@ class T(unittest.TestCase):
             self.assertAlmostEqual(r["xc"], 100 * min(v for v in want.values() if v is not None), delta=1, msg=name)
             now = {x["key"]: x["factor"] for x in r["acro_rules"]}; wa = dict(g["acro_f"])
             if dry: wa["rain"] = 1.0
-            self.assertEqual({k: now[k] for k in wa}, wa, name)
+            self.assertEqual({k: now[k] for k in wa if k != "gust"}, {k: v for k, v in wa.items() if k != "gust"}, name)
+            self.assertEqual(now["gust"], xcf["gust"], name)                                                   # acro gusts now use the same launch limit as XC (25 / 40)
             self.assertAlmostEqual(r["acro"], 100 * min(1, min(v for v in now.values() if v is not None)), delta=1, msg=name)
             self.assertGreaterEqual(r["xc"], g["xc"], name)                                                    # only the rain change can lift XC
 
     def test_values_are_the_old_ones(self):
-        self.assertEqual(limits(self.rules), {"xc": {"wind": 20, "gust": 25, "w850": 25}, "acro": {"wind": 15, "gust": 20, "w850": 20}, "rain_mm": 0.2})
+        self.assertEqual(limits(self.rules), {"xc": {"wind": 20, "gust": 25, "w850": 25}, "acro": {"wind": 15, "gust": 25, "w850": 20}, "rain_mm": 0.2})
         x = self.rules["xc"]; self.assertEqual((x["ceiling"]["min_asl_m"], x["ceiling"]["zero_at_asl_m"], x["thermals"]["min_ms"], x["thermals"]["zero_at_ms"]), (2000, 1300, 1.5, 0.5))
         self.assertEqual((self.rules["shared"]["cape"]["limit"], self.rules["shared"]["cape"]["zero_at"]), (800, 1800))
         d = self.rules["direction"]; self.assertEqual({k: d[k] for k in ("launch_arc_deg", "calm_below_kmh", "unflyable_arc_deg", "unflyable_min_850_kmh")},
