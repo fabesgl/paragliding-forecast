@@ -103,4 +103,14 @@ class T(unittest.TestCase):
         p = extract.batch_system_prompt(SITES); self.assertIn("not_reports", p); self.assertIn("Catalan", p); self.assertIn("bright = bright, mystic", p)
         self.assertEqual(extract.validate_batch("garbage", [{"id": 1, "ts": __import__("datetime").datetime(2026, 11, 25)}], {"bright"}, "bright"), {})
 
+
+
+
+class Alias(unittest.TestCase):
+    def test_a_place_word_from_the_model_is_mapped_to_the_site_id(self):
+        import datetime
+        items = [{"id": 1, "ts": datetime.datetime(2026, 11, 25, 12, 0)}, {"id": 2, "ts": datetime.datetime(2026, 11, 25, 12, 1)}]
+        rep = lambda i, site: dict(id=i, site=site, date="2026-11-24", flown="yes", wind_speed="unknown", wind_dir="unknown", turbulence="unknown", thermals="unknown", restitution="unknown", rating=None, confidence=0.7)
+        got = extract.validate_batch(json.dumps({"reports": [rep(1, "Mystic"), rep(2, "tawonga")], "not_reports": []}), items, {"bright"}, "bright", SITES)
+        self.assertEqual(got[1]["site_id"], "bright"); self.assertIsNone(got[2])               # a place that is not one of ours is dropped, never guessed
 if __name__ == "__main__": unittest.main()

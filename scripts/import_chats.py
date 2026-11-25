@@ -62,6 +62,7 @@ if __name__ == "__main__":
     ap.add_argument("--parallel", type=int, default=4, help="with --backend anthropic: calls running at once (default 4)")
     ap.add_argument("--base-url"); ap.add_argument("--date-order", choices=["auto", "dmy", "mdy"], default="auto")
     ap.add_argument("--limit", type=int, help="stop after this many messages go to the model (for a trial run: the first ones in the file)")
+    ap.add_argument("--cue-sample", type=int, help="like --sample, but only from messages that look like reports of a past day (a more informative trial when reports are rare)")
     ap.add_argument("--sample", type=int, help="with --backend anthropic: send only N messages spread evenly across the whole file (a representative trial)")
     ap.add_argument("--no-prefilter", action="store_true"); ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
@@ -82,6 +83,10 @@ if __name__ == "__main__":
     if a.backend == "anthropic":                                   # batched, parallel, resumable
         import signal, threading
         targets, c = batch.collect(a.files, salt_, sites, names, a.date_order, db, prefilter=not a.no_prefilter)
+        if a.cue_sample:
+            pool = [t for t in targets if extract.REPORT_CUES.search(extract.fold(t["text"]))]; print(f"{len(pool):,} of the {len(targets):,} candidates look like reports of a past day")
+            if a.cue_sample < len(pool): step = len(pool) / a.cue_sample; pool = [pool[int(i * step)] for i in range(a.cue_sample)]
+            targets = pool
         if a.sample and a.sample < len(targets): step = len(targets) / a.sample; targets = [targets[int(i * step)] for i in range(a.sample)]
         if a.limit: targets = targets[:a.limit]
         est = batch.estimate(targets, a.batch_size, a.parallel)

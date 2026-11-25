@@ -46,7 +46,7 @@ def run_batched(targets, llm, db, sites, default_site=None, batch_size=20, paral
         for _ in range(retries + 1):
             if stop.is_set() and got: break
             raw = llm.complete(sysmsg, user, sch, max_tokens=600 + 90 * len(items))
-            got.update({k: v for k, v in extract.validate_batch(raw, items, set(sid), default_site).items() if k not in got})
+            got.update({k: v for k, v in extract.validate_batch(raw, items, set(sid), default_site, sites).items() if k not in got})
             if len(got) == len(items): break
         return got
 

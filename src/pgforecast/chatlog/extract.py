@@ -19,6 +19,10 @@ _ES = r"volar|volamos|volaron|volado|volamos|vuelo|vuelos|despeg\w*|aterriz\w*|t
 _CA = r"volat|volem|vols?|enlair\w*|aterrat\w*|termiques|vent|turbulent\w*|restitucio|base de nuvols|cancel\w*lat|ratxes?|ascendencies|sense vent|volarem|he volat|hem volat"
 KEYWORDS = re.compile(rf"\b({_EN}|{_ES}|{_CA})\b", re.I)    # run on fold(text)
 
+# Words that make a message LIKELY to be a report of a past day (used only to pick a more informative trial sample, never to decide what is kept).
+REPORT_CUES = re.compile(r"\b(flew|flown|launched|landed|yesterday|last (weekend|saturday|sunday)|cloud ?base|xc|km flight|(was|were) (a |an )?(epic|great|good|amazing|awesome|sick|fun|rowdy|bumpy|smooth|strong|light|booming|dead|blown|cooking|glass)"
+                         r"|hours? (in the air|airtime)|volamos|vam volar|he volat|hem volat|ayer|ahir)\b", re.I)
+
 def schema(site_ids):
     return {"type": "object", "additionalProperties": False,
         "required": ["is_report", "site", "date", "flown", "wind_speed", "wind_dir", "turbulence", "thermals", "restitution", "rating", "confidence"],
@@ -113,7 +117,7 @@ def batch_user_prompt(items):
         out.append(f"msg: {it['text']}")
     return "\n".join(out)
 
-def validate_batch(raw, items, site_ids, default_site):
+def validate_batch(raw, items, site_ids, default_site, aliases=None):
     """Returns {id: label dict, or None for 'not a usable report'} for every id the model answered properly. Ids it skipped or botched are absent
     (the caller retries them once, then leaves them for the next run)."""
     try: j = json.loads(raw)
@@ -122,7 +126,9 @@ def validate_batch(raw, items, site_ids, default_site):
     ids = {it["id"]: it for it in items}; got = {}
     for i in j.get("not_reports") or []:
         if isinstance(i, int) and i in ids and i not in got: got[i] = None
+    amap = {fold(a): sid for sid, al in (aliases or {}).items() for a in al}          # the model sometimes answers with a place word ('mystic') instead of the site id
     for e in j.get("reports") or []:
         if not isinstance(e, dict) or e.get("id") not in ids or e["id"] in got: continue
+        if isinstance(e.get("site"), str) and e["site"] not in site_ids and fold(e["site"]) in amap: e = {**e, "site": amap[fold(e["site"])]}
         got[e["id"]] = validate(json.dumps({**{k: v for k, v in e.items() if k != "id"}, "is_report": True}), ids[e["id"]]["ts"], site_ids, default_site)
     return got
