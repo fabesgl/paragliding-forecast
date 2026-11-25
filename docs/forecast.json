@@ -1,0 +1,217 @@
+{
+ "updated_local": "Wed 25 Nov 2026 12:10 AEDT",
+ "days": [
+  {
+   "date": "2026-11-25",
+   "xc": 86,
+   "acro": 75,
+   "xc_range": [
+    80,
+    92
+   ],
+   "models": {
+    "gfs_seamless": {
+     "xc": 80,
+     "acro": 65
+    },
+    "ecmwf_ifs025": {
+     "xc": 92,
+     "acro": 78
+    },
+    "icon_seamless": {
+     "xc": 85,
+     "acro": 82
+    }
+   },
+   "key": {
+    "wind_kmh": 6.333333333333333,
+    "wind_dir": "N",
+    "gust_kmh": 15.5,
+    "wind850_kmh": 17.333333333333332,
+    "wind850_dir": "N",
+    "wind700_kmh": 27.866666666666664,
+    "cloudbase_agl_m": 1708.3333333333335,
+    "blh_m": 1696.6666666666667,
+    "sw_wm2": 814.1666666666666,
+    "cape": 11.666666666666666,
+    "rain_mm": 0.0,
+    "low_cloud_pct": 35.0
+   },
+   "why": [
+    "Launch wind N 6 km/h, gusts to 16",
+    "Cloud base ~1708 m above ground (good)",
+    "Boundary layer ~1697 m (moderate thermals)"
+   ]
+  },
+  {
+   "date": "2026-11-26",
+   "xc": 82,
+   "acro": 70,
+   "xc_range": [
+    77,
+    88
+   ],
+   "models": {
+    "gfs_seamless": {
+     "xc": 88,
+     "acro": 72
+    },
+    "ecmwf_ifs025": {
+     "xc": 77,
+     "acro": 61
+    },
+    "icon_seamless": {
+     "xc": 82,
+     "acro": 76
+    }
+   },
+   "key": {
+    "wind_kmh": 7.5,
+    "wind_dir": "N",
+    "gust_kmh": 12.2,
+    "wind850_kmh": 13.533333333333333,
+    "wind850_dir": "NNE",
+    "wind700_kmh": 22.21666666666667,
+    "cloudbase_agl_m": 1772.916666666667,
+    "blh_m": 1952.5,
+    "sw_wm2": 827.3333333333334,
+    "cape": 68.33333333333333,
+    "rain_mm": 0.0,
+    "low_cloud_pct": 12.833333333333334
+   },
+   "why": [
+    "Launch wind N 8 km/h, gusts to 12",
+    "Cloud base ~1773 m above ground (good)",
+    "Boundary layer ~1952 m (strong thermals)"
+   ]
+  },
+  {
+   "date": "2026-11-27",
+   "xc": 6,
+   "acro": 11,
+   "xc_range": [
+    0,
+    17
+   ],
+   "models": {
+    "gfs_seamless": {
+     "xc": 1,
+     "acro": 2
+    },
+    "ecmwf_ifs025": {
+     "xc": 0,
+     "acro": 0
+    },
+    "icon_seamless": {
+     "xc": 17,
+     "acro": 30
+    }
+   },
+   "key": {
+    "wind_kmh": 4.316666666666666,
+    "wind_dir": "N",
+    "gust_kmh": 28.4,
+    "wind850_kmh": 33.916666666666664,
+    "wind850_dir": "N",
+    "wind700_kmh": 50.01666666666667,
+    "cloudbase_agl_m": 554.166666666667,
+    "blh_m": 631.6666666666666,
+    "sw_wm2": 443.3333333333333,
+    "cape": 186.66666666666666,
+    "rain_mm": 2.9000000000000004,
+    "low_cloud_pct": 55.5
+   },
+   "why": [
+    "Launch wind N 4 km/h, gusts to 28",
+    "Rain 2.9 mm in the flying window",
+    "Cloud base ~554 m above ground (low)",
+    "Boundary layer ~632 m (weak thermals)"
+   ]
+  },
+  {
+   "date": "2026-11-28",
+   "xc": 0,
+   "acro": 0,
+   "xc_range": [
+    0,
+    0
+   ],
+   "models": {
+    "gfs_seamless": {
+     "xc": 0,
+     "acro": 0
+    },
+    "ecmwf_ifs025": {
+     "xc": 0,
+     "acro": 0
+    },
+    "icon_seamless": {
+     "xc": 0,
+     "acro": 0
+    }
+   },
+   "key": {
+    "wind_kmh": 4.766666666666667,
+    "wind_dir": "NW",
+    "gust_kmh": 46.4,
+    "wind850_kmh": 33.333333333333336,
+    "wind850_dir": "NNW",
+    "wind700_kmh": 69.53333333333333,
+    "cloudbase_agl_m": 49.99999999999982,
+    "blh_m": 335.0,
+    "sw_wm2": 170.33333333333334,
+    "cape": 216.66666666666666,
+    "rain_mm": 9.3,
+    "low_cloud_pct": 88.33333333333333
+   },
+   "why": [
+    "Launch wind NW 5 km/h, gusts to 46",
+    "Rain 9.3 mm in the flying window",
+    "Cloud base ~50 m above ground (low)",
+    "Boundary layer ~335 m (weak thermals)"
+   ]
+  },
+  {
+   "date": "2026-11-29",
+   "xc": 52,
+   "acro": 46,
+   "xc_range": [
+    0,
+    93
+   ],
+   "models": {
+    "gfs_seamless": {
+     "xc": 93,
+     "acro": 82
+    },
+    "ecmwf_ifs025": {
+     "xc": 62,
+     "acro": 57
+    },
+    "icon_seamless": {
+     "xc": 0,
+     "acro": 0
+    }
+   },
+   "key": {
+    "wind_kmh": 9.016666666666667,
+    "wind_dir": "NW",
+    "gust_kmh": 9.016666666666667,
+    "wind850_kmh": 4.733333333333333,
+    "wind850_dir": "W",
+    "wind700_kmh": 16.0,
+    "cloudbase_agl_m": 1937.5,
+    "blh_m": 1982.5,
+    "sw_wm2": 995.0,
+    "cape": 153.33333333333334,
+    "rain_mm": 0.0,
+    "low_cloud_pct": 0.0
+   },
+   "why": [
+    "Launch wind NW 9 km/h, gusts to 5",
+    "Cloud base ~1938 m above ground (good)",
+    "Boundary layer ~1982 m (strong thermals)"
+   ]
+  }
+ ]
+}

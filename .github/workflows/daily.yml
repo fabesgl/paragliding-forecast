@@ -1,0 +1,45 @@
+name: Daily update
+on:
+  schedule:
+    - cron: "30 18 * * *"   # 18:30 UTC = 5:30am AEDT (6:30am AEST in winter)
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency: daily-update
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - name: Collect BOM observations
+        id: bom
+        continue-on-error: true
+        run: python scripts/collect_bom.py bright
+      - name: Fetch forecasts, score, build dashboard
+        id: fc
+        continue-on-error: true
+        run: python scripts/daily_forecast.py bright
+      - name: Commit new data
+        run: |
+          git config user.name "daily-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add observations forecast_archive predictions docs
+          git diff --cached --quiet || git commit -m "Daily update $(date -u +%F)"
+          git pull --rebase -q && git push
+      - uses: actions/upload-pages-artifact@v4
+        if: steps.fc.outcome == 'success'
+        with: { path: docs }
+      - uses: actions/deploy-pages@v4
+        id: deploy
+        if: steps.fc.outcome == 'success'
+      - name: Fail the run if a step failed
+        if: steps.bom.outcome == 'failure' || steps.fc.outcome == 'failure'
+        run: exit 1
