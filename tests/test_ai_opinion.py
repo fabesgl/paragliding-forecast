@@ -1,5 +1,5 @@
 """Run: .venv/bin/python -m unittest tests.test_ai_opinion -v   (no network: the API is faked)"""
-import sys, unittest
+import sys, unittest, unittest.mock
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import requests
@@ -36,7 +36,7 @@ class T(unittest.TestCase):
         self.assertEqual(c["json"]["tool_choice"]["name"], "give_opinion")
 
     def test_failures_never_raise(self):
-        A.time.sleep = lambda *_: None
+        patcher = __import__("unittest").mock.patch.object(A.time, "sleep", lambda *_: None); patcher.start(); self.addCleanup(patcher.stop)   # speed up retries, then restore time.sleep for other tests
         for resps in ([Resp(500)] * 3, [requests.ConnectTimeout()] * 3, [Resp(400, text="bad")], [Resp(200, {"content": [{"type": "text", "text": "hi"}]})],
                       [Resp(200, {"content": [{"type": "tool_use", "name": "give_opinion", "input": {"xc_call": "great", "acro_call": "poor", "reasoning": "x"}}]})]):
             out, st = A.opinions([DAY], {}, [], {}, CFG, env={"ANTHROPIC_API_KEY": "k"}, session=Fake(*resps)); self.assertEqual(out, {}); self.assertIn("failed", st)
