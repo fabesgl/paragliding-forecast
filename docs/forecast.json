@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 20:57 AEDT",
+ "updated_local": "Wed 25 Nov 2026 21:03 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -509,7 +509,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached: gusts 29 km/h exceed 25 km/h for both disciplines, and 850 hPa wind of 21 km/h exceeds the acro limit of 20. Models strongly disagree (ECMWF 2% vs GFS 95% XC), so confidence is low.",
+    "reasoning": "Hard limits apply: gusts of 29 km/h breach both XC and acro limits, and 850 hPa wind of 21 km/h breaches the acro limit. Models disagree sharply (ECMWF 2% vs GFS 95% XC), so confidence is low; northerly aloft also hurts acro.",
     "forced": ""
    },
    "summary": {
@@ -1027,13 +1027,13 @@
    "ai": {
     "xc_call": "good",
     "acro_call": "marginal",
-    "reasoning": "Launch is a light northerly (7 km/h), gusts 22 km/h, no hard-limit breaches, and ~1,430 m climbs with 1.6 m/s thermals support XC, though models range 68-96 and rain is 0.2 mm. Acro is held back by northerly wind aloft (11 km/h pushing pilots off the box) and the 3,000 m winds from WNW/NW that risk Buffalo turbulence.",
+    "reasoning": "Launch is a light northerly (7 km/h), gusts 22 km/h, no hard-limit breaches, and climbs about 1430 m with 1.6 m/s thermals. Acro is held back by northerly wind aloft (11 km/h, drifting pilots off the box) and the 0.2 mm rain flag; models disagree (XC 68\u201396%).",
     "forced": ""
    },
    "summary": {
     "xc": "Thermals reaching about 2,200 m at about 1.6 m/s. Best window 12\u20135pm. Watch gusts near 22 km/h.",
     "acro": "N aloft: train higher, you'll drift towards the hill. Smooth, steady air expected: launch wind 7 km/h, shear 8 km/h aloft. Best acro window 12\u20135pm.",
-    "pulled": "gusts near 22 km/h (-14%)",
+    "pulled": "XC gusts near 22 km/h (-14%) \u00b7 acro gusts near 22 km/h (-14%) \u00b7 0.2 mm of rain (-11%)",
     "agreement": "models differ"
    }
   },
@@ -1545,13 +1545,13 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached for both disciplines: 4.3 mm rain forecast in the window, gusts 28 km/h, and 850 hPa wind 39 km/h from the north. Thermals are weak (0.4 m/s), cloud base sits below 900 m ASL, and the strong northerly aloft would push acro pilots off the box.",
+    "reasoning": "Hard limits breached for both disciplines: 4.3 mm rain forecast in the window, gusts 28 km/h, and 850 hPa wind 39 km/h. Thermals are weak (0.4 m/s), cloud base only about 889 m ASL, and strong northerly wind aloft. Models agree on the strong northerly, so no rescue there.",
     "forced": ""
    },
    "summary": {
-    "xc": "Unlikely: thermals topping out near 900 m and weak thermals (about 0.4 m/s).",
-    "acro": "NNE aloft: train higher, you'll drift towards the hill. Rough or unflyable: climbs reaching about 92 m above launch and 39 km/h wind at 850 hPa.",
-    "pulled": "XC thermals topping out near 900 m (-100%) \u00b7 acro climbs reaching about 92 m above launch (-100%)",
+    "xc": "Rain 4.3 mm in the window; also thermals topping out near 900 m.",
+    "acro": "Rain 4.3 mm in the window; also climbs reaching about 92 m above launch.",
+    "pulled": "4.3 mm of rain (-70%) \u00b7 XC thermals topping out near 900 m (-100%) \u00b7 acro climbs reaching about 92 m above launch (-100%)",
     "agreement": "models agree"
    }
   },
@@ -2063,13 +2063,13 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Rain of 10.6 mm is forecast in the window, a hard limit breach for both disciplines; acro also breaches on 850 hPa wind (21 km/h). Thermals are weak (0.5 m/s), cloud base about 896 m ASL, and westerly wind aloft (Buffalo turbulence) is strong, so no real chance of flying.",
+    "reasoning": "Rain of 10.6 mm is forecast in the window, a hard breach for both disciplines. Thermals are weak (0.5 m/s), cloud base sits near 896 m ASL, and westerly flow aloft (W/WNW 24-30 km/h) brings Buffalo turbulence; the 850 hPa wind also breaches the acro limit.",
     "forced": ""
    },
    "summary": {
-    "xc": "Unlikely: thermals topping out near 900 m and 10.6 mm of rain.",
-    "acro": "WNW aloft, rough off Buffalo. Rough or unflyable: climbs reaching about 99 m above launch and 10.6 mm of rain.",
-    "pulled": "XC thermals topping out near 900 m (-100%) \u00b7 acro climbs reaching about 99 m above launch (-100%)",
+    "xc": "Rain 10.6 mm in the window; also thermals topping out near 900 m.",
+    "acro": "Rain 10.6 mm in the window; also climbs reaching about 99 m above launch.",
+    "pulled": "10.6 mm of rain (-100%) \u00b7 XC thermals topping out near 900 m (-100%) \u00b7 acro climbs reaching about 99 m above launch (-100%)",
     "agreement": "models agree"
    }
   },
@@ -2581,7 +2581,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Gusts of 26 km/h breach the 25 km/h hard limit for both disciplines, so both are poor. Models disagree strongly (GFS XC 95% vs ECMWF 14%), and westerly wind aloft (~13 km/h, WNW/W at 1,500-2,000 m) would add Buffalo turbulence for acro.",
+    "reasoning": "Gusts of 26 km/h breach the 25 km/h hard limit for both disciplines, so both are poor. Models strongly disagree (XC 14% to 95%), and aloft westerly of about 13 km/h at Buffalo adds acro turbulence concern.",
     "forced": ""
    },
    "summary": {
@@ -3099,12 +3099,12 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Gusts of 28 km/h breach the 25 km/h hard limit for both disciplines, so both are poor. Models disagree strongly (ICON 0%, ECMWF 26%), and the WNW launch wind plus westerly-ish flow aloft adds Buffalo turbulence concern.",
+    "reasoning": "Gusts of 28 km/h breach the 25 km/h hard limit for both disciplines, so both are poor. Models disagree strongly (ICON 0%, ECMWF 26%), and the WNW launch wind and westerly aloft add Buffalo turbulence concerns.",
     "forced": ""
    },
    "summary": {
-    "xc": "Unlikely: wind WNW at launch and gusts near 28 km/h.",
-    "acro": "SSW aloft at 12 km/h. Rough or unflyable: wind WNW at launch and gusts near 28 km/h.",
+    "xc": "Wind WNW at launch; also gusts near 28 km/h.",
+    "acro": "Wind WNW at launch; also gusts near 28 km/h.",
     "pulled": "wind WNW at launch (-67%)",
     "agreement": "models differ"
    }
