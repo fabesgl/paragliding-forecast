@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 13:41 AEDT",
+ "updated_local": "Wed 25 Nov 2026 13:43 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -196,7 +196,7 @@
    ],
    "winds": [
     {
-     "label": "Launch (10 m)",
+     "label": "Launch (797 m)",
      "height_m": null,
      "cells": [
       {
@@ -609,7 +609,7 @@
    ],
    "winds": [
     {
-     "label": "Launch (10 m)",
+     "label": "Launch (797 m)",
      "height_m": null,
      "cells": [
       {
@@ -1022,7 +1022,7 @@
    ],
    "winds": [
     {
-     "label": "Launch (10 m)",
+     "label": "Launch (797 m)",
      "height_m": null,
      "cells": [
       {
@@ -1435,7 +1435,7 @@
    ],
    "winds": [
     {
-     "label": "Launch (10 m)",
+     "label": "Launch (797 m)",
      "height_m": null,
      "cells": [
       {
@@ -1848,7 +1848,7 @@
    ],
    "winds": [
     {
-     "label": "Launch (10 m)",
+     "label": "Launch (797 m)",
      "height_m": null,
      "cells": [
       {
