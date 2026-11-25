@@ -73,7 +73,7 @@ def vec_avg(pairs):
     v = sum(-s_ * math.cos(math.radians(d)) for s_, d in pairs) / len(pairs)
     return math.hypot(u, v), math.degrees(math.atan2(-u, -v)) % 360
 def wind_table(day):
-    rows = [("Launch (10 m)", "wind_speed_10m", "wind_direction_10m", None)] + [
+    rows = [(f"Launch ({cfg['launch_height_m']} m)", "wind_speed_10m", "wind_direction_10m", None)] + [
         (lab, f"wind_speed_{l}hPa", f"wind_direction_{l}hPa", f"geopotential_height_{l}hPa") for lab, l in LEVELS]
     table = []
     for lab, sv, dv, hv in rows:
