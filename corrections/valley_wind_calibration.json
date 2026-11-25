@@ -1,0 +1,12 @@
+{
+ "n_days": 0,
+ "k": null,
+ "r2": null,
+ "ready": false,
+ "station": 94889,
+ "station_note": "Wangaratta: a WEAK proxy (about 60 km away on the flat). BOM has no Bright station in its free feed. Replace with a station at Bright if one turns up.",
+ "current_setting": 6,
+ "min_days": 30,
+ "updated": "2026-11-25T05:20Z",
+ "notified": false
+}

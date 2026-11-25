@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 16:09 AEDT",
+ "updated_local": "Wed 25 Nov 2026 16:20 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -124,7 +124,7 @@
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.966,
+     "factor": 1.0,
      "value": "0.0 mm (want none)"
     }
    ],
@@ -236,7 +236,7 @@
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.966,
+     "factor": 1.0,
      "value": "0.0 mm (want none)"
     }
    ],
@@ -478,33 +478,33 @@
     },
     {
      "h": 13,
-     "xc": 51
+     "xc": 52
     },
     {
      "h": 14,
-     "xc": 59
+     "xc": 60
     },
     {
      "h": 15,
-     "xc": 66
+     "xc": 67
     },
     {
      "h": 16,
-     "xc": 72
+     "xc": 73
     },
     {
      "h": 17,
-     "xc": 79
+     "xc": 80
     }
    ],
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached: gusts 28 km/h exceed both XC (25) and acro (20) limits, and 850 hPa wind 21 km/h exceeds acro's 20 limit. Models strongly disagree (XC range 2-93%), so confidence is low, though northerly aloft would also hurt acro.",
+    "reasoning": "Hard limits breached: gusts 28 km/h exceed both XC (25) and acro (20) limits, and 850 hPa wind 21 km/h exceeds the acro limit of 20. Models strongly disagree (XC 2% to 93%), so confidence is low, though the rule-based calls are overridden by the limits anyway.",
     "forced": ""
    },
    "summary": {
-    "xc": "Flyable, but gusts near 28 km/h. Best window 3\u20136pm.",
+    "xc": "Flyable, but gusts near 28 km/h. Best window 2\u20136pm.",
     "acro": "N aloft: train higher, you'll drift towards the hill. Rough or unflyable: gusts near 28 km/h and 21 km/h wind at 850 hPa.",
     "pulled": "gusts near 28 km/h (-67%)",
     "agreement": "models disagree"
@@ -516,11 +516,11 @@
    "acro": 34,
    "xc_range": [
     20,
-    97
+    98
    ],
    "models": {
     "gfs_seamless": {
-     "xc": 97,
+     "xc": 98,
      "acro": 95
     },
     "ecmwf_ifs025": {
@@ -633,7 +633,7 @@
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.956,
+     "factor": 0.983,
      "value": "0.0 mm (want none)"
     }
    ],
@@ -745,7 +745,7 @@
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.956,
+     "factor": 0.983,
      "value": "0.0 mm (want none)"
     }
    ],
@@ -987,15 +987,15 @@
     },
     {
      "h": 13,
-     "xc": 68
-    },
-    {
-     "h": 14,
      "xc": 69
     },
     {
+     "h": 14,
+     "xc": 70
+    },
+    {
      "h": 15,
-     "xc": 71
+     "xc": 72
     },
     {
      "h": 16,
@@ -1009,7 +1009,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Gusts of 25 km/h breach both hard limits (XC 25, acro 20), so both are poor. Models disagree sharply (XC 20 to 97; GFS is an outlier, ECMWF near zero), so confidence is low even though launch wind and rain are fine.",
+    "reasoning": "Gusts of 25.4 km/h breach both hard limits (XC 25, acro 20), so both are poor by rule. Models disagree widely (XC 20 to 98; ECMWF near zero), so confidence is low; the decent thermals and northerly launch would otherwise be workable.",
     "forced": ""
    },
    "summary": {
@@ -1142,7 +1142,7 @@
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.322,
+     "factor": 0.333,
      "value": "4.4 mm (want none)"
     }
    ],
@@ -1254,7 +1254,7 @@
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.322,
+     "factor": 0.333,
      "value": "4.4 mm (want none)"
     }
    ],
@@ -1518,7 +1518,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached for both disciplines: 4.4 mm rain in the window, gusts 32 km/h and 850 hPa wind 38 km/h. Thermals are weak (0.8 m/s) with cloud base near 1200 m ASL and strong northerly wind aloft, so climbs are low and rough.",
+    "reasoning": "Hard limits breached for both disciplines: 4.4 mm rain in the window, gusts about 32 km/h, and 850 hPa wind about 38 km/h. Launch is a light northerly, but strong northerly aloft with low climbs (cloud top about 1200 m ASL) makes it unattractive.",
     "forced": ""
    },
    "summary": {
@@ -2027,7 +2027,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached for both: 10.5 mm rain forecast in the window, gusts 26 km/h, and 850 hPa wind 22 km/h. Thermals are weak (0.7 m/s), cloud base about 942 m ASL and climbs only about 145 m, so there is little height for either discipline.",
+    "reasoning": "Hard limits breached for both: 10.5 mm rain forecast in the window, gusts 26 km/h, and 850 hPa wind 22 km/h. Thermals are weak (0.7 m/s), cloud base sits near 942 m ASL, and westerly winds aloft add Buffalo turbulence.",
     "forced": ""
    },
    "summary": {
@@ -2039,15 +2039,15 @@
   },
   {
    "date": "2026-11-29",
-   "xc": 37,
+   "xc": 38,
    "acro": 29,
    "xc_range": [
     0,
-    97
+    100
    ],
    "models": {
     "gfs_seamless": {
-     "xc": 97,
+     "xc": 100,
      "acro": 87
     },
     "ecmwf_ifs025": {
@@ -2160,7 +2160,7 @@
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.891,
+     "factor": 0.914,
      "value": "0.2 mm (want none)"
     }
    ],
@@ -2272,7 +2272,7 @@
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.891,
+     "factor": 0.914,
      "value": "0.2 mm (want none)"
     }
    ],
@@ -2510,23 +2510,23 @@
     },
     {
      "h": 12,
-     "xc": 63
+     "xc": 65
     },
     {
      "h": 13,
-     "xc": 63
+     "xc": 65
     },
     {
      "h": 14,
-     "xc": 60
+     "xc": 61
     },
     {
      "h": 15,
-     "xc": 49
+     "xc": 50
     },
     {
      "h": 16,
-     "xc": 37
+     "xc": 38
     },
     {
      "h": 17,
@@ -2536,7 +2536,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Gusts of 26 km/h breach both hard limits (XC 25, acro 20), so both are poor. Models disagree sharply (GFS strong, ECMWF and ICON near zero), and westerly aloft around 16 km/h would hurt acro anyway.",
+    "reasoning": "Gusts of 26 km/h breach both hard limits, so both calls are poor. Models disagree sharply (GFS strong, ECMWF and ICON near zero), and westerly flow aloft (about 16 km/h, WNW/W) would add Buffalo turbulence for acro.",
     "forced": ""
    },
    "summary": {
