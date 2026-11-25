@@ -78,6 +78,13 @@ def _aloft(h, levels, weights):
 
 def _hourly(h, name): return h.get(name) or []
 
+def rain_factor(x, limit, zero, margin):
+    """Rain rule: exactly no rain scores 100%. The score eases down to the usual value at `limit` (about 90%), then follows the normal fade to 0 at `zero`."""
+    if x is None: return None
+    if x >= limit: return below(x, limit, zero, margin)
+    at_limit = below(limit, limit, zero, margin)
+    return 1 - (1 - at_limit) * max(0.0, x) / limit
+
 def _window_features(h, launch_elev, est):
     """est = the 'estimates' section of the site's rules.yaml."""
     cbm, heat, climb, cap = est["cloud_base_m_per_degC"], est["thermal_heat_fraction"], est["thermal_climb_fraction"], est["thermal_depth_cap_m"]
@@ -87,7 +94,7 @@ def _window_features(h, launch_elev, est):
     ws, wd, gu = col("wind_speed_10m"), col("wind_direction_10m"), col("wind_gusts_10m")
     w8, d8, w7 = col("wind_speed_850hPa"), col("wind_direction_850hPa"), col("wind_speed_700hPa")
     t, td, blh, sw = col("temperature_2m"), col("dew_point_2m"), col("boundary_layer_height"), col("shortwave_radiation")
-    shear, ceil, therm = [], [], []
+    shear, ceil, therm, therm_h = [], [], [], [None] * n
     for i in range(n):
         if None not in (ws[i], wd[i], w8[i], d8[i]):          # vector wind difference, 10 m vs 850 hPa
             u1, v1 = -ws[i]*math.sin(math.radians(wd[i])), -ws[i]*math.cos(math.radians(wd[i]))
@@ -100,14 +107,15 @@ def _window_features(h, launch_elev, est):
         if sw[i] is not None and (blh[i] is not None or cb is not None):
             zi = blh[i] if blh[i] is not None else min(cb, cap)
             H = heat * max(sw[i], 0) / 1200.0                                     # sensible heat flux, K m/s (rough: a share of the sunshine)
-            therm.append(climb * (9.81 / 300.0 * H * max(zi, 0)) ** (1 / 3))      # typical climb ~ a share of Deardorff w*
+            therm.append(climb * (9.81 / 300.0 * H * max(zi, 0)) ** (1 / 3)); therm_h[i] = therm[-1]      # typical climb ~ a share of Deardorff w*
     return dict(ws=_mean(ws), wd=_vec_mean_dir(ws, wd), gust=max([g for g in gu if g is not None], default=None),
                 w850=_mean(w8), d850=_vec_mean_dir(w8, d8), w700=_mean(w7), shear=_mean(shear),
                 cb=_mean([cbm*(a-b) for a, b in zip(t, td) if a is not None and b is not None]),
                 ceiling=_mean(ceil), blh=_mean(blh), sw=_mean(sw), therm=_mean(therm),
                 cape=_mean(col("cape")), low=_mean(col("cloud_cover_low")),
                 rain=(sum(x for x in col("precipitation") if x is not None) if any(x is not None for x in col("precipitation")) else None),
-                pairs=[(s_, d_) for s_, d_ in zip(ws, wd) if s_ is not None and d_ is not None])
+                pairs=[(s_, d_) for s_, d_ in zip(ws, wd) if s_ is not None and d_ is not None],
+                hours=list(zip(ws, wd, therm_h)))
 
 def score_day(h, rules, launch_elev):
     """h: dict of variable -> hourly list for the flying window. rules: the site's settings (rules_config.load_rules).
@@ -115,14 +123,23 @@ def score_day(h, rules, launch_elev):
     Every rule gives a factor from 0 to 1; the score is 100 x the LOWEST factor (weakest link: the worst rule sets the score)."""
     d, sh, xr, ar, mg = rules["direction"], rules["shared"], rules["xc"], rules["acro"], rules["smoothing"]["full_score_margin"]
     f = _window_features(h, launch_elev, rules["estimates"])
-    in_arc = _mean([1.0 if (_in_arc(dd, tuple(d["launch_arc_deg"])) or s < d["calm_below_kmh"]) else 0.0 for s, dd in f["pairs"]])
+    sl = d["southerly_launch"]; k_valley, fade = sl["valley_wind_kmh_per_thermal_ms"], sl["fade_kmh"]; south_ok = False
+    def hour_direction(s_, dd, th):
+        """100% when the wind is in the launch arc or near calm. A southerly is OK when the (estimated) thermic valley wind beats it, fading over +/- fade km/h. Else 0%."""
+        nonlocal south_ok
+        if _in_arc(dd, tuple(d["launch_arc_deg"])) or s_ < d["calm_below_kmh"]: return 1.0
+        if _in_arc(dd, tuple(sl["arc_deg"])):
+            x = _smooth((k_valley * (th or 0.0) - s_ + fade) / (2 * fade)); south_ok |= x > 0.5; return x
+        return 0.0
+    in_arc = _mean([hour_direction(s_, dd, th) for s_, dd, th in f["hours"] if s_ is not None and dd is not None])
     syn_bad = f["w850"] is not None and f["d850"] is not None and _in_arc(f["d850"], tuple(d["unflyable_arc_deg"])) and f["w850"] > d["unflyable_min_850_kmh"]
-    direction = 0.0 if syn_bad else (in_arc if in_arc is not None else 1.0)
-    dtxt = (f"strong {compass(f['d850'])} wind aloft" if syn_bad else f"wind {compass(f['wd'])} at launch" if f["wd"] is not None else "no data")
+    direction = 0.0 if syn_bad else (in_arc if in_arc is not None else 1.0)         # strong southerly aloft stays a no-go whatever the valley wind does
+    dtxt = (f"strong {compass(f['d850'])} wind aloft" if syn_bad else f"wind {compass(f['wd'])} at launch, valley wind should win" if south_ok and f["wd"] is not None
+            else f"wind {compass(f['wd'])} at launch" if f["wd"] is not None else "no data")
     g = lambda x: f"{x:g}"                                           # 20 -> '20', 1.5 -> '1.5'
     under = lambda x, v: below(x, v[0], v[1], mg)
     shared = [("direction", "Wind direction", (None, "", 0, dtxt), direction)]
-    rain = ("rain", "Rain in window", (f["rain"], " mm", 1, " (want none)"), under(f["rain"], (sh["rain"]["limit_mm"], sh["rain"]["zero_at_mm"])))
+    rain = ("rain", "Rain in window", (f["rain"], " mm", 1, " (want none)"), rain_factor(f["rain"], sh["rain"]["limit_mm"], sh["rain"]["zero_at_mm"], mg))
     cape = ("cape", "CAPE (overdevelopment)", (f["cape"], "", 0, f" (want <{g(sh['cape']['limit'])})"), under(f["cape"], (sh["cape"]["limit"], sh["cape"]["zero_at"])))
     def kmh(key, label, val, sec, name):
         c = sec[name]; return (key, label, (val, " km/h", 0, f" (want <{g(c['limit_kmh'])})"), under(val, (c["limit_kmh"], c["zero_at_kmh"])))

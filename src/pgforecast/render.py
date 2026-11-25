@@ -91,7 +91,7 @@ def day_name(d, today):
     x = dt.date.fromisoformat(d["date"]); tag = " · today" if x == today else ""
     return x.strftime("%A %-d %b"), tag
 
-def corrections_block(state, cfg):
+def corrections_block(state, cfg, calib=None):
     names = {"gfs_seamless": "GFS", "ecmwf_ifs025": "ECMWF", "icon_seamless": "ICON"}
     units = {v: u for v, (_, _, u) in corr.VARS.items()}
     labels = {"temperature_2m": "Temperature", "dew_point_2m": "Dew point", "wind_speed_10m": "Wind speed", "wind_gusts_10m": "Gusts", "pressure_msl": "Pressure"}
@@ -113,6 +113,11 @@ def corrections_block(state, cfg):
         sect = sorted({kk.split("|")[3] for kk, b in state["bins"].items() if kk.split("|")[1] == k and kk.split("|")[3] != "all" and corr.status(b) == "active"})
         out.append(f'<h4>{E(p.get("note") or k.replace("_", " ").title())} (BOM {p["bom_station"]})</h4><table class="tbl"><tr><th></th>' + "".join(f"<th>{n}</th>" for n in names.values()) + "</tr>" + "".join(rows) + "</table>" +
                    (f'<p class="note">Direction-specific corrections in use for: {", ".join(sect)}.</p>' if sect else ""))
+    if calib:
+        k = calib.get("k"); n = calib.get("n_days", 0)
+        out.append(f'<h4>Valley wind estimate</h4><p class="note">The scoring assumes {calib.get("current_setting")} km/h of valley wind per 1 m/s of thermal strength (a default). '
+                   f'Checking it against {E(str(calib.get("station")))} ({E(calib.get("station_note", "")[:60])}): {n} of {calib.get("min_days", 30)} usable dry days collected'
+                   + (f'; so far the observed figure is {k} km/h per m/s (R² {calib.get("r2")}). Nothing is changed automatically.' if k is not None and calib.get("ready") else ". Nothing is changed automatically.") + '</p>')
     out.append('<p class="note">Mystic has no weather station, so nothing is corrected at the launch point yet. Tables show observed minus forecast at the nearest BOM stations, 09:00-17:00.</p>')
     return "".join(out)
 
@@ -127,7 +132,7 @@ document.addEventListener("visibilitychange",function(){if(document.hidden||!nav
 try{var t=+sessionStorage.getItem("r")||0;if(Date.now()-t<18e5)return;sessionStorage.setItem("r",Date.now())}catch(e){}location.reload()})})();
 </script>"""
 
-def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows, generated_utc=None):
+def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows, generated_utc=None, calib=None):
     faces = {0: "N", 90: "E", 180: "S", 270: "W"}.get(cfg.get("launch_facing_deg", 0), "N")
     upd = local_now.strftime("%-I:%M%p %a").replace("AM", "am").replace("PM", "pm")
     names = {"ecmwf_ifs025": "ECMWF", "ncep_gfs025": "GFS", "dwd_icon": "ICON"}
@@ -149,7 +154,7 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
 <div id="net" role="status" hidden></div>
 <header>{MOUNTAIN}<div><h1>Mystic, Bright</h1><div class="mu">Updated {upd} · {cfg["launch_height_m"]} m · faces {faces}</div></div></header>
 {"".join(cards)}
-<details class="more"><summary>Forecast corrections {CHEV}</summary>{corrections_block(cstate, cfg)}</details>
+<details class="more"><summary>Forecast corrections {CHEV}</summary>{corrections_block(cstate, cfg, calib)}</details>
 <details class="more"><summary>Track record {CHEV}</summary>{track}</details>
 <details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strip shows the XC score for each hour. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
 {JS}</body></html>"""

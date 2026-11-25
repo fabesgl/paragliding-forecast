@@ -9,6 +9,7 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: write
+  issues: write                  # lets the job open one issue when the valley-wind calibration is ready
 concurrency: daily-update
 jobs:
   update:
@@ -25,6 +26,11 @@ jobs:
         run: python scripts/collect_bom.py bright
       - name: Update bias corrections (forecasts vs BOM observations)
         run: python scripts/update_corrections.py bright
+      - name: Valley-wind calibration check (reports only, never changes the rules)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/calibrate_valley_wind.py bright
       - name: Wait for the newest ECMWF, GFS and ICON runs
         run: python scripts/wait_for_models.py
       - name: Fetch forecasts, score, build dashboard

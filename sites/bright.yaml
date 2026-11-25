@@ -29,6 +29,7 @@ bom_stations:                        # BOM half-hourly feed IDV60801.<id>.json (
   94884: Benalla
   94908: Omeo
 # Note: no Bright or Mt Buffalo station exists in the standard BOM Victoria feed.
+valley_wind_station: {id: 94889, note: "Wangaratta: a WEAK proxy (about 60 km away on the flat). BOM has no Bright station in its free feed. Replace with a station at Bright if one turns up."}
 chat_aliases: [bright, mystic, mystic park, ovens valley, tawonga]   # words that mean this site in pilot chats
 xcontest_launch_names: []            # Phase 2 (later)
 grading: {}                          # Phase 5

@@ -8,14 +8,18 @@
 # Speeds are km/h, heights are metres above sea level (ASL) unless a name says otherwise. All values are averages over the models.
 # Keep zero_at on the bad side of the limit (above it for "stay under" rules, below it for "stay over" rules) or the file will be rejected.
 
-direction:                       # Is the wind blowing from a direction Mystic can launch in? Scores 0% or 100% per hour, then averaged over the window.
+direction:                       # Is the wind blowing from a direction Mystic can launch in? Scored per hour (100%, 0%, or in between for a southerly), then averaged over the window.
   launch_arc_deg: [315, 45]      # Compass arc (from, to, clockwise) the 10 m wind must come from to launch: 315 = NW, through N, to 45 = NE.
   calm_below_kmh: 6              # Under this launch wind speed the direction is ignored (light and variable wind is fine from any side).
   unflyable_arc_deg: [135, 247]  # Compass arc of wind aloft that rules the day out: 135 = SE, through S, to 247 = SW.
-  unflyable_min_850_kmh: 25      # The day is ruled out (0%) when the 850 hPa wind comes from the arc above AND is stronger than this.
+  unflyable_min_850_kmh: 25      # The day is ruled out (0%) when the 850 hPa wind comes from the arc above AND is stronger than this. The valley wind below can NOT override this.
+  southerly_launch:              # A southerly at launch (over calm_below_kmh) is still OK when the thermic valley wind, which blows from the north, is stronger than the southerly.
+    arc_deg: [135, 247]          # Launch wind from this arc counts as a southerly: 135 = SE, through S, to 247 = SW.
+    valley_wind_kmh_per_thermal_ms: 6   # Estimated valley wind (km/h) for each 1 m/s of estimated thermal strength. A DEFAULT, to be calibrated from observations (see calibrate_valley_wind.py).
+    fade_kmh: 3                  # Fade width (km/h): 100% when the valley wind beats the southerly by this much or more, 0% when it falls short by this much, 50% when equal.
 
 shared:                          # Rules that apply to BOTH XC and acro.
-  rain:                          # Rain in the flying window (total over the window, millimetres).
+  rain:                          # Rain in the flying window (total over the window, millimetres). No rain scores 100%; the score eases to about 90% at limit_mm, then falls to 0%.
     limit_mm: 0.2                # Rain at or above this counts as "rain forecast" (also the AI second opinion's hard limit).
     zero_at_mm: 2.0              # Score reaches 0% at this much rain.
   cape:                          # CAPE = energy for storms. High CAPE means overdevelopment (thunderstorm) risk.

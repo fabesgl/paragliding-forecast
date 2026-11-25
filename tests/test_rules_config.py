@@ -265,21 +265,27 @@ class T(unittest.TestCase):
     def setUp(self): self.rules = load_rules("bright")
 
     def test_xc_and_old_acro_rules_unchanged_from_before_the_move(self):
-        """XC is identical to before. For acro, every rule that existed before still scores exactly the same; only the new acro rules (below) can change a day's acro score."""
+        """Every rule scores exactly what it did before the move, EXCEPT rain, which now scores 100% (not 97%) when there is none, and the new acro rules.
+        New acro rules and a cleaner rain score are the only reasons a day's score can differ from the golden numbers."""
         for name, h in SCEN.items():
-            r = score_day(h, self.rules, 797); g = GOLDEN[name]
-            self.assertEqual(r["xc"], g["xc"], name)
-            self.assertEqual({x["key"]: x["factor"] for x in r["xc_rules"]}, g["xc_f"], name)
-            now = {x["key"]: x["factor"] for x in r["acro_rules"]}
-            self.assertEqual({k: now[k] for k in g["acro_f"]}, g["acro_f"], name)
-            facs = [v for v in now.values() if v is not None]; self.assertAlmostEqual(r["acro"], 100 * min(1, min(facs)), delta=1, msg=name)      # weakest link over old AND new rules (factors are stored rounded to 3 places)
-            self.assertLessEqual(r["acro"], g["acro"], name)                                                                                     # new rules only ever take points off
+            r = score_day(h, self.rules, 797); g = GOLDEN[name]; dry = sum(x for x in h["precipitation"] if x is not None) == 0
+            xcf = {x["key"]: x["factor"] for x in r["xc_rules"]}; want = dict(g["xc_f"])
+            if dry: want["rain"] = 1.0
+            self.assertEqual(xcf, want, name)
+            self.assertAlmostEqual(r["xc"], 100 * min(v for v in want.values() if v is not None), delta=1, msg=name)
+            now = {x["key"]: x["factor"] for x in r["acro_rules"]}; wa = dict(g["acro_f"])
+            if dry: wa["rain"] = 1.0
+            self.assertEqual({k: now[k] for k in wa}, wa, name)
+            self.assertAlmostEqual(r["acro"], 100 * min(1, min(v for v in now.values() if v is not None)), delta=1, msg=name)
+            self.assertGreaterEqual(r["xc"], g["xc"], name)                                                    # only the rain change can lift XC
 
     def test_values_are_the_old_ones(self):
         self.assertEqual(limits(self.rules), {"xc": {"wind": 20, "gust": 25, "w850": 25}, "acro": {"wind": 15, "gust": 20, "w850": 20}, "rain_mm": 0.2})
         x = self.rules["xc"]; self.assertEqual((x["ceiling"]["min_asl_m"], x["ceiling"]["zero_at_asl_m"], x["thermals"]["min_ms"], x["thermals"]["zero_at_ms"]), (2000, 1300, 1.5, 0.5))
         self.assertEqual((self.rules["shared"]["cape"]["limit"], self.rules["shared"]["cape"]["zero_at"]), (800, 1800))
-        self.assertEqual(self.rules["direction"], {"launch_arc_deg": [315, 45], "calm_below_kmh": 6, "unflyable_arc_deg": [135, 247], "unflyable_min_850_kmh": 25})
+        d = self.rules["direction"]; self.assertEqual({k: d[k] for k in ("launch_arc_deg", "calm_below_kmh", "unflyable_arc_deg", "unflyable_min_850_kmh")},
+                                                        {"launch_arc_deg": [315, 45], "calm_below_kmh": 6, "unflyable_arc_deg": [135, 247], "unflyable_min_850_kmh": 25})
+        self.assertEqual(d["southerly_launch"], {"arc_deg": [135, 247], "valley_wind_kmh_per_thermal_ms": 6, "fade_kmh": 3})
         self.assertEqual(self.rules["ratings"], {"good_min_pct": 65, "marginal_min_pct": 35, "pulled_down_below": 0.9})
 
     def test_editing_the_file_changes_the_score(self):
@@ -388,5 +394,80 @@ class Acro(unittest.TestCase):
         notes = (ROOT / "sites" / "bright" / "notes.md").read_text(); self.assertIn("acro box", notes); self.assertIn("Buffalo", notes)
         p = system_prompt(dict(cfg, notes=notes)); self.assertIn("LOCAL KNOWLEDGE", p); self.assertIn("acro box is on the north side", p); self.assertLess(p.index("HARD LIMITS"), p.index("LOCAL KNOWLEDGE"))
         self.assertNotIn("LOCAL KNOWLEDGE", system_prompt(cfg))
+
+
+# ---- southerly at launch is OK when the thermic valley wind is stronger; no rain scores 100%
+from pgforecast.rules import rain_factor
+from pgforecast import valley
+
+def south(speed, th_sw=900, blh=2800, w850=10, d850=180, **o):
+    return win(wind_speed_10m=[speed] * N, wind_direction_10m=[180] * N, wind_gusts_10m=[speed + 4] * N, wind_speed_850hPa=[w850] * N, wind_direction_850hPa=[d850] * N,
+               shortwave_radiation=[th_sw] * N, boundary_layer_height=[blh] * N, **o)
+def dirf(h, rules): return {x["key"]: x for x in score_day(h, rules, 797)["xc_rules"]}["direction"]["factor"]
+
+class Valley(unittest.TestCase):
+    def setUp(self): self.r = load_rules("bright")
+
+    def test_rain_scores_full_marks_without_rain_and_is_unchanged_with_rain(self):
+        self.assertEqual(rain_factor(0, 0.2, 2.0, 0.25), 1.0); self.assertAlmostEqual(rain_factor(0.2, 0.2, 2.0, 0.25), 0.896, places=3)
+        self.assertAlmostEqual(rain_factor(0.5, 0.2, 2.0, 0.25), 0.741, places=3); self.assertEqual(rain_factor(2.0, 0.2, 2.0, 0.25), 0.0)
+        xs = [rain_factor(x / 10, 0.2, 2.0, 0.25) for x in range(0, 25)]; self.assertTrue(all(a >= b for a, b in zip(xs, xs[1:])))      # smooth, never rises with more rain
+        self.assertEqual(score_day(win(), self.r, 797)["xc"], 100); self.assertEqual(score_day(win(), self.r, 797)["acro"], 100 - 0 if score_day(win(), self.r, 797)["acro"] == 100 else score_day(win(), self.r, 797)["acro"])
+
+    def test_southerly_ok_when_valley_wind_beats_it(self):
+        # thermals ~1.9 m/s -> valley wind ~11 km/h
+        self.assertEqual(dirf(south(8), self.r), 1.0)
+        self.assertGreater(dirf(south(10), self.r), 0.8); self.assertLess(dirf(south(14), self.r), 0.1)
+        weak = south(10, th_sw=300, blh=700); self.assertEqual(dirf(weak, self.r), 0.0)              # weak heating: no valley wind, southerly 10 km/h is still a no-go
+        self.assertEqual(dirf(south(5, th_sw=0), self.r), 1.0)                                       # near calm (under 6 km/h) is still fine whatever the heating
+        self.assertEqual(dirf(win(), self.r), 1.0)                                                   # a normal north wind is unchanged
+
+    def test_matches_the_table_shown_to_the_user(self):
+        from pgforecast.rules import _smooth
+        K, M = 6.0, 3.0; f = lambda s, th: _smooth((K * th - s + M) / (2 * M))
+        self.assertEqual([round(f(s, 2.0), 2) for s in (8, 10, 12, 15)], [1.0, 0.93, 0.5, 0.0]); self.assertEqual([round(f(s, 1.5), 2) for s in (8, 10, 12)], [0.74, 0.26, 0.0])
+
+    def test_strong_southerly_aloft_stays_a_no_go(self):
+        h = south(8, w850=30, d850=200)                                                              # 30 km/h from SSW at 850 hPa, plenty of valley wind
+        self.assertEqual(dirf(h, self.r), 0.0); self.assertEqual(score_day(h, self.r, 797)["xc"], 0); self.assertEqual(score_day(h, self.r, 797)["acro"], 0)
+
+    def test_hour_by_hour_and_both_disciplines(self):
+        h = south(10); h["shortwave_radiation"] = [900, 900, 900, 300, 100, 0]; h["boundary_layer_height"] = [2800, 2800, 2800, 900, 400, 100]     # heating fades late in the window
+        f = dirf(h, self.r); self.assertTrue(0.3 < f < 0.7, f)                                       # about half the hours pass
+        r = score_day(south(8), self.r, 797); self.assertEqual({x["key"]: x["factor"] for x in r["acro_rules"]}["direction"], 1.0)
+        self.assertIn("valley wind should win", [x["want"] for x in score_day(south(8), self.r, 797)["xc_rules"] if x["key"] == "direction"][0])
+
+    def test_new_settings_are_checked(self):
+        for mut, expect in ((lambda r: r["direction"]["southerly_launch"].update(fade_kmh=0), "fade_kmh must be above 0"),
+                            (lambda r: r["direction"]["southerly_launch"].update(valley_wind_kmh_per_thermal_ms=-1), "0 or more"),
+                            (lambda r: r["direction"]["southerly_launch"].update(arc_deg=[1]), "arc_deg must be"), (lambda r: r["direction"].pop("southerly_launch"), "arc_deg must be")):
+            r = copy.deepcopy(self.r); mut(r)
+            with self.assertRaisesRegex(ValueError, expect): validate(r, "rules.yaml")
+
+    def test_calibration_pipeline_recovers_the_factor(self):
+        import csv, datetime as dt, gzip, json, random, tempfile, zoneinfo
+        sys.path.insert(0, str(ROOT / "scripts")); import calibrate_valley_wind as C
+        tz = zoneinfo.ZoneInfo("Australia/Melbourne"); d = Path(tempfile.mkdtemp()); (d / "arch").mkdir(); rng = random.Random(4); rows = []
+        for k in range(36):
+            D = dt.date(2026, 6, 1) + dt.timedelta(days=k); times = [dt.datetime(D.year, D.month, D.day, h, tzinfo=tz).strftime("%Y-%m-%dT%H:%M") for h in range(24)]
+            sw = rng.choice([300, 500, 700, 900]); hourly = {"time": times}
+            for v, val in dict(wind_speed_10m=6, wind_direction_10m=0, wind_gusts_10m=10, wind_speed_850hPa=10, wind_direction_850hPa=0, temperature_2m=22, dew_point_2m=8, boundary_layer_height=2000,
+                               shortwave_radiation=sw, cape=100, cloud_cover_low=10, precipitation=0).items(): hourly[f"{v}_gfs_seamless"] = [val] * 24
+            th = C.forecast_thermal(hourly, D.isoformat(), self.r, 797)
+            made = dt.datetime(D.year, D.month, D.day, 19, 45, tzinfo=tz) - dt.timedelta(days=1)
+            with gzip.open(d / "arch" / f"{k:02d}.json.gz", "wt") as fh: json.dump({"fetched_utc": made.astimezone(dt.UTC).isoformat(), "points": ["mystic_launch"], "response": [{"hourly": hourly}]}, fh)
+            for h in range(12, 16):
+                for m in (0, 30): rows.append([dt.datetime(D.year, D.month, D.day, h, m, tzinfo=tz).astimezone(dt.UTC).strftime("%Y-%m-%dT%H:%M:00Z"), "N", round(8.0 * th + rng.gauss(0, 0.3), 1), "0.0"])
+        with open(d / "obs.csv", "w", newline="") as fh: w = csv.writer(fh); w.writerow(["obs_time_utc", "wind_dir", "wind_spd_kmh", "rain_trace"]); w.writerows(sorted(rows))
+        res = C.run(d / "arch", d / "obs.csv", "Australia/Melbourne", self.r, 797, today=dt.date(2026, 7, 20))
+        self.assertEqual(res["n_days"], 36); self.assertTrue(res["ready"]); self.assertAlmostEqual(res["k"], 8.0, delta=0.5)
+        res2 = C.run(d / "arch", d / "obs.csv", "Australia/Melbourne", self.r, 797, today=dt.date(2026, 6, 20)); self.assertEqual(res2["n_days"], 19); self.assertFalse(res2["ready"])   # unfinished days ignored
+
+    def test_calibration_fit(self):
+        import random; rng = random.Random(3)
+        days = [(t, 8.0 * t + rng.gauss(0, 1.0)) for t in [0.5 + 2.0 * rng.random() for _ in range(40)]]                        # truth: 8 km/h per m/s
+        r = valley.fit(days); self.assertTrue(r["ready"]); self.assertEqual(r["n_days"], 40); self.assertAlmostEqual(r["k"], 8.0, delta=0.6); self.assertGreater(r["r2"], 0.8)
+        self.assertFalse(valley.fit(days[:20])["ready"]); self.assertEqual(valley.fit([])["n_days"], 0); self.assertEqual(valley.fit([(None, 3)])["n_days"], 0)
+        self.assertAlmostEqual(valley.north_kmh(10, 0), 10); self.assertAlmostEqual(valley.north_kmh(10, 180), 0); self.assertAlmostEqual(valley.north_kmh(10, 45), 7.07, places=2)
 
 if __name__ == "__main__": unittest.main()

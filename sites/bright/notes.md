@@ -12,6 +12,7 @@ Wind at acro height (about 1,000-2,000 m up)
 Launch
 - Launch needs a north valley wind (roughly NW to NE) or near calm. NW on launch is normal and is not a problem.
 - A southerly aloft is fine as long as launch still has a north valley breeze or is near calm.
+- A southerly AT launch stronger than about 6 km/h is also OK if the thermic valley wind (which blows from the north on a sunny day) is stronger than the southerly. The stronger the heating and thermals, the stronger the valley wind. The scoring estimates the valley wind as about 6 km/h per 1 m/s of thermal strength; that is a default still to be calibrated from observations. Strong southerly wind aloft (over 25 km/h at 850 hPa) is still a no-go.
 
 Air quality
 - Smooth air between thermals is ideal for acro. Thermic air is fine, but not as good. Very strong or rough thermals are a mild negative, not a no-go.
