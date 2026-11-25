@@ -91,7 +91,7 @@ with logf.open("a", newline="") as f:
     if new: w.writerow(["made_at_utc", "target_date", "lead_days", "xc_pct", "acro_pct", "method"])
     for d in out_days:
         lead = (dt.date.fromisoformat(d["date"]) - local_now.date()).days
-        w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v2"])
+        w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3"])
 # 4. write the dashboard
 docs = ROOT/"docs"; docs.mkdir(exist_ok=True)
 (docs/"forecast.json").write_text(json.dumps(dict(updated_local=local_now.strftime("%a %d %b %Y %H:%M %Z"), days=out_days), indent=1))
@@ -136,6 +136,6 @@ h1{{font-size:20px;margin:4px 0}} .upd{{color:#5f6368;font-size:13px;margin-bott
 <h1>Mystic, Bright: flying forecast</h1><div class="upd">Updated {local_now.strftime('%a %d %b %H:%M %Z')} · window 11:00-16:00 · average of {len(out_days[0]['models']) if out_days else 0} models ({', '.join(out_days[0]['models']) if out_days else ''})</div>
 {''.join(cards)}
 <section class="card"><h2>Track record</h2>{'<table><tr><td>Day</td><td>XC</td><td>Acro</td><td>Lead</td></tr>'+''.join(rows)+'</table>' if rows else '<p class="note">Predictions are being logged daily. Outcomes will be compared here once flight data or pilot notes are added.</p>'}</section>
-<p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% (smoothly) and the score is all of them multiplied, so a % beside a rule is how much that rule alone cuts the score. Thermal strength is an estimate from sunshine and boundary-layer depth. Read it as a rough guide. Acro is experimental. Forecast data: Open-Meteo.</p></body></html>"""
+<p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% (smoothly) and the day's score is set by the weakest rule, so the % beside a rule is how far it holds the score below 100%. Thermal strength is an estimate from sunshine and boundary-layer depth. Read it as a rough guide. Acro is experimental. Forecast data: Open-Meteo.</p></body></html>"""
 (docs/"index.html").write_text(page)
 print("ok", [(d["date"], d["xc"], d["acro"]) for d in out_days])

@@ -77,7 +77,7 @@ def _window_features(h, launch_elev):
 
 def score_day(h, launch_arc=(315, 45), bad_arc=(135, 247), launch_elev=797):
     """h: dict of variable -> hourly list for the flying window. Returns XC %, acro %, and the rule factors.
-    Every rule gives a factor from 0 to 1; the score is 100 x the product of all factors (so every rule has to be met)."""
+    Every rule gives a factor from 0 to 1; the score is 100 x the LOWEST factor (weakest link: the worst rule sets the score)."""
     f = _window_features(h, launch_elev)
     in_arc = _mean([1.0 if (_in_arc(d, launch_arc) or s < 6) else 0.0 for s, d in f["pairs"]])
     syn_bad = f["w850"] is not None and f["d850"] is not None and _in_arc(f["d850"], bad_arc) and f["w850"] > 25
@@ -101,7 +101,7 @@ def score_day(h, launch_arc=(315, 45), bad_arc=(135, 247), launch_elev=797):
         ("cape", "CAPE (overdevelopment)", (f["cape"], "", 0, " (want <800)"), below(f["cape"], 800, 1800)), rain]
     def total(rules):
         got = [r[3] for r in rules if r[3] is not None]
-        return None if not got else math.prod(got)
+        return None if not got else min(got)
     pct = lambda x: None if x is None else round(100 * max(0, min(1, x)))
     pack = lambda rules: [dict(key=k, label=l, num=v[0], unit=v[1], nd=v[2], want=v[3], factor=None if x is None else round(x, 3)) for k, l, v, x in rules]
     key = dict(wind_kmh=f["ws"], wind_dir=compass(f["wd"]), gust_kmh=f["gust"], wind850_kmh=f["w850"], wind850_dir=compass(f["d850"]),
