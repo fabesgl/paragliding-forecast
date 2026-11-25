@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: main            # always start from the newest main (not the commit the run was triggered from), so a run queued behind another one sees its commit
       - uses: actions/setup-python@v6
         with: { python-version: "3.12" }
       - run: pip install -r requirements.txt
