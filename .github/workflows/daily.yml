@@ -5,6 +5,7 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: write
+  actions: read
   pages: write
   id-token: write
 concurrency: daily-update
