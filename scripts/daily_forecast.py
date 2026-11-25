@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out"
 sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.rules import score_day, compass
+from pgforecast import corrections as corr
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
 cfg = yaml.safe_load((ROOT/"sites"/f"{site}.yaml").read_text())
 tz = ZoneInfo(cfg["timezone"]); now = dt.datetime.now(dt.UTC); local_now = now.astimezone(tz)
@@ -38,6 +39,14 @@ runs = json.loads(mr.read_text()) if mr.exists() else {}       # which model run
 arch = OUT/"forecast_archive"; arch.mkdir(parents=True, exist_ok=True)
 with gzip.open(arch/f"{now:%Y-%m-%dT%H%MZ}.json.gz", "wt") as f:
     json.dump({"fetched_utc": now.isoformat(), "model_runs": runs, "points": keys, "response": raw}, f, separators=(",", ":"))
+# 1b. apply the bias corrections (the archive above keeps the raw, uncorrected forecast)
+cf = OUT/"corrections"/"corrections.json"
+cstate = json.loads(cf.read_text()) if cf.exists() else corr.new_state()
+n_corrected = 0
+for pk in keys:
+    for m in MODELS:
+        n_corrected += corr.apply_hourly(cstate, m, pk, raw[keys.index(pk)]["hourly"])
+print("corrected values:", n_corrected, corr.summary(cstate))
 # 2. score Mystic for each model and day
 mystic = raw[keys.index("mystic_launch")]["hourly"]
 times = mystic["time"]; win = cfg.get("flying_window_local", ["11:00", "16:00"])
@@ -151,6 +160,37 @@ def wind_html(rows):
     out.append("</table>")
     note = f'<p class="note">* not every model has this level; shown from: {"; ".join(foot)}. </p>' if foot else ""
     return '<h3>Wind by height (km/h, local time)</h3>' + "".join(out) + note
+def corrections_html(state):
+    names = {"gfs_seamless": "GFS", "ecmwf_ifs025": "ECMWF", "icon_seamless": "ICON"}
+    units = {v: u for v, (_, _, u) in corr.VARS.items()}
+    labels = {"temperature_2m": "Temperature", "dew_point_2m": "Dew point", "wind_speed_10m": "Wind speed", "wind_gusts_10m": "Gusts", "pressure_msl": "Pressure"}
+    c = corr.summary(state)
+    pts = [(k, p) for k, p in cfg["points"].items() if p.get("bom_station")]
+    days = max([b["n_days"] for b in state["bins"].values()], default=0)
+    head = (f'<p class="note">{c["active"]} corrections in use, {c["validating"]} being checked on past days, {c["learning"]} still learning '
+            f'(a correction needs {corr.MIN_DAYS} days of data, then {corr.MIN_EVAL} checked days with at least {round(100*corr.MIN_GAIN)}% less error). '
+            f'Most days of data so far: {days}.</p>')
+    out = ['<section class="card"><h2>Forecast corrections</h2>' + head]
+    for k, p in pts:
+        rows = []
+        for var in corr.VARS:
+            cells = []
+            for m in names:
+                b = state["bins"].get(corr.bin_key(m, k, var, "all"))
+                if b is None: cells.append("<td><small>waiting for data</small></td>"); continue
+                st = corr.status(b)
+                val = f'{b["corr"]:+.1f} {units[var]}' if b["kind"] == "add" else f'x{b["corr"]:.2f}'
+                g = corr.gain(b)
+                cells.append(f'<td class="c-{st}">{val} <small>' + (f'{round(100*g):+d}% error, in use' if st == "active" else
+                             f'no gain ({round(100*g):+d}%), not used' if st == "off" else
+                             f'checking {b["eval_days"]}/{corr.MIN_EVAL}' if st == "validating" else f'learning {b["n_days"]}/{corr.MIN_DAYS} d') + "</small></td>")
+            rows.append(f'<tr><td>{labels[var]}</td>{"".join(cells)}</tr>')
+        sect = sorted({kk.split("|")[3] for kk, b in state["bins"].items() if kk.split("|")[1] == k and kk.split("|")[3] != "all" and corr.status(b) == "active"})
+        out.append(f'<h3>{html.escape(p.get("note") or k.replace("_", " ").title())} (BOM station {p["bom_station"]})</h3><table class="wt"><tr><th></th>' +
+                   "".join(f"<th>{n}</th>" for n in names.values()) + "</tr>" + "".join(rows) + "</table>" +
+                   (f'<p class="note">Direction-specific corrections in use for: {", ".join(sect)}.</p>' if sect else ""))
+    out.append('<p class="note">Mystic itself has no weather station, so nothing is corrected at the launch point yet; the scores use the raw forecast there. These tables show how far each model is off at the nearest BOM stations (observed minus forecast), for 09:00-17:00.</p></section>')
+    return "".join(out)
 cards = []
 for d in out_days:
     k = d["key"]; dn = dt.date.fromisoformat(d["date"]).strftime("%a %d %b")
@@ -181,9 +221,10 @@ h1{{font-size:20px;margin:4px 0}} .upd{{color:#5f6368;font-size:13px;margin-bott
 .scores{{display:flex;gap:10px}} .s{{flex:1;border:3px solid;border-radius:10px;padding:8px;text-align:center}}
 .s b{{font-size:28px;display:block}} .s span{{font-weight:600}} .s small{{display:block;color:#5f6368;font-size:11px}}
 .why{{padding-left:18px;margin:8px 0}} table{{width:100%;border-collapse:collapse;font-size:13px}} td{{padding:3px 0;border-top:1px solid #eee}} td:first-child{{color:#5f6368;width:38%}}
-.note{{font-size:12px;color:#5f6368}} h3{{font-size:14px;margin:12px 0 4px}} .wt th{{text-align:left;font-size:12px;color:#5f6368;font-weight:600}} .wt td small{{display:block;color:#5f6368;font-size:11px}} .wt td{{white-space:nowrap}} .ar{{font-size:16px;display:inline-block;width:1.1em}} .pd{{margin:8px 0 2px;font-size:13px}} .pd.ok{{color:#2e7d32}} .why li{{font-size:13px}}</style></head><body>
+.note{{font-size:12px;color:#5f6368}} .c-active{{background:#e8f5e9}} .c-off{{background:#fff3e0}} .wt small{{display:block}} h3{{font-size:14px;margin:12px 0 4px}} .wt th{{text-align:left;font-size:12px;color:#5f6368;font-weight:600}} .wt td small{{display:block;color:#5f6368;font-size:11px}} .wt td{{white-space:nowrap}} .ar{{font-size:16px;display:inline-block;width:1.1em}} .pd{{margin:8px 0 2px;font-size:13px}} .pd.ok{{color:#2e7d32}} .why li{{font-size:13px}}</style></head><body>
 <h1>Mystic, Bright: flying forecast</h1><div class="upd">Updated {local_now.strftime('%a %d %b %H:%M %Z')} · window 11:00-16:00 · runs {runs_txt} · average of {len(out_days[0]['models']) if out_days else 0} models ({', '.join(out_days[0]['models']) if out_days else ''})</div>
 {''.join(cards)}
+{corrections_html(cstate)}
 <section class="card"><h2>Track record</h2>{'<table><tr><td>Day</td><td>XC</td><td>Acro</td><td>Lead</td></tr>'+''.join(rows)+'</table>' if rows else '<p class="note">Predictions are being logged daily. Outcomes will be compared here once flight data or pilot notes are added.</p>'}</section>
 <p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% (smoothly) and the day's score is set by the weakest rule, so the % beside a rule is how far it holds the score below 100%. Thermal strength is an estimate from sunshine and boundary-layer depth. Read it as a rough guide. Acro is experimental. Forecast data: Open-Meteo.</p></body></html>"""
 (docs/"index.html").write_text(page)

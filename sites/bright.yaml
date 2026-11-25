@@ -8,10 +8,10 @@ flying_window_local: ["11:00", "16:00"]
 points:
   mystic_launch:   {lat: -36.75855, lon: 146.96575, role: launch, status: confirmed, note: "SAFA site guide; 797 m ASL, 477 m above landing"}
   bright_valley:   {lat: -36.73, lon: 146.96, role: landing, status: approx}
-  mount_hotham:    {lat: -36.98, lon: 147.13, role: ridge_ref,   status: approx}
-  falls_creek:     {lat: -36.87, lon: 147.28, role: ridge_ref,   status: approx}
+  mount_hotham:    {lat: -36.98, lon: 147.13, role: ridge_ref,   status: approx, bom_station: 94906}
+  falls_creek:     {lat: -36.87, lon: 147.28, role: ridge_ref,   status: approx, bom_station: 94903}
   mount_buffalo:   {lat: -36.77, lon: 146.79, role: ridge_ref,   status: approx, note: "The Horn"}
-  upwind_nw:       {lat: -36.36, lon: 146.31, role: upwind, status: confirmed, note: "Near Wangaratta"}
+  upwind_nw:       {lat: -36.36, lon: 146.31, role: upwind, status: confirmed, bom_station: 94889, note: "Near Wangaratta"}
   upwind_sw:       {lat: -37.05, lon: 146.09, role: upwind, status: confirmed, note: "Near Mansfield"}
 
 # To be answered by Fabian
