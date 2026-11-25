@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 13:23 AEDT",
+ "updated_local": "Wed 25 Nov 2026 13:28 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -192,6 +192,225 @@
      "want": " (want none)",
      "factor": 0.966,
      "value": "0.0 mm (want none)"
+    }
+   ],
+   "winds": [
+    {
+     "label": "Launch (10 m)",
+     "height_m": null,
+     "cells": [
+      {
+       "kmh": 9,
+       "deg": 4,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 10,
+       "deg": 359,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 9,
+       "deg": 359,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~1,000 m",
+     "height_m": 1078,
+     "cells": [
+      {
+       "kmh": 12,
+       "deg": 19,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 17,
+       "deg": 0,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 16,
+       "deg": 354,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~1,500 m",
+     "height_m": 1558,
+     "cells": [
+      {
+       "kmh": 28,
+       "deg": 357,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 19,
+       "deg": 358,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 17,
+       "deg": 355,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~2,000 m",
+     "height_m": 2057,
+     "cells": [
+      {
+       "kmh": 31,
+       "deg": 353,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 19,
+       "deg": 357,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 19,
+       "deg": 351,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~3,000 m",
+     "height_m": 3143,
+     "cells": [
+      {
+       "kmh": 28,
+       "deg": 346,
+       "compass": "NNW",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 30,
+       "deg": 335,
+       "compass": "NNW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 28,
+       "deg": 334,
+       "compass": "NNW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
     }
    ]
   },
@@ -387,6 +606,225 @@
      "factor": 0.956,
      "value": "0.0 mm (want none)"
     }
+   ],
+   "winds": [
+    {
+     "label": "Launch (10 m)",
+     "height_m": null,
+     "cells": [
+      {
+       "kmh": 6,
+       "deg": 17,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 8,
+       "deg": 16,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 9,
+       "deg": 9,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~1,000 m",
+     "height_m": 1090,
+     "cells": [
+      {
+       "kmh": 10,
+       "deg": 7,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 13,
+       "deg": 8,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 15,
+       "deg": 4,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~1,500 m",
+     "height_m": 1575,
+     "cells": [
+      {
+       "kmh": 19,
+       "deg": 349,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 15,
+       "deg": 0,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 14,
+       "deg": 1,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~2,000 m",
+     "height_m": 2083,
+     "cells": [
+      {
+       "kmh": 24,
+       "deg": 318,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 15,
+       "deg": 344,
+       "compass": "NNW",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 13,
+       "deg": 355,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~3,000 m",
+     "height_m": 3177,
+     "cells": [
+      {
+       "kmh": 26,
+       "deg": 311,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 22,
+       "deg": 316,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 15,
+       "deg": 326,
+       "compass": "NNW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    }
    ]
   },
   {
@@ -580,6 +1018,225 @@
      "want": " (want none)",
      "factor": 0.139,
      "value": "4.8 mm (want none)"
+    }
+   ],
+   "winds": [
+    {
+     "label": "Launch (10 m)",
+     "height_m": null,
+     "cells": [
+      {
+       "kmh": 2,
+       "deg": 67,
+       "compass": "ENE",
+       "arrow": "\u2199",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 3,
+       "deg": 8,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 4,
+       "deg": 21,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~1,000 m",
+     "height_m": 1066,
+     "cells": [
+      {
+       "kmh": 15,
+       "deg": 21,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 17,
+       "deg": 13,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 13,
+       "deg": 21,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~1,500 m",
+     "height_m": 1548,
+     "cells": [
+      {
+       "kmh": 39,
+       "deg": 13,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 38,
+       "deg": 11,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 32,
+       "deg": 12,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~2,000 m",
+     "height_m": 2059,
+     "cells": [
+      {
+       "kmh": 45,
+       "deg": 8,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 41,
+       "deg": 7,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 43,
+       "deg": 10,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~3,000 m",
+     "height_m": 3156,
+     "cells": [
+      {
+       "kmh": 51,
+       "deg": 354,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 50,
+       "deg": 354,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 51,
+       "deg": 353,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
     }
    ]
   },
@@ -775,6 +1432,225 @@
      "factor": 0.0,
      "value": "11.1 mm (want none)"
     }
+   ],
+   "winds": [
+    {
+     "label": "Launch (10 m)",
+     "height_m": null,
+     "cells": [
+      {
+       "kmh": 6,
+       "deg": 344,
+       "compass": "NNW",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 5,
+       "deg": 333,
+       "compass": "NNW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 4,
+       "deg": 314,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~1,000 m",
+     "height_m": 968,
+     "cells": [
+      {
+       "kmh": 12,
+       "deg": 317,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 11,
+       "deg": 308,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 9,
+       "deg": 296,
+       "compass": "WNW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~1,500 m",
+     "height_m": 1447,
+     "cells": [
+      {
+       "kmh": 30,
+       "deg": 308,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 23,
+       "deg": 291,
+       "compass": "WNW",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 15,
+       "deg": 273,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~2,000 m",
+     "height_m": 1957,
+     "cells": [
+      {
+       "kmh": 37,
+       "deg": 284,
+       "compass": "WNW",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 33,
+       "deg": 275,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 27,
+       "deg": 273,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~3,000 m",
+     "height_m": 3056,
+     "cells": [
+      {
+       "kmh": 49,
+       "deg": 293,
+       "compass": "WNW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 52,
+       "deg": 293,
+       "compass": "WNW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 40,
+       "deg": 284,
+       "compass": "WNW",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    }
    ]
   },
   {
@@ -968,6 +1844,225 @@
      "want": " (want none)",
      "factor": 0.891,
      "value": "0.2 mm (want none)"
+    }
+   ],
+   "winds": [
+    {
+     "label": "Launch (10 m)",
+     "height_m": null,
+     "cells": [
+      {
+       "kmh": 6,
+       "deg": 323,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 10,
+       "deg": 314,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 11,
+       "deg": 306,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~1,000 m",
+     "height_m": 984,
+     "cells": [
+      {
+       "kmh": 12,
+       "deg": 310,
+       "compass": "NW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 14,
+       "deg": 298,
+       "compass": "WNW",
+       "arrow": "\u2198",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 15,
+       "deg": 285,
+       "compass": "WNW",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~1,500 m",
+     "height_m": 1464,
+     "cells": [
+      {
+       "kmh": 13,
+       "deg": 289,
+       "compass": "WNW",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 17,
+       "deg": 291,
+       "compass": "WNW",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 19,
+       "deg": 284,
+       "compass": "WNW",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
+    },
+    {
+     "label": "~2,000 m",
+     "height_m": 1962,
+     "cells": [
+      {
+       "kmh": 10,
+       "deg": 279,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 12,
+       "deg": 278,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 14,
+       "deg": 265,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": true
+    },
+    {
+     "label": "~3,000 m",
+     "height_m": 3047,
+     "cells": [
+      {
+       "kmh": 39,
+       "deg": 277,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 34,
+       "deg": 271,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 32,
+       "deg": 265,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      }
+     ],
+     "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless"
+     ],
+     "partial": false
     }
    ]
   }
