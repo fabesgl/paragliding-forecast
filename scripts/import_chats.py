@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.chatlog import extract, parsers, store
-from pgforecast.chatlog.llm import LocalLLM
+from pgforecast.chatlog.llm import LocalLLM, AnthropicLLM
 
 def load_sites():
     sites = {}
@@ -36,6 +36,7 @@ def run(files, llm, db, salt_, sites, chat_names=None, default_site=None, date_o
             if prefilter and not (extract.KEYWORDS.search(extract.fold(m.text)) or alias_rx.search(extract.fold(m.text))): stats["skipped_irrelevant"] += 1; continue
             if dry: stats["sent_to_model"] += 1; continue
             if limit and stats["sent_to_model"] >= limit: out("limit reached"); return stats
+            if getattr(llm, "over_budget", lambda: False)(): out("cost cap reached - stopping (re-run to continue where it left off)"); return stats
             ctx = [extract.scrub(c.text) for c in msgs[max(0, i - 3):i] if 0 <= (m.ts - c.ts).total_seconds() <= 6 * 3600]
             raw = None
             for _ in range(2):                                          # one retry if the reply is not valid JSON
@@ -52,7 +53,10 @@ def run(files, llm, db, salt_, sites, chat_names=None, default_site=None, date_o
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("files", nargs="+"); ap.add_argument("--default-site", help="site id to use when a message names no place (e.g. a Bright-only group)")
-    ap.add_argument("--model", default="qwen2.5:7b-instruct"); ap.add_argument("--backend", choices=["ollama", "openai"], default="ollama")
+    ap.add_argument("--model", help="model name (default: qwen2.5:7b-instruct locally, claude-haiku-5-5 with --backend anthropic)")
+    ap.add_argument("--backend", choices=["ollama", "openai", "anthropic"], default="ollama",
+                    help="ollama/openai = a model on this machine (default). anthropic = the Claude API: the SCRUBBED message text is sent to Anthropic; key from the ANTHROPIC_API_KEY environment variable")
+    ap.add_argument("--max-usd", type=float, default=2.0, help="with --backend anthropic: stop once the estimated cost reaches this (default 2.00)")
     ap.add_argument("--chat", help="name for this chat (any text; only a hash is stored). Needed to keep senders matched across re-exports with different file names. One file only.")
     ap.add_argument("--base-url"); ap.add_argument("--date-order", choices=["auto", "dmy", "mdy"], default="auto")
     ap.add_argument("--limit", type=int, help="stop after this many messages go to the model (for a trial run)")
@@ -61,9 +65,15 @@ if __name__ == "__main__":
     sites = load_sites()
     if a.default_site and a.default_site not in sites: sys.exit(f"unknown site {a.default_site}; have {list(sites)}")
     db = None if a.dry_run else store.connect(ROOT / "data" / "chat_labels.sqlite")
-    llm = None if a.dry_run else LocalLLM(a.model, a.backend, a.base_url)
+    if a.backend == "anthropic":
+        llm = None if a.dry_run else AnthropicLLM(a.model or "claude-haiku-5-5", a.max_usd)
+        if llm: print("NOTE: --backend anthropic sends each message (after removing links, @mentions, phone numbers and emails) plus up to 3 earlier messages to the Claude API. "
+                      "Names are not sent as a field, but a name written inside a message would be. Nothing but the labels is stored here.")
+    else:
+        llm = None if a.dry_run else LocalLLM(a.model or "qwen2.5:7b-instruct", a.backend, a.base_url)
     salt_ = store.salt(ROOT / "data" / "chat_salt") if not a.dry_run else "dry"
     (ROOT / "data").mkdir(exist_ok=True)
     if a.chat and len(a.files) > 1: sys.exit("--chat names one chat; pass one file, or leave it out to use each file's name")
     s = run(a.files, llm, db, salt_, sites, chat_names={a.files[0]: a.chat} if a.chat else None, default_site=a.default_site, date_order=a.date_order, limit=a.limit, dry=a.dry_run, prefilter=not a.no_prefilter)
     print(("DRY RUN " if a.dry_run else "") + ", ".join(f"{k}={v}" for k, v in s.items()))
+    if llm is not None and hasattr(llm, "report"): print(llm.report())

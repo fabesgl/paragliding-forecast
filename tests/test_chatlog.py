@@ -155,4 +155,56 @@ class T2(unittest.TestCase):
         for secret in ["Jordi", "Puig", "Vidal", "Núria", "N\u00faria", "brutal", "rotors", "cenar", "sopar"]: self.assertNotIn(secret.encode(), raw)
         self.assertIsNone(store.sender_hash("salt", "club", ""))
 
+
+
+
+# ---- Claude API backend (no network: a fake client stands in for the SDK)
+class FakeUsage: 
+    def __init__(s, i, o): s.input_tokens, s.output_tokens = i, o
+class FakeBlock:
+    def __init__(s, inp): s.type, s.input = "tool_use", inp
+class FakeResp:
+    def __init__(s, inp, i=900, o=60): s.content, s.usage = [FakeBlock(inp)], FakeUsage(i, o)
+class FakeClient:
+    def __init__(s, fn=None): s.sent, s.messages = [], s
+    def create(s, **kw):
+        s.sent.append(kw); user = kw["messages"][0]["content"]
+        return FakeResp(json.loads(fake_model(user)))
+
+class T3(unittest.TestCase):
+    def setUp(self):
+        from pgforecast.chatlog.llm import AnthropicLLM; self.A = AnthropicLLM
+        self.d = Path(tempfile.mkdtemp())
+
+    def test_key_only_from_environment(self):
+        import os
+        old = os.environ.pop("ANTHROPIC_API_KEY", None)
+        try:
+            with self.assertRaises(SystemExit) as c: self.A("claude-haiku-5-5")
+            self.assertIn("ANTHROPIC_API_KEY", str(c.exception))
+        finally:
+            if old: os.environ["ANTHROPIC_API_KEY"] = old
+        with self.assertRaises(SystemExit): self.A("some-unpriced-model", client=FakeClient())
+
+    def test_scrubbed_text_only_and_cost_tracked(self):
+        (self.d / "c.txt").write_text(f"[22/11/2026, 18:02:11] {NAMES[0]}: Mystic was epic yesterday, call me +61 400 123 456 or mail jo@example.com, see https://x.com/a @{NAMES[1].split()[0]}\n"
+                                      f"[22/11/2026, 18:03:11] {NAMES[1]}: agreed, restitution was good, flew 2 hours\n")
+        fc = FakeClient(); llm = self.A("claude-haiku-5-5", client=fc); db = store.connect(self.d / "l.sqlite")
+        s = import_chats.run([self.d / "c.txt"], llm, db, "salt", {"bright": ["bright", "mystic"]}, default_site="bright", out=lambda *_: None)
+        sent = json.dumps(fc.sent)
+        for secret in ("+61 400", "400 123", "jo@example.com", "https://x.com", NAMES[0], NAMES[1], "Zebediah", "Marguerite"): self.assertNotIn(secret, sent)
+        for token in ("[number]", "[email]", "[link]", "[person]"): self.assertIn(token, sent)
+        self.assertEqual(fc.sent[0]["model"], "claude-haiku-5-5"); self.assertEqual(fc.sent[0]["tool_choice"], {"type": "tool", "name": "label_message"})
+        self.assertEqual(llm.usage["calls"], 2); self.assertAlmostEqual(llm.cost(), (1800 * 0.10 + 120 * 0.50) / 1e6, places=9)
+        self.assertIn("estimated cost", llm.report()); self.assertEqual(s["kept"], 2)
+        db.close(); raw = (self.d / "l.sqlite").read_bytes()
+        for secret in NAMES + ["400 123", "jo@example.com"]: self.assertNotIn(secret.encode(), raw)
+
+    def test_cost_cap_stops_the_run(self):
+        lines = "".join(f"[22/11/2026, 18:{i:02d}:00] A B: Mystic was epic day {i}, thermals strong\n" for i in range(10)); (self.d / "c.txt").write_text(lines)
+        llm = self.A("claude-haiku-5-5", client=FakeClient(), max_usd=0.0001)             # 0.0001 USD: reached after a couple of messages
+        msgs = []; db = store.connect(self.d / "l.sqlite")
+        s = import_chats.run([self.d / "c.txt"], llm, db, "salt", {"bright": ["bright", "mystic"]}, default_site="bright", out=msgs.append)
+        self.assertLess(s["sent_to_model"], 10); self.assertTrue(any("cost cap" in m for m in msgs))
+
 if __name__ == "__main__": unittest.main()
