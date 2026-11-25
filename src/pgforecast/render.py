@@ -55,9 +55,9 @@ def dial(p, name):
 
 BAR = {"good": "#639922", "marginal": "#ba7517"}           # hourly-strip bar colours; anything else is grey
 
-def strip(hourly, key="xc", name="XC"):
+def strip(hourly, key="xc", name="XC", score=None):
     bars = "".join(f'<i title="{S._h(x["h"])} {x.get(key)}%" style="height:{max(8, x.get(key) or 0)}%;background:{BAR.get(S.label(x.get(key) or 0), "#5f5e5a")}"></i>' for x in hourly)
-    return f'<h3>Through the day ({name})</h3><div class="strip" role="img" aria-label="Hourly {name} score, 9am to 6pm">{bars}</div><div class="ticks mu"><span>9am</span><span>12</span><span>3pm</span><span>6pm</span></div>'
+    return f'<h3><span style="color:{TONE[S.label(score)][1]}">{name}</span> window</h3><div class="strip" role="img" aria-label="Hourly {name} score, 9am to 6pm">{bars}</div><div class="ticks mu"><span>9am</span><span>12</span><span>3pm</span><span>6pm</span></div>'
 
 def arrow(deg, kmh):
     col = "#97c459" if kmh < 20 else "#ef9f27" if kmh < 33 else "#e24b4a"
@@ -86,7 +86,7 @@ def card_body(d, cfg, ai_status):
             f'<p class="sum"><b style="color:{TONE[S.label(d["xc"])][1]}">XC:</b> {E(S.xc_text(d))}</p>'
             f'<p class="sum" style="margin-top:0"><b style="color:{TONE[S.label(d["acro"])][1]}">Acro:</b> {E(S.acro_text(d))}</p>'
             f'<div class="pull mu">{DOWN}<span>{("Pulled down by: " + E(pull)) if pull else "Nothing is pulling it down"}</span></div>'
-            f'{strip(d["hourly"])}{strip(d["hourly"], "acro", "acro") if any(x.get("acro") is not None for x in d["hourly"]) else ""}{ladder(d["winds"], cfg["launch_height_m"])}{ai_box(d.get("ai"), ai_status)}')
+            f'{strip(d["hourly"], "xc", "XC", d["xc"])}{strip(d["hourly"], "acro", "Acro", d["acro"]) if any(x.get("acro") is not None for x in d["hourly"]) else ""}{ladder(d["winds"], cfg["launch_height_m"])}{ai_box(d.get("ai"), ai_status)}')
 
 def pill(n, p):
     lab = S.label(p); return f'<span class="pill" style="background:{TONE[lab][2]};color:{TONE[lab][3]}">{n} {"n/a" if p is None else f"{p}%"}</span>'
