@@ -1,5 +1,5 @@
 {
- "updated_local": "Wed 25 Nov 2026 14:34 AEDT",
+ "updated_local": "Wed 25 Nov 2026 14:49 AEDT",
  "days": [
   {
    "date": "2026-11-25",
@@ -416,7 +416,7 @@
    "ai": {
     "xc_call": "marginal",
     "acro_call": "marginal",
-    "reasoning": "Launch is a light northerly (9 km/h) and cloud base near 2,336 m ASL with a 1.5 m/s thermal estimate is workable, but the models strongly disagree (GFS 93% XC vs ECMWF 2%, ICON 33%), so confidence is low. Gusts of about 28 km/h and a 20 km/h 850 hPa wind with northerly flow aloft temper both calls, and the rule score of 43% XC looks too high given the spread."
+    "reasoning": "Launch wind is light northerly and cloud base near 2,336 m ASL with 0 mm rain, but models strongly disagree (ECMWF 2%, GFS 93% for XC), so confidence is low. Gusts near 28 km/h and 1,500 m winds of 17\u201328 km/h add turbulence and thermal-drift risk."
    }
   },
   {
@@ -834,7 +834,7 @@
    "ai": {
     "xc_call": "marginal",
     "acro_call": "marginal",
-    "reasoning": "Launch winds are light northerly (about 8 km/h, gusts 26 km/h) and thermals look usable with cloud base near 2,286 m ASL, but the ECMWF run (XC 20) and ICON (XC 53) disagree strongly with GFS (XC 97), so confidence is low. Gusts just over the limit and a 1,500 m wind of about 19 km/h with a northerly-to-northwesterly profile above make the XC rating only marginal, and the acro rating is held at marginal because of the gusty, sheared air."
+    "reasoning": "Launch wind is light northerly and thermals (~1.6 m/s) reach about 2,300 m ASL, but models strongly disagree (XC score 20 to 97; ECMWF much lower). Gusts near 26 km/h and 850 hPa wind of 15 km/h add turbulence risk, so I rate it marginal for both."
    }
   },
   {
@@ -1252,7 +1252,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "marginal",
-    "reasoning": "Weak thermals (about 0.8 m/s) and a cloud ceiling near 1,130 m ASL, far below the 2,000 m needed for useful XC lift, make long flights unlikely; 4.8 mm of rain in the window also counts against it. Launch wind is light and northerly, so the site is launchable, but gusts of 27 km/h and strong northerly winds aloft (about 36 km/h at 850 hPa, 52 km/h at 700 hPa) with shear near 34 km/h give some turbulence risk for acro. The models are not in confli"
+    "reasoning": "Weak thermals (0.8 m/s), low ceiling near 1130 m and CAPE of 221 point to no usable lift above 2000 m, plus rain risk and strong 850 hPa wind. Launch wind is light northerly and flyable, but gusts near 27 km/h and shear of about 34 km/h make acro only marginal."
    }
   },
   {
@@ -1670,7 +1670,7 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "marginal",
-    "reasoning": "Weak thermals (about 0.6 m/s) under a low ceiling near 938 m ASL, with 79% low cloud and 11 mm rain in the window, rule out XC. Launch wind is light NW and valley-compatible, but the 700 hPa wind of 45 km/h and a 18 km/h shear push acro to marginal on turbulence risk, with gusts near 26 km/h. The rule scores are consistent with this read; the wind-by-height table shows the models agree on the strong upper westerlies."
+    "reasoning": "Weak thermals (0.6 m/s), low cloud ceiling near 938 m ASL and 11 mm rain make XC poor; the rule scores agree. Launch wind is light NW, but gusts near 26 km/h and 18 km/h shear at 850 hPa keep acro marginal."
    }
   },
   {
@@ -2088,7 +2088,7 @@
    "ai": {
     "xc_call": "marginal",
     "acro_call": "marginal",
-    "reasoning": "Launch wind is light NW (about 10 km/h, gusts ~26) so the site is launchable, but the models strongly disagree (GFS 97% XC versus ECMWF 14% and ICON 0%), so the 37% blend is not reliable. Thermals are modest (~1.7 m/s) with cloudbase near 2,400 m ASL and CAPE only 67, which is workable but not a strong XC day; gusts and the WNW wind aloft lean toward a marginal call, and the acro call is held back by the gusts and the wind shear."
+    "reasoning": "Models strongly disagree (GFS 97% XC, ECMWF 14%, ICON 0%), so confidence is low. Launch NW 10 km/h is fine, but gusts of 26 km/h, a ~2,400 m ceiling and 1.7 m/s thermals give only modest XC potential."
    }
   }
  ]
