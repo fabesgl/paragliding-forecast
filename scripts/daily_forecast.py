@@ -173,5 +173,7 @@ if logf.exists():
     for r_ in csv.DictReader(logf.open()):
         if r_["target_date"] < today: seen[r_["target_date"]] = r_   # last prediction made for each past day
     track_rows = [f'<tr><td>{d}</td><td>{r_["xc_pct"]}%</td><td>{r_["acro_pct"]}%</td><td>{r_["lead_days"]} d</td></tr>' for d, r_ in sorted(seen.items())[-14:]]
-(docs/"index.html").write_text(render.render_page(out_days, cfg, local_now, local_now.date(), cstate, runs, ai_status, track_rows))
+(docs/"index.html").write_text(render.render_page(out_days, cfg, local_now, local_now.date(), cstate, runs, ai_status, track_rows, generated_utc=now))
+import shutil
+shutil.copytree(ROOT/"pwa", docs, dirs_exist_ok=True)     # app manifest, service worker and icons (kept in pwa/ and published with the page)
 print("ok", [(d["date"], d["xc"], d["acro"]) for d in out_days])

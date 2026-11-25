@@ -14,6 +14,7 @@ header{position:relative;height:104px;background:#13203a;overflow:hidden;padding
 header svg{position:absolute;left:0;bottom:0;width:100%;height:96px}
 header div{position:relative;padding:16px}h1{margin:0;font-size:19px;font-weight:600}
 .mu{color:var(--mu);font-size:12px}
+#net{position:sticky;top:0;z-index:5;background:#412402;color:#fac775;font-size:12.5px;text-align:center;padding:calc(6px + env(safe-area-inset-top,0px)) 12px 6px}
 .cd{background:var(--card);border-radius:14px;margin:10px 12px;padding:14px}
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.top b{font-size:16px;font-weight:600}
 .dials{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;text-align:center}.dials svg{width:96px;height:96px;display:block;margin:0 auto}.dials div div{font-size:13px;font-weight:600}
@@ -113,7 +114,18 @@ def corrections_block(state, cfg):
     out.append('<p class="note">Mystic has no weather station, so nothing is corrected at the launch point yet. Tables show observed minus forecast at the nearest BOM stations, 09:00-17:00.</p>')
     return "".join(out)
 
-def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows):
+JS = """<script>
+if("serviceWorker"in navigator)addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
+(function(){var g=(+document.querySelector('meta[name=generated]').content)*1e3,n=document.getElementById("net"),fc=false;if(!g)return;
+function age(){var h=(Date.now()-g)/36e5;return h<1?"under an hour":h<36?Math.round(h)+" h":Math.round(h/24)+" days"}
+function f(){var off=!navigator.onLine||fc,old=(Date.now()-g)/36e5>14;if(off||old){n.hidden=false;n.textContent=(off?"Offline. ":"")+"This forecast is "+age()+" old."}else n.hidden=true}
+function chk(){fetch("forecast.json",{cache:"no-store"}).then(function(r){fc=!!r.headers.get("x-sw-cache");f()}).catch(function(){fc=true;f()})}
+addEventListener("online",chk);addEventListener("offline",chk);chk();f();
+document.addEventListener("visibilitychange",function(){if(document.hidden||!navigator.onLine||Date.now()-g<36e5)return;
+try{var t=+sessionStorage.getItem("r")||0;if(Date.now()-t<18e5)return;sessionStorage.setItem("r",Date.now())}catch(e){}location.reload()})})();
+</script>"""
+
+def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows, generated_utc=None):
     faces = {0: "N", 90: "E", 180: "S", 270: "W"}.get(cfg.get("launch_facing_deg", 0), "N")
     upd = local_now.strftime("%-I:%M%p %a").replace("AM", "am").replace("PM", "pm")
     names = {"ecmwf_ifs025": "ECMWF", "ncep_gfs025": "GFS", "dwd_icon": "ICON"}
@@ -128,10 +140,14 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
                          f'<div class="pills">{pill("XC", d["xc"])}{pill("Acro", d["acro"])}{CHEV}</div></summary><div class="cd2">{card_body(d, cfg, ai_status)}</div></details>')
     track = ('<table class="tbl"><tr><th>Day</th><th>XC</th><th>Acro</th><th>Lead</th></tr>' + "".join(track_rows) + "</table>") if track_rows else '<p class="note">Predictions are logged every update. Outcomes will be compared here once flight data or pilot notes are added.</p>'
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f1722"><meta name="color-scheme" content="dark"><title>Mystic, Bright flying forecast</title><style>{CSS}</style></head><body>
+<meta name="theme-color" content="#0f1722"><meta name="color-scheme" content="dark"><meta name="generated" content="{int(generated_utc.timestamp()) if generated_utc else 0}">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Mystic"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mystic forecast</title><style>{CSS}</style></head><body>
+<div id="net" role="status" hidden></div>
 <header>{MOUNTAIN}<div><h1>Mystic, Bright</h1><div class="mu">Updated {upd} · {cfg["launch_height_m"]} m · faces {faces}</div></div></header>
 {"".join(cards)}
 <details class="more"><summary>Forecast corrections {CHEV}</summary>{corrections_block(cstate, cfg)}</details>
 <details class="more"><summary>Track record {CHEV}</summary>{track}</details>
 <details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is 65% or more, marginal 35-64%, poor under 35%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strip shows the XC score for each hour. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
-</body></html>"""
+{JS}</body></html>"""
