@@ -1,7 +1,14 @@
 """Plain-language text for each day, written from the numbers (no AI involved)."""
 
+GOOD_MIN, MARGINAL_MIN, PULLED_BELOW = 65, 35, 0.9     # defaults; replaced from the site's rules.yaml by configure()
+
+def configure(rules):
+    """Take the Good/Marginal/Poor cut-offs and the 'pulled down' threshold from the site's rule settings."""
+    global GOOD_MIN, MARGINAL_MIN, PULLED_BELOW
+    r = rules["ratings"]; GOOD_MIN, MARGINAL_MIN, PULLED_BELOW = r["good_min_pct"], r["marginal_min_pct"], r["pulled_down_below"]
+
 def label(p):
-    return "n/a" if p is None else "good" if p >= 65 else "marginal" if p >= 35 else "poor"
+    return "n/a" if p is None else "good" if p >= GOOD_MIN else "marginal" if p >= MARGINAL_MIN else "poor"
 
 def agreement(day):
     lo, hi = day["xc_range"]
@@ -16,7 +23,8 @@ def phrase(r):
             "shear": f"{n:.0f} km/h of wind shear up to 850 hPa", "ceiling": f"thermals topping out near {round(n, -2):,.0f} m",
             "thermals": f"weak thermals (about {n:.1f} m/s)", "cape": f"overdevelopment risk (CAPE {n:.0f})", "rain": f"{n:.1f} mm of rain"}.get(k, r["label"].lower())
 
-def limiters(rules, below=0.9):
+def limiters(rules, below=None):
+    below = PULLED_BELOW if below is None else below
     return sorted([r for r in rules if r["factor"] is not None and r["factor"] < below], key=lambda r: r["factor"])
 
 def _h(h):

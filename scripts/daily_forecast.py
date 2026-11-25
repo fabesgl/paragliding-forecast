@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out"
 sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.rules import score_day, compass
+from pgforecast.rules_config import load_rules
 from pgforecast import corrections as corr, ai_opinion, render
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
 cfg = yaml.safe_load((ROOT/"sites"/f"{site}.yaml").read_text())
@@ -19,6 +20,9 @@ VARS = ["wind_speed_10m","wind_direction_10m","wind_gusts_10m","wind_speed_850hP
  "boundary_layer_height","shortwave_radiation","precipitation","pressure_msl"]
 LEVELS = [("~1,000 m", 900), ("~1,500 m", 850), ("~2,000 m", 800), ("~3,000 m", 700)]   # nominal height ASL, pressure level
 LEVEL_VARS = [f"{a}_{l}hPa" for _, l in LEVELS for a in ("wind_speed", "wind_direction", "geopotential_height")]
+cfg["rules"] = load_rules(site)                         # sites/<site>/rules.yaml: every rule threshold lives there
+from pgforecast import summary as _summary
+_summary.configure(cfg["rules"])
 keys = list(cfg["points"]); pts = cfg["points"]
 r = None
 for attempt in range(6):
@@ -109,7 +113,7 @@ for day in [d for d in days if d >= today][:5]:
         idx = [i for i, t in enumerate(times) if t[:10] == day and win[0] <= t[11:16] <= win[1]]
         if all(mystic.get(f"wind_speed_10m_{m}", [None])[i] is None for i in idx): continue   # model has no data (e.g. BOM ACCESS-G)
         h = {v: fill(idx, v, m) for v in VARS}
-        per_model[m] = score_day(h, tuple(cfg["launch_wind_directions_deg"][0]), tuple(cfg["unflyable_synoptic_deg"][0]), cfg["launch_height_m"])
+        per_model[m] = score_day(h, cfg["rules"], cfg["launch_height_m"])
     def avg(k):
         v = [p[k] for p in per_model.values() if p[k] is not None]; return round(sum(v)/len(v)) if v else None
     best = per_model.get("gfs_seamless") or next(iter(per_model.values()), None)
@@ -126,8 +130,7 @@ for day in [d for d in days if d >= today][:5]:
     hourly = []                                   # the XC rules applied to each hour on its own, 9am-6pm, averaged over models
     for hh in range(9, 18):
         i = next((i for i, t in enumerate(times) if t == f"{day}T{hh:02d}:00"), None)
-        vals = [] if i is None else [score_day({v: fill([i], v, m) for v in VARS}, tuple(cfg["launch_wind_directions_deg"][0]),
-                                               tuple(cfg["unflyable_synoptic_deg"][0]), cfg["launch_height_m"])["xc"] for m in per_model]
+        vals = [] if i is None else [score_day({v: fill([i], v, m) for v in VARS}, cfg["rules"], cfg["launch_height_m"])["xc"] for m in per_model]
         vals = [v for v in vals if v is not None]
         hourly.append(dict(h=hh, xc=round(sum(vals) / len(vals)) if vals else None))
     xcs = [p["xc"] for p in per_model.values() if p["xc"] is not None]

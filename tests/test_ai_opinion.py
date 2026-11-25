@@ -5,7 +5,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import requests
 from pgforecast import ai_opinion as A
 
-CFG = {"name": "Bright", "launch_height_m": 797, "launch_above_landing_m": 477}
+from pgforecast.rules_config import load_rules
+RULES = load_rules("bright")
+CFG = {"name": "Bright", "launch_height_m": 797, "launch_above_landing_m": 477, "rules": RULES}
 DAY = {"date": "2026-11-26", "xc": 57, "acro": 34, "xc_range": [20, 97], "models": {"gfs_seamless": {"xc": 88, "acro": 72}},
        "key": {"wind_kmh": 8.2, "gust_kmh": 26.0, "wind_dir": "N"}, "xc_rules": [{"label": "Gusts", "value": "26 km/h", "factor": 0.58}], "acro_rules": []}
 
@@ -52,18 +54,18 @@ def day_with(wind=8, gust=20, w850=15, rain=0.0, acro_wind=None):
 
 class Limits(unittest.TestCase):
     def test_breaches_per_discipline(self):
-        self.assertEqual(A.hard_limits(day_with()), {"xc": [], "acro": []})
-        h = A.hard_limits(day_with(gust=22)); self.assertEqual(h["xc"], []); self.assertEqual(len(h["acro"]), 1)          # 22 is fine for XC (<25), over the acro limit (20)
-        h = A.hard_limits(day_with(wind=18, w850=30)); self.assertEqual(len(h["xc"]), 1); self.assertEqual(len(h["acro"]), 2)
-        h = A.hard_limits(day_with(rain=0.2)); self.assertEqual((len(h["xc"]), len(h["acro"])), (1, 1)); self.assertIn("rain", h["xc"][0])
-        self.assertEqual(A.hard_limits(day_with(rain=0.1, wind=20, gust=25, w850=25))["xc"], [])                         # exactly at the limit is allowed
+        self.assertEqual(A.hard_limits(day_with(), RULES), {"xc": [], "acro": []})
+        h = A.hard_limits(day_with(gust=22), RULES); self.assertEqual(h["xc"], []); self.assertEqual(len(h["acro"]), 1)          # 22 is fine for XC (<25), over the acro limit (20)
+        h = A.hard_limits(day_with(wind=18, w850=30), RULES); self.assertEqual(len(h["xc"]), 1); self.assertEqual(len(h["acro"]), 2)
+        h = A.hard_limits(day_with(rain=0.2), RULES); self.assertEqual((len(h["xc"]), len(h["acro"])), (1, 1)); self.assertIn("rain", h["xc"][0])
+        self.assertEqual(A.hard_limits(day_with(rain=0.1, wind=20, gust=25, w850=25), RULES)["xc"], [])                         # exactly at the limit is allowed
 
     def test_enforce_forces_poor_and_explains(self):
-        res = A.enforce(dict(xc_call="good", acro_call="good", reasoning="Looks great."), A.hard_limits(day_with(gust=28)))
+        res = A.enforce(dict(xc_call="good", acro_call="good", reasoning="Looks great."), A.hard_limits(day_with(gust=28), RULES))
         self.assertEqual((res["xc_call"], res["acro_call"], res["forced"]), ("poor", "poor", "xc acro")); self.assertIn("hard limits", res["reasoning"])
-        res = A.enforce(dict(xc_call="good", acro_call="good", reasoning="x"), A.hard_limits(day_with(gust=22)))
+        res = A.enforce(dict(xc_call="good", acro_call="good", reasoning="x"), A.hard_limits(day_with(gust=22), RULES))
         self.assertEqual((res["xc_call"], res["acro_call"], res["forced"]), ("good", "poor", "acro"))                      # inside the XC limits it may say good
-        res = A.enforce(dict(xc_call="poor", acro_call="poor", reasoning="x"), A.hard_limits(day_with(rain=2)))
+        res = A.enforce(dict(xc_call="poor", acro_call="poor", reasoning="x"), A.hard_limits(day_with(rain=2), RULES))
         self.assertEqual((res["forced"], res["reasoning"]), ("", "x"))                                                     # already poor: nothing changed, nothing added
 
     def test_limits_in_prompt_and_payload_and_end_to_end(self):

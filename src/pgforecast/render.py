@@ -49,8 +49,10 @@ def dial(p, name):
             f'<text x="50" y="52" text-anchor="middle" font-size="22" font-weight="600" fill="#e8edf3">{val}</text><text x="50" y="68" text-anchor="middle" font-size="11" fill="#8fa0b5">{name}</text></svg>'
             f'<div style="color:{txt}">{lab.capitalize()}</div></div>')
 
+BAR = {"good": "#639922", "marginal": "#ba7517"}           # hourly-strip bar colours; anything else is grey
+
 def strip(hourly):
-    bars = "".join(f'<i title="{S._h(x["h"])} {x["xc"]}%" style="height:{max(8, x["xc"] or 0)}%;background:{"#639922" if (x["xc"] or 0) >= 65 else "#ba7517" if (x["xc"] or 0) >= 35 else "#5f5e5a"}"></i>' for x in hourly)
+    bars = "".join(f'<i title="{S._h(x["h"])} {x["xc"]}%" style="height:{max(8, x["xc"] or 0)}%;background:{BAR.get(S.label(x["xc"] or 0), "#5f5e5a")}"></i>' for x in hourly)
     return f'<h3>Through the day (XC)</h3><div class="strip" role="img" aria-label="Hourly XC score, 9am to 6pm">{bars}</div><div class="ticks mu"><span>9am</span><span>12</span><span>3pm</span><span>6pm</span></div>'
 
 def arrow(deg, kmh):
@@ -149,5 +151,5 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
 {"".join(cards)}
 <details class="more"><summary>Forecast corrections {CHEV}</summary>{corrections_block(cstate, cfg)}</details>
 <details class="more"><summary>Track record {CHEV}</summary>{track}</details>
-<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is 65% or more, marginal 35-64%, poor under 35%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strip shows the XC score for each hour. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
+<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strip shows the XC score for each hour. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
 {JS}</body></html>"""

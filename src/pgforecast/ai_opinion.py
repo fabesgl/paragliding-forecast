@@ -1,7 +1,7 @@
 """'AI second opinion': a language model reads one day's forecast data and gives its own XC and acro call.
 It only ever ADDS a second opinion; it never touches the rule scores. Any failure returns None so the daily run carries on."""
 import json, os, time, requests
-from .rules import LIMITS
+from .rules_config import limits as _limits
 
 MODEL = "claude-haiku-5-5"
 URL = "https://api.anthropic.com/v1/messages"
@@ -13,9 +13,9 @@ TOOL = {"name": "give_opinion", "description": "Record your own flying call for 
 
 NAMES = {"wind": "launch wind", "gust": "gusts", "w850": "850 hPa wind"}
 
-def hard_limits(day):
+def hard_limits(day, rules):
     """The rule limits the day breaches, per discipline: {'xc': [...], 'acro': [...]}. Uses the same model-averaged numbers the rules use."""
-    out = {}
+    LIMITS = _limits(rules); out = {}
     for d in ("xc", "acro"):
         rules = {r.get("key"): r.get("num") for r in day.get(f"{d}_rules", [])}; hit = []
         for k, lim in LIMITS[d].items():
@@ -36,6 +36,7 @@ def enforce(res, breaches):
     return res
 
 def system_prompt(cfg):
+    LIMITS = _limits(cfg["rules"]); CEIL = f"{cfg['rules']['xc']['ceiling']['min_asl_m']:,.0f}"
     return f"""You are an experienced paragliding forecaster giving a second opinion for {cfg['name']}.
 Site facts: the launch faces north at {cfg['launch_height_m']} m ASL, {cfg['launch_above_landing_m']} m above the landing. It is launchable in northerly valley wind
 (roughly NW to NE); strong synoptic wind from S, SE or SW makes it unflyable. Times are local. Speeds are km/h, heights metres.
@@ -45,7 +46,7 @@ XC: rain forecast in the flying window ({LIMITS['rain_mm']} mm or more); launch 
 Acro: rain forecast in the flying window ({LIMITS['rain_mm']} mm or more); launch wind over {LIMITS['acro']['wind']} km/h; gusts over {LIMITS['acro']['gust']} km/h; 850 hPa wind over {LIMITS['acro']['w850']} km/h.
 The data lists any breaches under hard_limit_breaches. Inside these limits you are free to disagree with the rule scores, either way.
 Give your OWN judgement from the data. The rule scores are one input and are untested; disagree with them when the data says so.
-Calls: XC (cross-country) good = a realistic chance of long flights (usable thermals above ~2,000 m ASL, manageable wind and gusts, no rain);
+Calls: XC (cross-country) good = a realistic chance of long flights (usable thermals above ~{CEIL} m ASL, manageable wind and gusts, no rain);
 marginal = flyable but with a clear problem; poor = unlikely. Acro: good = smooth, light and steady air (low wind, low gusts, little shear), marginal = some turbulence risk, poor = rough or unflyable.
 Reasoning: at most 2 short sentences (under 60 words in total) naming the deciding factors, and say so if the models disagree. Use only the data given; do not invent numbers."""
 
@@ -53,7 +54,7 @@ def enabled(env=os.environ):
     v = (env.get("AI_OPINION_ENABLED") or "").strip().lower()
     return bool(env.get("ANTHROPIC_API_KEY")) and v not in ("false", "0", "off", "no", "disabled")
 
-def day_payload(day, wind_rows, active_corrections, counts):
+def day_payload(day, wind_rows, active_corrections, counts, rules):
     r = lambda x: None if x is None else round(x, 1)
     return {"date": day["date"], "rule_scores": {"xc_pct": day["xc"], "acro_pct": day["acro"], "xc_pct_range_across_models": day["xc_range"], "per_model": day["models"]},
             "key_numbers": {k: (r(v) if isinstance(v, float) else v) for k, v in day["key"].items()},
@@ -62,7 +63,7 @@ def day_payload(day, wind_rows, active_corrections, counts):
             "wind_by_height": [{"height": w["label"] + (f" ({w['height_m']} m)" if w["height_m"] else ""),
                                 "at_11_13_15": [None if c is None else f"{c['compass']} {c['kmh']}" for c in w["cells"]], "only_some_models": w["partial"]} for w in wind_rows],
             "corrections_in_use": active_corrections or "none yet (still learning)", "correction_status_counts": counts,
-            "hard_limit_breaches": hard_limits(day) or None}
+            "hard_limit_breaches": hard_limits(day, rules) or None}
 
 def _trim(t, n=450):
     """Cut at a sentence end if the text is too long, so it never stops mid-word."""
@@ -100,9 +101,9 @@ def opinions(days, winds_by_date, active_corrections, counts, cfg, env=os.enviro
     try:
         sysmsg = system_prompt(cfg)
         for d in days:
-            try: res = ask(sysmsg, day_payload(d, winds_by_date.get(d["date"], []), active_corrections, counts), env["ANTHROPIC_API_KEY"], session)
+            try: res = ask(sysmsg, day_payload(d, winds_by_date.get(d["date"], []), active_corrections, counts, cfg["rules"]), env["ANTHROPIC_API_KEY"], session)
             except PermissionError as e: print("AI opinion: API key rejected", e, "- skipping the rest"); return out, "key rejected"
-            if res: out[d["date"]] = enforce(res, hard_limits(d))
+            if res: out[d["date"]] = enforce(res, hard_limits(d, cfg["rules"]))
             else: failed += 1
     except Exception as e:                                       # whatever happens, the run must go on
         print("AI opinion: unexpected error", type(e).__name__); return out, "error"

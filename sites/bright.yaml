@@ -16,8 +16,7 @@ points:
 
 # To be answered by Fabian
 launch_facing_deg: 0                 # Mystic faces N
-launch_wind_directions_deg: [[315, 45]]   # NW..NE, launchable in N valley wind
-unflyable_synoptic_deg: [[135, 247]]      # strong S, SE, SW synoptic wind
+# Wind-direction and every other rule threshold now live in sites/bright/rules.yaml
 launch_height_m: 797
 launch_above_landing_m: 477
 other_launches: []                   # Mystic only for now
