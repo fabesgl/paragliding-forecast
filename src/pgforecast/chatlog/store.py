@@ -44,6 +44,10 @@ def _h(*parts): return hashlib.sha256("|".join(parts).encode()).hexdigest()
 
 def chat_hash(salt_, chat_alias): return _h(salt_, "chat", chat_alias.strip().casefold())[:12]
 
+def pilot_hash(salt_, name):
+    """Anonymous id for a pilot across sources that name pilots outright (e.g. XContest). Same salt file as the chat importer; not chat-scoped."""
+    return _h(salt_, "pilot", name.strip().casefold())[:16] if name and name.strip() else None
+
 def sender_hash(salt_, chat_alias, sender):
     """Anonymous id for a person within one chat. Same person + same chat alias = same id; the name cannot be recovered without the salt."""
     return _h(salt_, "sender", chat_alias.strip().casefold(), sender.strip().casefold())[:16] if sender and sender.strip() else None

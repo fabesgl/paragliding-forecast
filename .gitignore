@@ -17,3 +17,6 @@ data/
 chat_exports/
 *.sqlite
 data/chat_salt
+
+# saved XContest pages (personal login, never commit)
+xcontest_pages/
