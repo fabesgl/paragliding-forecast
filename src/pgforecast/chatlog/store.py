@@ -50,11 +50,12 @@ def msg_key(salt_, ts, text, sender_h=None):
 
 def seen(db, key): return db.execute("SELECT 1 FROM chat_seen WHERE msg_key=?", (key,)).fetchone() is not None
 
-def save(db, key, source, label, model, prompt_version, weight=CHAT_WEIGHT, chat_h=None, sender_h=None):
+def save(db, key, source, label, model, prompt_version, weight=CHAT_WEIGHT, chat_h=None, sender_h=None, commit=True):
     if label:
         db.execute("""INSERT OR IGNORE INTO chat_label (msg_key,source,chat_hash,sender_hash,site_id,date,date_source,flown,wind_speed,wind_dir,turbulence,thermals,
                       restitution,rating,llm_confidence,weight,model,prompt_version,imported_utc) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                    (key, source, chat_h, sender_h, label["site_id"], label["date"], label["date_source"], label["flown"], label["wind_speed"], label["wind_dir"],
                     label["turbulence"], label["thermals"], label["restitution"], label["rating"], label["llm_confidence"], weight, model,
                     prompt_version, datetime.now(UTC).strftime("%Y-%m-%dT%H:%MZ")))
-    db.execute("INSERT OR REPLACE INTO chat_seen VALUES (?,?)", (key, 1 if label else 0)); db.commit()
+    db.execute("INSERT OR REPLACE INTO chat_seen VALUES (?,?)", (key, 1 if label else 0))
+    if commit: db.commit()

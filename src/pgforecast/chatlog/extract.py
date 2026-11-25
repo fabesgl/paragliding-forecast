@@ -77,3 +77,52 @@ def validate(raw, ts, site_ids, default_site):
     c = j.get("confidence"); c = max(0.0, min(1.0, float(c))) if isinstance(c, (int, float)) else 0.5
     return dict(site_id=site, date=d.isoformat(), date_source=src, flown=flown, wind_speed=pick("wind_speed", SPEED), wind_dir=pick("wind_dir", DIRS),
                 turbulence=pick("turbulence", LEVEL4), thermals=pick("thermals", THERM), restitution=pick("restitution", RESTIT), rating=r, llm_confidence=round(c, 2))
+
+
+# ---- batches: about 20 numbered messages per call ---------------------------------------------------------------------------------------
+def batch_schema(site_ids):
+    """Compact reply: ids that are not flying reports go in a short list; only real reports get a full entry (cheaper and faster than 20 full entries)."""
+    one = schema(site_ids); props = {k: v for k, v in one["properties"].items() if k != "is_report"}; props["id"] = {"type": "integer"}
+    req = ["id"] + [k for k in one["required"] if k != "is_report"]
+    return {"type": "object", "additionalProperties": False, "required": ["reports", "not_reports"],
+            "properties": {"reports": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": req, "properties": props}},
+                           "not_reports": {"type": "array", "items": {"type": "integer"}}}}
+
+def batch_system_prompt(sites):
+    names = "; ".join(f"{sid} = {', '.join(a)}" for sid, a in sites.items())
+    return f"""You label paragliding chat messages. You receive several numbered messages; the 'ctx' lines under a message are earlier messages shown only for context and are never labelled.
+Messages may be in English, Spanish or Catalan (or a mix): understand them, but answer in the English values below. Resolve relative days (yesterday/ayer/ahir, today/hoy/avui, the day before yesterday/anteayer/abans d'ahir, weekday names such as sabado/dissabte) from each message's own date.
+Decide for EACH numbered message. A message is a REPORT only if it says how a past day (today, yesterday, a named weekday) was for flying or not flying. Questions, forecasts, plans, banter and 'will fly tomorrow' are NOT reports.
+Put the id of every message that is not a report in `not_reports`. Add a full entry to `reports` for every report. Every id must appear exactly once. Never output names, quotes or any message text: only ids and the allowed values.
+Fields of a report entry:
+- site: one of [{names}], or 'other' if it is a different place, or 'unknown' if not stated.
+- date: the day being reported as YYYY-MM-DD, worked out from the message date. null if unclear.
+- flown: 'yes' if the writer or the group flew, 'no' if it was not flown (too windy, rain, cancelled), else 'unknown'.
+- wind_speed: calm, light, moderate, strong or unknown. wind_dir: compass point the wind came from, or unknown.
+- turbulence: none, light, moderate, strong, unknown. thermals: none, weak, moderate, strong, unknown.
+- restitution: evening lift when slopes release stored heat late in the day: none, weak, good, unknown.
+- rating: 1 (awful) to 5 (epic) for the flying quality of the day (convert other scales, e.g. 8/10 -> 4), or null if not stated or implied.
+- confidence: 0 to 1, how sure you are of these labels."""
+
+def batch_user_prompt(items):
+    """items: list of dict(id, ts, text, ctx) with text already scrubbed."""
+    out = []
+    for it in items:
+        out.append(f"#{it['id']} | {it['ts']:%Y-%m-%d %a %H:%M}")
+        out += [f"ctx: {c}" for c in it["ctx"]]
+        out.append(f"msg: {it['text']}")
+    return "\n".join(out)
+
+def validate_batch(raw, items, site_ids, default_site):
+    """Returns {id: label dict, or None for 'not a usable report'} for every id the model answered properly. Ids it skipped or botched are absent
+    (the caller retries them once, then leaves them for the next run)."""
+    try: j = json.loads(raw)
+    except (TypeError, ValueError): return {}
+    if not isinstance(j, dict): return {}
+    ids = {it["id"]: it for it in items}; got = {}
+    for i in j.get("not_reports") or []:
+        if isinstance(i, int) and i in ids and i not in got: got[i] = None
+    for e in j.get("reports") or []:
+        if not isinstance(e, dict) or e.get("id") not in ids or e["id"] in got: continue
+        got[e["id"]] = validate(json.dumps({**{k: v for k, v in e.items() if k != "id"}, "is_report": True}), ids[e["id"]]["ts"], site_ids, default_site)
+    return got

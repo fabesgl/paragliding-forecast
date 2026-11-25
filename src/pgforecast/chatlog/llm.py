@@ -1,6 +1,6 @@
 """Talk to a LOCAL language model (Ollama, or any OpenAI-compatible local server such as llama.cpp / LM Studio).
 Refuses any non-local address so chat text can never be sent over the internet."""
-import json, os, requests
+import json, os, requests, threading
 from urllib.parse import urlparse
 
 LOCAL = {"localhost", "127.0.0.1", "::1", "[::1]"}
@@ -34,7 +34,7 @@ class AnthropicLLM:
     (never a file in the repo, never a command-line argument). Keeps a running token count and cost, and refuses to go past max_usd."""
     def __init__(self, model="claude-haiku-5-5", max_usd=2.0, client=None, backend="anthropic"):
         self.model, self.max_usd, self.backend = model, max_usd, backend
-        self.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
+        self.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0}; self._lock = threading.Lock()
         if model not in PRICES: raise SystemExit(f"No price known for {model}; add it to PRICES in llm.py so the cost can be tracked.")
         if client is None:
             key = os.environ.get("ANTHROPIC_API_KEY")
@@ -53,16 +53,17 @@ class AnthropicLLM:
         u = self.usage
         return f"Claude API ({self.model}): {u['calls']} calls, {u['input_tokens']:,} input + {u['output_tokens']:,} output tokens, estimated cost ${self.cost():.4f} (cap ${self.max_usd:.2f})"
 
-    def complete(self, system, user, schema):
+    def complete(self, system, user, schema, max_tokens=600):
         """Return the model's JSON reply as text. Uses a forced tool call so the reply always matches the label schema."""
-        tool = {"name": "label_message", "description": "Record the labels for the last chat message.", "input_schema": schema}
+        tool = {"name": "label_message", "description": "Record the labels for the chat message(s).", "input_schema": schema}
         try:
-            r = self.client.messages.create(model=self.model, max_tokens=600, system=system, tools=[tool], tool_choice={"type": "tool", "name": "label_message"},
+            r = self.client.messages.create(model=self.model, max_tokens=max_tokens, system=system, tools=[tool], tool_choice={"type": "tool", "name": "label_message"},
                                             output_config={"effort": "low"}, messages=[{"role": "user", "content": user}])
         except Exception as e:
             if type(e).__name__ == "AuthenticationError": raise SystemExit("The Claude API rejected ANTHROPIC_API_KEY (check the key).")
             raise
-        self.usage["calls"] += 1; self.usage["input_tokens"] += r.usage.input_tokens; self.usage["output_tokens"] += r.usage.output_tokens
+        with self._lock:                                          # batches run in several threads
+            self.usage["calls"] += 1; self.usage["input_tokens"] += r.usage.input_tokens; self.usage["output_tokens"] += r.usage.output_tokens
         for b in r.content:
             if b.type == "tool_use": return json.dumps(b.input)
         return None

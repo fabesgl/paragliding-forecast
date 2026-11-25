@@ -9,7 +9,12 @@ Meant to be run on the home desktop: nothing is installed on the laptop.
 3. Export chats: WhatsApp > Export chat > Without media (.txt). Telegram Desktop > Export chat history > Format: JSON. Put them in `chat_exports/` (git-ignored).
 
 ## Optional: use the Claude API instead of a local model
-Install `pip install -r requirements-chat-api.txt`, set `ANTHROPIC_API_KEY` in your shell or profile (never in a file in this repo), then add `--backend anthropic` (model `claude-haiku-5-5`, about $0.10 per million input tokens and $0.50 per million output tokens). The same scrubbing of links, @mentions, phone numbers and emails is applied first, but the scrubbed message text and up to 3 earlier messages ARE sent to Anthropic, and a name written inside a message is not removed. The run prints tokens and estimated cost, and stops at `--max-usd` (default 2.00).
+Install `pip install -r requirements-chat-api.txt` and set `ANTHROPIC_API_KEY` in your shell profile (never in a file in this repo). Then add `--backend anthropic` (model `claude-haiku-5-5`, $0.10 per million input tokens, $0.50 per million output tokens).
+The same scrubbing of links, @mentions, phone numbers and emails is applied first. The scrubbed message text and up to 2 earlier messages ARE sent to Anthropic; a name written inside a message is not removed.
+- Messages go in batches of 20 per call (`--batch-size`), 4 calls at once (`--parallel`). Only messages that mention flying or the site are sent unless you add `--no-prefilter`.
+- Count and estimate first, sending nothing: add `--dry-run`. Representative trial: `--sample 30` (30 messages spread evenly across the whole file).
+- Stop any time with Ctrl-C (running batches finish and are saved). Run the SAME command again to continue: finished messages are skipped.
+- It prints tokens and estimated cost as it goes, and stops at `--max-usd` (default 2.00).
 
 ## Run
 - Trial (30 messages): `.venv/bin/python scripts/import_chats.py chat_exports/bright.txt --default-site bright --limit 30`
