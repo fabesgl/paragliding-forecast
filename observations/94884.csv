@@ -1,0 +1,4 @@
+obs_time_utc,local_time,air_temp,apparent_t,dewpt,rel_hum,wind_dir,wind_spd_kmh,gust_kmh,press_qnh,press_msl,rain_trace,cloud,vis_km
+2026-11-22T22:00:00Z,20261123090000,21.5,18.6,9.5,46,WSW,15,,,1010.9,2.0,Partly cloudy,20
+2026-11-23T22:00:00Z,20261124090000,15.0,12.9,8.1,63,S,9,,,1019.9,0.0,Clear,40
+2026-11-24T22:00:00Z,20261125090000,18.0,17.6,8.3,53,CALM,0,,,1022.5,0.0,Mostly cloudy,40

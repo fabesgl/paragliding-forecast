@@ -6,18 +6,29 @@ flying_window_local: ["11:00", "16:00"]
 
 # status: "approx" = from the brief, not yet confirmed; "confirmed" = checked by Fabian
 points:
-  mystic_launch:   {lat: -36.74, lon: 146.96, role: launch,  status: approx, note: "DEM says ~394 m; real launch is higher. Need exact coords."}
+  mystic_launch:   {lat: -36.75855, lon: 146.96575, role: launch, status: confirmed, note: "SAFA site guide; 797 m ASL, 477 m above landing"}
   bright_valley:   {lat: -36.73, lon: 146.96, role: landing, status: approx}
   mount_hotham:    {lat: -36.98, lon: 147.13, role: ridge_ref,   status: approx}
   falls_creek:     {lat: -36.87, lon: 147.28, role: ridge_ref,   status: approx}
   mount_buffalo:   {lat: -36.77, lon: 146.79, role: ridge_ref,   status: approx, note: "The Horn"}
-  upwind_nw:       {lat: -36.36, lon: 146.31, role: upwind, status: proposed, note: "Near Wangaratta"}
-  upwind_sw:       {lat: -37.05, lon: 146.09, role: upwind, status: proposed, note: "Near Mansfield"}
+  upwind_nw:       {lat: -36.36, lon: 146.31, role: upwind, status: confirmed, note: "Near Wangaratta"}
+  upwind_sw:       {lat: -37.05, lon: 146.09, role: upwind, status: confirmed, note: "Near Mansfield"}
 
 # To be answered by Fabian
-launch_wind_directions_deg: null     # e.g. [[200, 270]]
-other_launches: []                   # e.g. Tawonga Gap, Buffalo
+launch_facing_deg: 0                 # Mystic faces N
+launch_wind_directions_deg: [[315, 45]]   # NW..NE, launchable in N valley wind
+unflyable_synoptic_deg: [[135, 247]]      # strong S, SE, SW synoptic wind
+launch_height_m: 797
+launch_above_landing_m: 477
+other_launches: []                   # Mystic only for now
 
-bom_stations: {}                     # filled in step 2
+bom_stations:                        # BOM half-hourly feed IDV60801.<id>.json (last ~72 h)
+  94903: Falls Creek
+  94906: Mount Hotham
+  94905: Mount Hotham Airport
+  94889: Wangaratta
+  94884: Benalla
+  94908: Omeo
+# Note: no Bright or Mt Buffalo station exists in the standard BOM Victoria feed.
 xcontest_launch_names: []            # Phase 2 (later)
 grading: {}                          # Phase 5
