@@ -1,13 +1,13 @@
 {
- "updated_local": "Wed 25 Nov 2026 12:16 AEDT",
+ "updated_local": "Wed 25 Nov 2026 12:17 AEDT",
  "days": [
   {
    "date": "2026-11-25",
-   "xc": 86,
-   "acro": 75,
+   "xc": 85,
+   "acro": 74,
    "xc_range": [
     80,
-    92
+    90
    ],
    "models": {
     "gfs_seamless": {
@@ -15,8 +15,8 @@
      "acro": 65
     },
     "ecmwf_ifs025": {
-     "xc": 92,
-     "acro": 78
+     "xc": 90,
+     "acro": 75
     },
     "icon_seamless": {
      "xc": 85,
@@ -58,7 +58,7 @@
     },
     "ecmwf_ifs025": {
      "xc": 77,
-     "acro": 61
+     "acro": 62
     },
     "icon_seamless": {
      "xc": 82,
@@ -173,8 +173,8 @@
   },
   {
    "date": "2026-11-29",
-   "xc": 52,
-   "acro": 46,
+   "xc": 56,
+   "acro": 50,
    "xc_range": [
     0,
     93
@@ -185,8 +185,8 @@
      "acro": 82
     },
     "ecmwf_ifs025": {
-     "xc": 62,
-     "acro": 57
+     "xc": 75,
+     "acro": 68
     },
     "icon_seamless": {
      "xc": 0,
