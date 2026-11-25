@@ -45,7 +45,8 @@ You receive one day of model forecast data (average of several models), hand-wri
 HARD LIMITS (these override your judgement): rate a discipline "poor" if ANY of these hold for it.
 XC: rain forecast in the flying window ({LIMITS['rain_mm']} mm or more); launch wind over {LIMITS['xc']['wind']} km/h; gusts over {LIMITS['xc']['gust']} km/h; 850 hPa wind over {LIMITS['xc']['w850']} km/h.
 Acro: rain forecast in the flying window ({LIMITS['rain_mm']} mm or more); launch wind over {LIMITS['acro']['wind']} km/h; gusts over {LIMITS['acro']['gust']} km/h; 850 hPa wind over {LIMITS['acro']['w850']} km/h.
-The data lists any breaches under hard_limit_breaches. Inside these limits you are free to disagree with the rule scores, either way.
+The data lists any breaches under hard_limit_breaches. A "front" entry means the models show a cold or warm front (status: pre = arrives within ~36 h, passing = during this day at time_local, post = passed within ~48 h). Fronts bring wind shifts to SW/S, gusts, rain and a collapse of thermals; weigh it, and mention it if it decides the day.
+Inside these limits you are free to disagree with the rule scores, either way.
 {NOTES}Give your OWN judgement from the data. The rule scores are one input and are untested; disagree with them when the data says so.
 Calls: XC (cross-country) good = a realistic chance of long flights (usable thermals above ~{CEIL} m ASL, manageable wind and gusts, no rain);
 marginal = flyable but with a clear problem; poor = unlikely. Acro: good = smooth, light and steady air (low wind, low gusts, little shear), marginal = some turbulence risk, poor = rough or unflyable.
@@ -64,7 +65,8 @@ def day_payload(day, wind_rows, active_corrections, counts, rules):
             "wind_by_height": [{"height": w["label"] + (f" ({w['height_m']} m)" if w["height_m"] else ""),
                                 "at_11_13_15": [None if c is None else f"{c['compass']} {c['kmh']}" for c in w["cells"]], "only_some_models": w["partial"]} for w in wind_rows],
             "corrections_in_use": active_corrections or "none yet (still learning)", "correction_status_counts": counts,
-            "hard_limit_breaches": hard_limits(day, rules) or None}
+            "hard_limit_breaches": hard_limits(day, rules) or None,
+            "front": (None if not (day.get("front") or {}).get("status") else {"status": day["front"]["status"], "kind": day["front"]["kind"], "time_local": day["front"]["time"], "strength": day["front"]["strength"]})}
 
 def _trim(t, n=450):
     """Cut at a sentence end if the text is too long, so it never stops mid-word."""

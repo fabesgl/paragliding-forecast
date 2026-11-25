@@ -9,7 +9,7 @@ OUT = ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out"
 sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.rules import score_day, compass, acro_window_score
 from pgforecast.rules_config import load_rules
-from pgforecast import corrections as corr, ai_opinion, render
+from pgforecast import corrections as corr, ai_opinion, render, fronts
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
 cfg = yaml.safe_load((ROOT/"sites"/f"{site}.yaml").read_text())
 tz = ZoneInfo(cfg["timezone"]); now = dt.datetime.now(dt.UTC); local_now = now.astimezone(tz)
@@ -49,12 +49,16 @@ if failed_models: print("MODELS UNAVAILABLE this update:", failed_models, "- car
 raw = [dict(got[ok_models[0]][i], hourly={"time": got[ok_models[0]][i]["hourly"]["time"]}) for i in range(len(keys))]      # one entry per point, all models merged
 for m in ok_models:
     for i in range(len(keys)): raw[i]["hourly"].update({k: v for k, v in got[m][i]["hourly"].items() if k != "time"})
+# 0. fronts: spotted from the model-average pressure, 850 hPa temperature and wind direction at Mystic (information only; never changes a score)
+_mh = raw[keys.index("mystic_launch")]["hourly"]
+front_list = fronts.detect(_mh["time"], fronts.series(_mh, ok_models), cfg["rules"]["fronts"])
+print("fronts:", [(f["kind"], f["time"], f["strength"]) for f in front_list] or "none")
 # 1. archive the raw forecast (this is the real, honest forecast-by-lead record we train on later)
 mr = OUT/"model_runs"/"latest.json"
 runs = json.loads(mr.read_text()) if mr.exists() else {}       # which model run each forecast comes from (written by wait_for_models.py)
 arch = OUT/"forecast_archive"; arch.mkdir(parents=True, exist_ok=True)
 with gzip.open(arch/f"{now:%Y-%m-%dT%H%MZ}.json.gz", "wt") as f:
-    json.dump({"fetched_utc": now.isoformat(), "model_runs": runs, "models_ok": ok_models, "models_failed": failed_models, "points": keys, "response": raw}, f, separators=(",", ":"))
+    json.dump({"fetched_utc": now.isoformat(), "model_runs": runs, "models_ok": ok_models, "models_failed": failed_models, "fronts": front_list, "points": keys, "response": raw}, f, separators=(",", ":"))
 # 1b. apply the bias corrections (the archive above keeps the raw, uncorrected forecast)
 cf = OUT/"corrections"/"corrections.json"
 cstate = json.loads(cf.read_text()) if cf.exists() else corr.new_state()
@@ -149,7 +153,7 @@ for day in [d for d in days if d >= today][:6]:
     xcs = [p["xc"] for p in per_model.values() if p["xc"] is not None]
     out_days.append(dict(date=day, xc=avg("xc"), acro=avg("acro"), xc_range=[min(xcs, default=None), max(xcs, default=None)],
         models={m: {"xc": p["xc"], "acro": p["acro"]} for m, p in per_model.items()},
-        key=mean_key(per_model, best), xc_rules=merged("xc_rules"), acro_rules=merged("acro_rules"), winds=wind_table(day), hourly=hourly))
+        key=mean_key(per_model, best), xc_rules=merged("xc_rules"), acro_rules=merged("acro_rules"), winds=wind_table(day), hourly=hourly, front=fronts.label_day(front_list, day, cfg["rules"]["fronts"])))
 # 2b. AI second opinion. Read-only: it never changes the rule scores above, and any failure here just means no panel.
 active = [f"{k.split('|')[1]} {k.split('|')[0]} {k.split('|')[2]} ({k.split('|')[3]}): " + (f"{b['corr']:+.1f}" if b["kind"] == "add" else f"x{b['corr']:.2f}")
           for k, b in cstate["bins"].items() if corr.status(b) == "active"]
@@ -158,7 +162,7 @@ print("AI opinion:", ai_status)
 for d in out_days: d["ai"] = ai.get(d["date"])
 # 3. log predictions (track record)
 logf = OUT/"predictions"/"log.csv"; logf.parent.mkdir(parents=True, exist_ok=True)
-LOG_COLS = ["made_at_utc", "target_date", "lead_days", "xc_pct", "acro_pct", "method", "models"]
+LOG_COLS = ["made_at_utc", "target_date", "lead_days", "xc_pct", "acro_pct", "method", "models", "front_status", "front_kind", "front_time"]
 old_rows = []
 if logf.exists():                                    # older files lack the models column: add it (blank for old rows)
     with logf.open(newline="") as f: old_rows = [[r.get(c, "") for c in LOG_COLS] for r in csv.DictReader(f)]
@@ -166,7 +170,7 @@ with logf.open("w", newline="") as f:
     w = csv.writer(f); w.writerow(LOG_COLS); w.writerows(old_rows)
     for d in out_days:                               # models = the ones that actually went into the scores (a model that failed to download or had no data is left out)
         lead = (dt.date.fromisoformat(d["date"]) - local_now.date()).days
-        w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3", "+".join(d["models"])])
+        w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3", "+".join(d["models"]), d["front"]["status"] or "none", d["front"]["kind"] or "", d["front"]["time"] or ""])
 aif = OUT/"predictions"/"ai_log.csv"                 # same keys as log.csv, plus the rule scores, so both can be compared with outcomes
 AI_COLS = ["made_at_utc", "target_date", "lead_days", "model", "xc_call", "acro_call", "xc_rule_pct", "acro_rule_pct", "limit_forced", "reasoning"]
 if ai:

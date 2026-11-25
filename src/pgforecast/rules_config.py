@@ -15,7 +15,7 @@ def _num(r, path, f):
 
 def validate(r, f="rules.yaml"):
     """Raises ValueError if a setting is missing, not a number, or on the wrong side of its limit."""
-    for d in ("direction", "shared", "xc", "acro", "acro_window", "smoothing", "estimates", "ratings"):
+    for d in ("direction", "shared", "xc", "acro", "acro_window", "fronts", "smoothing", "estimates", "ratings"):
         if not isinstance(r.get(d), dict): raise ValueError(f"{f}: missing section '{d}'")
     for k in ("launch_arc_deg", "unflyable_arc_deg"):
         a = r["direction"].get(k)
@@ -57,6 +57,12 @@ def validate(r, f="rules.yaml"):
     for b, lim, zero in (("thermals", "min_ms", "zero_at_ms"), ("climb", "min_above_launch_m", "zero_at_above_launch_m")):
         l, z = _num(r, ("acro_window", b, lim), f), _num(r, ("acro_window", b, zero), f)
         if not z < l: raise ValueError(f"{f}: acro_window.{b}.{zero} ({z}) must be lower than {lim} ({l})")
+    for k in ("window_h", "cold_drop_c", "warm_rise_c", "pressure_fall_hpa", "pressure_rise_hpa", "pre_frontal_max_h", "post_frontal_max_h"):
+        if _num(r, ("fronts", k), f) <= 0: raise ValueError(f"{f}: fronts.{k} must be above 0")
+    if r["fronts"]["window_h"] != int(r["fronts"]["window_h"]) or int(r["fronts"]["window_h"]) < 2: raise ValueError(f"{f}: fronts.window_h must be a whole number of hours, 2 or more")
+    for k in ("cold_before_arc_deg", "cold_after_arc_deg", "warm_before_arc_deg", "warm_after_arc_deg"):
+        a_ = r["fronts"].get(k)
+        if not (isinstance(a_, list) and len(a_) == 2 and all(isinstance(x, (int, float)) and 0 <= x <= 360 for x in a_)): raise ValueError(f"{f}: fronts.{k} must be [from, to] in degrees 0-360")
     m = _num(r, ("smoothing", "full_score_margin"), f)
     if not 0 <= m < 1: raise ValueError(f"{f}: smoothing.full_score_margin must be from 0 up to (not including) 1")
     for k in ("cloud_base_m_per_degC", "thermal_heat_fraction", "thermal_climb_fraction", "thermal_depth_cap_m"):

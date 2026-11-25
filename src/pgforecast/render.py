@@ -38,12 +38,14 @@ details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-
 .sum{font-size:14px}.row{grid-template-columns:108px repeat(3,1fr);font-size:14px;padding:7px 0}.cell svg{width:20px;height:20px}.strip{height:42px}.more{margin:10px 20px}}
 @media(min-width:1200px){body{max-width:1500px}.grid{grid-template-columns:repeat(3,1fr)}.row{grid-template-columns:96px repeat(3,1fr);font-size:13.5px}.dials svg{width:112px;height:112px}}
 .warn{margin:10px 12px;padding:8px 12px;border-radius:10px;background:#412402;color:#fac775;font-size:12.5px}
-.lc{color:#fac775;font-size:11.5px;margin-top:2px}.cd2>.lc{margin:0 0 6px}details[open]>summary .lc{display:none}
+.front{margin-top:8px;display:flex;gap:6px;align-items:flex-start;font-size:13px;font-weight:500}.front svg{flex:none;margin-top:3px}
+.lc{color:#fac775;font-size:11.5px;margin-top:2px}.cd2>.lc{margin:0 0 6px}details[open]>summary .lc,details[open]>summary .fr{display:none}
 .row>*{min-width:0}.tbl small{display:block;color:var(--mu)}.on{background:#173404}.off{background:#412402}
 """
 SPARK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z"/></svg>'
 DOWN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8fa0b5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7l10 10M17 8v9H8"/></svg>'
 CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#8fa0b5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>'
+FRONT = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18h18M5 18l3-6 3 6M12 18l3-9 3 9"/></svg>'
 MOUNTAIN = ('<svg viewBox="0 0 360 96" preserveAspectRatio="none" aria-hidden="true"><path d="M0 96L0 70L40 52L85 64L130 34L170 50L205 28L250 58L300 44L360 62L360 96Z" fill="#1c2c47"/>'
             '<path d="M0 96L0 82L60 70L110 78L160 60L220 74L280 66L360 80L360 96Z" fill="#0f1722"/></svg>')
 
@@ -82,11 +84,17 @@ def ai_box(a, status):
     tag = " · ".join(f'<span style="color:{TONE[a[k]][1]}">{n} {a[k]}</span>' for k, n in (("xc_call", "XC"), ("acro_call", "Acro")))
     return f'<div class="ai"><div class="mu">{SPARK} AI second opinion</div>{tag}<p>{E(a["reasoning"])}</p></div>'
 
+def front_line(f):
+    if not f or not f.get("status"): return ""
+    col = "#fac775" if f["status"] == "passing" else "#8fa0b5"
+    return f'<div class="front" style="color:{col}">{FRONT}<span>{E(f["text"])}{" (possible)" if f["strength"] == "likely" else ""}</span></div>'
+
 def card_body(d, cfg, ai_status):
     pull = S.pulled_text(d)
     return (f'<div class="dials">{dial(d["xc"], "XC")}{dial(d["acro"], "Acro")}</div>'
             f'<p class="sum"><b style="color:{TONE[S.label(d["xc"])][1]}">XC:</b> {E(S.xc_text(d))}</p>'
             f'<p class="sum" style="margin-top:0"><b style="color:{TONE[S.label(d["acro"])][1]}">Acro:</b> {E(S.acro_text(d))}</p>'
+            f'{front_line(d.get("front"))}'
             f'<div class="pull mu">{DOWN}<span>{("Pulled down by: " + E(pull)) if pull else "Nothing is pulling it down"}</span></div>'
             f'{strip(d["hourly"], "xc", "XC", d["xc"])}{strip(d["hourly"], "acro", "Acro", d["acro"]) if any(x.get("acro") is not None for x in d["hourly"]) else ""}{ladder(d["winds"], cfg["launch_height_m"])}{ai_box(d.get("ai"), ai_status)}')
 
@@ -153,7 +161,7 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
         if i < OPEN_DAYS:
             cards.append(f'<section class="cd"><div class="top"><b>{nm}</b><span class="mu">{E(S.agreement(d))}{tag}</span></div>{card_body(d, cfg, ai_status)}</section>')
         else:
-            cards.append(f'<details class="cd day"><summary><div><div class="nm">{nm}</div><div class="mu">{E(S.headline(d))}</div><div class="lc">Lower confidence: further out</div></div>'
+            cards.append(f'<details class="cd day"><summary><div><div class="nm">{nm}</div><div class="mu">{E(S.headline(d))}</div>{("<div class='mu fr'>" + E(d["front"]["text"]) + "</div>") if (d.get("front") or {}).get("status") else ""}<div class="lc">Lower confidence: further out</div></div>'
                          f'<div class="pills">{pill("XC", d["xc"])}{pill("Acro", d["acro"])}{CHEV}</div></summary><div class="cd2"><div class="lc">Lower confidence: forecasts get less reliable further out</div>{card_body(d, cfg, ai_status)}</div></details>')
     track = ('<table class="tbl"><tr><th>Day</th><th>XC</th><th>Acro</th><th>Lead</th></tr>' + "".join(track_rows) + "</table>") if track_rows else '<p class="note">Predictions are logged every update. Outcomes will be compared here once flight data or pilot notes are added.</p>'
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
