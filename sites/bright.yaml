@@ -1,0 +1,23 @@
+# One config file per site. Adding a site = copy this file and edit it.
+id: bright
+name: "Bright, Victoria (Mystic)"
+timezone: Australia/Melbourne
+flying_window_local: ["11:00", "16:00"]
+
+# status: "approx" = from the brief, not yet confirmed; "confirmed" = checked by Fabian
+points:
+  mystic_launch:   {lat: -36.74, lon: 146.96, role: launch,  status: approx, note: "DEM says ~394 m; real launch is higher. Need exact coords."}
+  bright_valley:   {lat: -36.73, lon: 146.96, role: landing, status: approx}
+  mount_hotham:    {lat: -36.98, lon: 147.13, role: ridge_ref,   status: approx}
+  falls_creek:     {lat: -36.87, lon: 147.28, role: ridge_ref,   status: approx}
+  mount_buffalo:   {lat: -36.77, lon: 146.79, role: ridge_ref,   status: approx, note: "The Horn"}
+  upwind_nw:       {lat: -36.36, lon: 146.31, role: upwind, status: proposed, note: "Near Wangaratta"}
+  upwind_sw:       {lat: -37.05, lon: 146.09, role: upwind, status: proposed, note: "Near Mansfield"}
+
+# To be answered by Fabian
+launch_wind_directions_deg: null     # e.g. [[200, 270]]
+other_launches: []                   # e.g. Tawonga Gap, Buffalo
+
+bom_stations: {}                     # filled in step 2
+xcontest_launch_names: []            # Phase 2 (later)
+grading: {}                          # Phase 5

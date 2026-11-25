@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+data/
+!data/.gitkeep
+*.sqlite
+*.db
+*.sqlite-journal
+playwright_state/
+*.session.json
+.env
+raw_html/
+igc/
+pilot_notes/
