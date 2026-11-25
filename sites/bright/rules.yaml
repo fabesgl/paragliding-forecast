@@ -78,6 +78,15 @@ acro:                            # Acro rules. Acro needs smooth, steady air and
     min_above_launch_m: 1400     # Want the thermal top / cloud base at least this far above launch (about 2,200 m ASL at Mystic).
     zero_at_above_launch_m: 400  # Score reaches 0% when climbs reach only this far above launch.
 
+acro_window:                     # ONLY the hourly "Acro window" strip and its "Best acro window" text. It does not change the XC window or any day score.
+                                 # Acro wings are smaller with less glide, so they need established conditions to launch and climb to working height. Each hour's acro score is capped by these two checks.
+  thermals:                      # Estimated climb rate that hour (m/s). Early and late hours, with weak thermals, score low.
+    min_ms: 1.5                  # Want thermals at least this strong (about 90% here, full score a little above).
+    zero_at_ms: 1.0              # The hour scores 0% at or below this climb rate.
+  climb:                         # How high that hour's thermals reach above launch (thermal top / cloud base minus launch height).
+    min_above_launch_m: 1000     # Want at least this far above launch to reach acro working height.
+    zero_at_above_launch_m: 600  # The hour scores 0% when climbs reach only this far above launch.
+
 smoothing:                       # How gently a rule's score fades from 100% to 0%.
   full_score_margin: 0.25        # The score stays 100% until the forecast is this fraction of the limit-to-zero distance on the good side of the limit.
                                  # Bigger = a wider fade (a gentler slope that starts earlier); 0 = starts fading right at the limit.

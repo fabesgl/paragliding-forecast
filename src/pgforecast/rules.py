@@ -117,6 +117,15 @@ def _window_features(h, launch_elev, est):
                 pairs=[(s_, d_) for s_, d_ in zip(ws, wd) if s_ is not None and d_ is not None],
                 hours=list(zip(ws, wd, therm_h)))
 
+def acro_window_score(acro_pct, key, rules):
+    """One hour's acro score for the 'Acro window' strip only: the normal hourly acro score, capped by the thermal-strength and climb-height checks (rules.yaml acro_window)."""
+    if acro_pct is None: return None
+    w, mg = rules["acro_window"], rules["smoothing"]["full_score_margin"]
+    th, cl = w["thermals"], w["climb"]
+    fs = [x for x in (above(key.get("thermal_ms"), th["min_ms"], th["zero_at_ms"], mg),
+                      above(key.get("climb_gain_m"), cl["min_above_launch_m"], cl["zero_at_above_launch_m"], mg)) if x is not None]
+    return acro_pct if not fs else round(min(acro_pct, 100 * max(0, min(1, min(fs)))))
+
 def score_day(h, rules, launch_elev):
     """h: dict of variable -> hourly list for the flying window. rules: the site's settings (rules_config.load_rules).
     Returns XC %, acro %, and the rule factors.

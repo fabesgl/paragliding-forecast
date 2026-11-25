@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # Only the GitHub job writes into the repo (docs/, forecast_archive/, predictions/). Local test runs go to data/local_out/ (git-ignored).
 OUT = ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out"
 sys.path.insert(0, str(ROOT / "src"))
-from pgforecast.rules import score_day, compass
+from pgforecast.rules import score_day, compass, acro_window_score
 from pgforecast.rules_config import load_rules
 from pgforecast import corrections as corr, ai_opinion, render
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
@@ -132,8 +132,9 @@ for day in [d for d in days if d >= today][:5]:
     for hh in range(9, 18):
         i = next((i for i, t in enumerate(times) if t == f"{day}T{hh:02d}:00"), None)
         sc = [] if i is None else [score_day({v: fill([i], v, m) for v in VARS}, cfg["rules"], cfg["launch_height_m"]) for m in per_model]
-        mean = lambda k: (lambda vals: round(sum(vals) / len(vals)) if vals else None)([x[k] for x in sc if x[k] is not None])
-        hourly.append(dict(h=hh, xc=mean("xc"), acro=mean("acro")))
+        avg_ = lambda vals: round(sum(vals) / len(vals)) if vals else None
+        acro_w = [acro_window_score(x["acro"], x["key"], cfg["rules"]) for x in sc]      # acro window only: also needs established thermals and climb height
+        hourly.append(dict(h=hh, xc=avg_([x["xc"] for x in sc if x["xc"] is not None]), acro=avg_([a for a in acro_w if a is not None])))
     xcs = [p["xc"] for p in per_model.values() if p["xc"] is not None]
     out_days.append(dict(date=day, xc=avg("xc"), acro=avg("acro"), xc_range=[min(xcs, default=None), max(xcs, default=None)],
         models={m: {"xc": p["xc"], "acro": p["acro"]} for m, p in per_model.items()},

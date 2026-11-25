@@ -15,7 +15,7 @@ def _num(r, path, f):
 
 def validate(r, f="rules.yaml"):
     """Raises ValueError if a setting is missing, not a number, or on the wrong side of its limit."""
-    for d in ("direction", "shared", "xc", "acro", "smoothing", "estimates", "ratings"):
+    for d in ("direction", "shared", "xc", "acro", "acro_window", "smoothing", "estimates", "ratings"):
         if not isinstance(r.get(d), dict): raise ValueError(f"{f}: missing section '{d}'")
     for k in ("launch_arc_deg", "unflyable_arc_deg"):
         a = r["direction"].get(k)
@@ -54,6 +54,9 @@ def validate(r, f="rules.yaml"):
         if not 0 <= fl <= 1: raise ValueError(f"{f}: acro.{nm}.floor must be from 0 to 1")
     hm, hz = _num(r, ("acro", "height", "min_above_launch_m"), f), _num(r, ("acro", "height", "zero_at_above_launch_m"), f)
     if not hz < hm: raise ValueError(f"{f}: acro.height.zero_at_above_launch_m ({hz}) must be lower than min_above_launch_m ({hm})")
+    for b, lim, zero in (("thermals", "min_ms", "zero_at_ms"), ("climb", "min_above_launch_m", "zero_at_above_launch_m")):
+        l, z = _num(r, ("acro_window", b, lim), f), _num(r, ("acro_window", b, zero), f)
+        if not z < l: raise ValueError(f"{f}: acro_window.{b}.{zero} ({z}) must be lower than {lim} ({l})")
     m = _num(r, ("smoothing", "full_score_margin"), f)
     if not 0 <= m < 1: raise ValueError(f"{f}: smoothing.full_score_margin must be from 0 up to (not including) 1")
     for k in ("cloud_base_m_per_degC", "thermal_heat_fraction", "thermal_climb_fraction", "thermal_depth_cap_m"):
