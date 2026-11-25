@@ -18,7 +18,7 @@ You receive one day of model forecast data (average of several models), hand-wri
 Give your OWN judgement from the data. The rule scores are one input and are untested; disagree with them when the data says so.
 Calls: XC (cross-country) good = a realistic chance of long flights (usable thermals above ~2,000 m ASL, manageable wind and gusts, no rain);
 marginal = flyable but with a clear problem; poor = unlikely. Acro: good = smooth, light and steady air (low wind, low gusts, little shear), marginal = some turbulence risk, poor = rough or unflyable.
-Reasoning: 1 or 2 plain sentences naming the deciding factors, and say so if the models disagree. Use only the data given; do not invent numbers."""
+Reasoning: at most 2 short sentences (under 60 words in total) naming the deciding factors, and say so if the models disagree. Use only the data given; do not invent numbers."""
 
 def enabled(env=os.environ):
     v = (env.get("AI_OPINION_ENABLED") or "").strip().lower()
@@ -33,6 +33,12 @@ def day_payload(day, wind_rows, active_corrections, counts):
             "wind_by_height": [{"height": w["label"] + (f" ({w['height_m']} m)" if w["height_m"] else ""),
                                 "at_11_13_15": [None if c is None else f"{c['compass']} {c['kmh']}" for c in w["cells"]], "only_some_models": w["partial"]} for w in wind_rows],
             "corrections_in_use": active_corrections or "none yet (still learning)", "correction_status_counts": counts}
+
+def _trim(t, n=450):
+    """Cut at a sentence end if the text is too long, so it never stops mid-word."""
+    if len(t) <= n: return t
+    cut = t[:n]; k = max(cut.rfind(". "), cut.rfind("; "))
+    return (cut[:k + 1] if k > 150 else cut.rsplit(" ", 1)[0] + "…")
 
 def ask(system, payload, key, session=requests, retries=2):
     """One call. Returns dict(xc_call, acro_call, reasoning), or raises PermissionError for a bad key, or returns None on other failures."""
@@ -52,7 +58,7 @@ def ask(system, payload, key, session=requests, retries=2):
             if block.get("type") == "tool_use" and block.get("name") == TOOL["name"]:
                 i = block["input"]
                 if i.get("xc_call") in CALLS and i.get("acro_call") in CALLS and isinstance(i.get("reasoning"), str):
-                    return dict(xc_call=i["xc_call"], acro_call=i["acro_call"], reasoning=" ".join(i["reasoning"].split())[:450])
+                    return dict(xc_call=i["xc_call"], acro_call=i["acro_call"], reasoning=_trim(" ".join(i["reasoning"].split())))
         print("AI opinion: reply had no valid opinion"); return None
     return None
 
