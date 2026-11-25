@@ -1,10 +1,10 @@
 {
- "updated_local": "Wed 25 Nov 2026 15:20 AEDT",
+ "updated_local": "Wed 25 Nov 2026 16:09 AEDT",
  "days": [
   {
    "date": "2026-11-25",
    "xc": 43,
-   "acro": 32,
+   "acro": 30,
    "xc_range": [
     2,
     93
@@ -12,7 +12,7 @@
    "models": {
     "gfs_seamless": {
      "xc": 93,
-     "acro": 96
+     "acro": 89
     },
     "ecmwf_ifs025": {
      "xc": 2,
@@ -24,21 +24,27 @@
     }
    },
    "key": {
-    "wind_kmh": 9.172222222222222,
+    "wind_kmh": 9.377777777777778,
     "wind_dir": "N",
     "gust_kmh": 28.433333333333334,
-    "wind850_kmh": 20.07777777777778,
+    "wind850_kmh": 20.62222222222222,
     "wind850_dir": "N",
-    "wind700_kmh": 28.894444444444446,
-    "shear_kmh": 11.092319194548205,
-    "ceiling_asl_m": 2335.75,
-    "cloudbase_agl_m": 1720.1388888888887,
+    "wind700_kmh": 28.744444444444444,
+    "shear_kmh": 11.474504607186248,
+    "ceiling_asl_m": 2330.8888888888887,
+    "cloudbase_agl_m": 1715.2777777777776,
     "blh_m": 1696.6666666666667,
-    "thermal_ms": 1.546973412315486,
-    "sw_wm2": 820.3333333333334,
-    "cape": 7.222222222222222,
+    "thermal_ms": 1.5387951358419034,
+    "sw_wm2": 808.5,
+    "cape": 6.111111111111112,
     "rain_mm": 0.0,
-    "low_cloud_pct": 36.888888888888886
+    "low_cloud_pct": 35.111111111111114,
+    "aloft_kmh": 17.709147289891188,
+    "aloft_u": 1.81881463361774,
+    "aloft_v": -17.600052600654198,
+    "north_aloft_kmh": 17.600052600654198,
+    "west_aloft_kmh": 0.0,
+    "climb_gain_m": 1533.8888888888887
    },
    "xc_rules": [
     {
@@ -54,7 +60,7 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 9.172222222222222,
+     "num": 9.377777777777778,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
@@ -74,42 +80,42 @@
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 20.07777777777778,
+     "num": 20.62222222222222,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.994,
-     "value": "20 km/h (want <25)"
+     "factor": 0.981,
+     "value": "21 km/h (want <25)"
     },
     {
      "key": "ceiling",
      "label": "Cloud base / thermal top",
-     "num": 2335.75,
+     "num": 2330.8888888888887,
      "unit": " m ASL",
      "nd": 0,
      "want": " (want >2000)",
      "factor": 1.0,
-     "value": "2336 m ASL (want >2000)"
+     "value": "2331 m ASL (want >2000)"
     },
     {
      "key": "thermals",
      "label": "Thermal strength (est.)",
-     "num": 1.546973412315486,
+     "num": 1.5387951358419034,
      "unit": " m/s",
      "nd": 1,
      "want": " (want >1.5)",
-     "factor": 0.929,
+     "factor": 0.924,
      "value": "1.5 m/s (want >1.5)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 7.222222222222222,
+     "num": 6.111111111111112,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "7 (want <800)"
+     "value": "6 (want <800)"
     },
     {
      "key": "rain",
@@ -136,7 +142,7 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 9.172222222222222,
+     "num": 9.377777777777778,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
@@ -156,32 +162,72 @@
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 20.07777777777778,
+     "num": 20.62222222222222,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.884,
-     "value": "20 km/h (want <20)"
+     "factor": 0.852,
+     "value": "21 km/h (want <20)"
     },
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 11.092319194548205,
+     "num": 11.474504607186248,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
-     "factor": 0.989,
+     "factor": 0.981,
      "value": "11 km/h (want <15)"
+    },
+    {
+     "key": "north_aloft",
+     "label": "Northerly wind aloft",
+     "num": 17.600052600654198,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (mild penalty above 5)",
+     "factor": 0.892,
+     "value": "18 km/h (mild penalty above 5)"
+    },
+    {
+     "key": "west_aloft",
+     "label": "Westerly wind aloft (Buffalo)",
+     "num": 0.0,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (want <8)",
+     "factor": 1.0,
+     "value": "0 km/h (want <8)"
+    },
+    {
+     "key": "thermals_strong",
+     "label": "Very strong thermals (est.)",
+     "num": 1.5387951358419034,
+     "unit": " m/s",
+     "nd": 1,
+     "want": " (want <2.5)",
+     "factor": 1.0,
+     "value": "1.5 m/s (want <2.5)"
+    },
+    {
+     "key": "height",
+     "label": "Climb height above launch",
+     "num": 1533.8888888888887,
+     "unit": " m",
+     "nd": 0,
+     "want": " (want >1400)",
+     "factor": 0.972,
+     "value": "1534 m (want >1400)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 7.222222222222222,
+     "num": 6.111111111111112,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "7 (want <800)"
+     "value": "6 (want <800)"
     },
     {
      "key": "rain",
@@ -201,7 +247,7 @@
      "cells": [
       {
        "kmh": 9,
-       "deg": 4,
+       "deg": 2,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -212,7 +258,7 @@
       },
       {
        "kmh": 10,
-       "deg": 359,
+       "deg": 357,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -223,7 +269,7 @@
       },
       {
        "kmh": 9,
-       "deg": 359,
+       "deg": 0,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -242,11 +288,11 @@
     },
     {
      "label": "~1,000 m",
-     "height_m": 1078,
+     "height_m": 1079,
      "cells": [
       {
-       "kmh": 12,
-       "deg": 19,
+       "kmh": 14,
+       "deg": 12,
        "compass": "NNE",
        "arrow": "\u2193",
        "models": [
@@ -256,7 +302,7 @@
       },
       {
        "kmh": 17,
-       "deg": 0,
+       "deg": 356,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -266,7 +312,7 @@
       },
       {
        "kmh": 16,
-       "deg": 354,
+       "deg": 355,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -283,11 +329,11 @@
     },
     {
      "label": "~1,500 m",
-     "height_m": 1558,
+     "height_m": 1559,
      "cells": [
       {
-       "kmh": 28,
-       "deg": 357,
+       "kmh": 29,
+       "deg": 353,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -298,7 +344,7 @@
       },
       {
        "kmh": 19,
-       "deg": 358,
+       "deg": 354,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -309,7 +355,7 @@
       },
       {
        "kmh": 17,
-       "deg": 355,
+       "deg": 356,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -328,11 +374,11 @@
     },
     {
      "label": "~2,000 m",
-     "height_m": 2057,
+     "height_m": 2058,
      "cells": [
       {
        "kmh": 31,
-       "deg": 353,
+       "deg": 352,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -342,7 +388,7 @@
       },
       {
        "kmh": 19,
-       "deg": 357,
+       "deg": 352,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -351,8 +397,8 @@
        ]
       },
       {
-       "kmh": 19,
-       "deg": 351,
+       "kmh": 21,
+       "deg": 350,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -369,10 +415,10 @@
     },
     {
      "label": "~3,000 m",
-     "height_m": 3143,
+     "height_m": 3144,
      "cells": [
       {
-       "kmh": 28,
+       "kmh": 27,
        "deg": 346,
        "compass": "NNW",
        "arrow": "\u2193",
@@ -384,7 +430,7 @@
       },
       {
        "kmh": 30,
-       "deg": 335,
+       "deg": 337,
        "compass": "NNW",
        "arrow": "\u2198",
        "models": [
@@ -394,8 +440,8 @@
        ]
       },
       {
-       "kmh": 28,
-       "deg": 334,
+       "kmh": 29,
+       "deg": 333,
        "compass": "NNW",
        "arrow": "\u2198",
        "models": [
@@ -428,7 +474,7 @@
     },
     {
      "h": 12,
-     "xc": 37
+     "xc": 35
     },
     {
      "h": 13,
@@ -436,37 +482,37 @@
     },
     {
      "h": 14,
-     "xc": 60
+     "xc": 59
     },
     {
      "h": 15,
-     "xc": 65
+     "xc": 66
     },
     {
      "h": 16,
-     "xc": 74
+     "xc": 72
     },
     {
      "h": 17,
-     "xc": 82
+     "xc": 79
     }
    ],
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits apply: forecast gusts of 28 km/h breach both XC (25) and acro (20) limits, and acro's 850 hPa wind of 20 km/h also breaches its 20 km/h cap. Models strongly disagree (GFS favourable, ECMWF near zero), so confidence is low.",
+    "reasoning": "Hard limits breached: gusts 28 km/h exceed both XC (25) and acro (20) limits, and 850 hPa wind 21 km/h exceeds acro's 20 limit. Models strongly disagree (XC range 2-93%), so confidence is low, though northerly aloft would also hurt acro.",
     "forced": ""
    },
    "summary": {
     "xc": "Flyable, but gusts near 28 km/h. Best window 3\u20136pm.",
-    "acro": "Rough or unflyable: gusts near 28 km/h and 20 km/h wind at 850 hPa.",
+    "acro": "N aloft: train higher, you'll drift towards the hill. Rough or unflyable: gusts near 28 km/h and 21 km/h wind at 850 hPa.",
     "pulled": "gusts near 28 km/h (-67%)",
     "agreement": "models disagree"
    }
   },
   {
    "date": "2026-11-26",
-   "xc": 57,
+   "xc": 59,
    "acro": 34,
    "xc_range": [
     20,
@@ -475,33 +521,39 @@
    "models": {
     "gfs_seamless": {
      "xc": 97,
-     "acro": 97
+     "acro": 95
     },
     "ecmwf_ifs025": {
      "xc": 20,
      "acro": 0
     },
     "icon_seamless": {
-     "xc": 53,
-     "acro": 4
+     "xc": 59,
+     "acro": 7
     }
    },
    "key": {
-    "wind_kmh": 8.061111111111112,
+    "wind_kmh": 8.205555555555556,
     "wind_dir": "N",
-    "gust_kmh": 25.666666666666668,
-    "wind850_kmh": 15.261111111111111,
+    "gust_kmh": 25.433333333333334,
+    "wind850_kmh": 15.422222222222222,
     "wind850_dir": "NNW",
-    "wind700_kmh": 19.95,
-    "shear_kmh": 7.8532893147095875,
-    "ceiling_asl_m": 2285.6111111111113,
-    "cloudbase_agl_m": 1502.7777777777776,
+    "wind700_kmh": 18.633333333333336,
+    "shear_kmh": 7.874633358067037,
+    "ceiling_asl_m": 2239.0833333333335,
+    "cloudbase_agl_m": 1456.25,
     "blh_m": 1952.5,
-    "thermal_ms": 1.6174884827875644,
-    "sw_wm2": 790.5,
-    "cape": 95.55555555555556,
+    "thermal_ms": 1.6022581102843743,
+    "sw_wm2": 768.2222222222223,
+    "cape": 94.44444444444444,
     "rain_mm": 0.03333333333333333,
-    "low_cloud_pct": 17.833333333333332
+    "low_cloud_pct": 20.333333333333332,
+    "aloft_kmh": 9.884060604555641,
+    "aloft_u": 1.0008084664672448,
+    "aloft_v": -9.291470122239659,
+    "north_aloft_kmh": 9.792359136167994,
+    "west_aloft_kmh": 0.0,
+    "climb_gain_m": 1442.0833333333333
    },
    "xc_rules": [
     {
@@ -517,7 +569,7 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 8.061111111111112,
+     "num": 8.205555555555556,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
@@ -527,17 +579,17 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 25.666666666666668,
+     "num": 25.433333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.578,
-     "value": "26 km/h (want <25)"
+     "factor": 0.597,
+     "value": "25 km/h (want <25)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 15.261111111111111,
+     "num": 15.422222222222222,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
@@ -547,32 +599,32 @@
     {
      "key": "ceiling",
      "label": "Cloud base / thermal top",
-     "num": 2285.6111111111113,
+     "num": 2239.0833333333335,
      "unit": " m ASL",
      "nd": 0,
      "want": " (want >2000)",
-     "factor": 0.999,
-     "value": "2286 m ASL (want >2000)"
+     "factor": 0.967,
+     "value": "2239 m ASL (want >2000)"
     },
     {
      "key": "thermals",
      "label": "Thermal strength (est.)",
-     "num": 1.6174884827875644,
+     "num": 1.6022581102843743,
      "unit": " m/s",
      "nd": 1,
      "want": " (want >1.5)",
-     "factor": 0.967,
+     "factor": 0.958,
      "value": "1.6 m/s (want >1.5)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 95.55555555555556,
+     "num": 94.44444444444444,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "96 (want <800)"
+     "value": "94 (want <800)"
     },
     {
      "key": "rain",
@@ -599,7 +651,7 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 8.061111111111112,
+     "num": 8.205555555555556,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
@@ -609,17 +661,17 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 25.666666666666668,
+     "num": 25.433333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.347,
-     "value": "26 km/h (want <20)"
+     "factor": 0.358,
+     "value": "25 km/h (want <20)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 15.261111111111111,
+     "num": 15.422222222222222,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
@@ -629,7 +681,7 @@
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 7.8532893147095875,
+     "num": 7.874633358067037,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
@@ -637,14 +689,54 @@
      "value": "8 km/h (want <15)"
     },
     {
+     "key": "north_aloft",
+     "label": "Northerly wind aloft",
+     "num": 9.792359136167994,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (mild penalty above 5)",
+     "factor": 0.945,
+     "value": "10 km/h (mild penalty above 5)"
+    },
+    {
+     "key": "west_aloft",
+     "label": "Westerly wind aloft (Buffalo)",
+     "num": 0.0,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (want <8)",
+     "factor": 1.0,
+     "value": "0 km/h (want <8)"
+    },
+    {
+     "key": "thermals_strong",
+     "label": "Very strong thermals (est.)",
+     "num": 1.6022581102843743,
+     "unit": " m/s",
+     "nd": 1,
+     "want": " (want <2.5)",
+     "factor": 1.0,
+     "value": "1.6 m/s (want <2.5)"
+    },
+    {
+     "key": "height",
+     "label": "Climb height above launch",
+     "num": 1442.0833333333333,
+     "unit": " m",
+     "nd": 0,
+     "want": " (want >1400)",
+     "factor": 0.866,
+     "value": "1442 m (want >1400)"
+    },
+    {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 95.55555555555556,
+     "num": 94.44444444444444,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "96 (want <800)"
+     "value": "94 (want <800)"
     },
     {
      "key": "rain",
@@ -663,7 +755,18 @@
      "height_m": null,
      "cells": [
       {
-       "kmh": 6,
+       "kmh": 7,
+       "deg": 14,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 8,
        "deg": 17,
        "compass": "NNE",
        "arrow": "\u2193",
@@ -675,18 +778,7 @@
       },
       {
        "kmh": 8,
-       "deg": 16,
-       "compass": "NNE",
-       "arrow": "\u2193",
-       "models": [
-        "gfs_seamless",
-        "ecmwf_ifs025",
-        "icon_seamless"
-       ]
-      },
-      {
-       "kmh": 9,
-       "deg": 9,
+       "deg": 11,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -705,20 +797,10 @@
     },
     {
      "label": "~1,000 m",
-     "height_m": 1090,
+     "height_m": 1091,
      "cells": [
       {
-       "kmh": 10,
-       "deg": 7,
-       "compass": "N",
-       "arrow": "\u2193",
-       "models": [
-        "gfs_seamless",
-        "icon_seamless"
-       ]
-      },
-      {
-       "kmh": 13,
+       "kmh": 12,
        "deg": 8,
        "compass": "N",
        "arrow": "\u2193",
@@ -728,8 +810,18 @@
        ]
       },
       {
-       "kmh": 15,
-       "deg": 4,
+       "kmh": 13,
+       "deg": 9,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 13,
+       "deg": 7,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -746,11 +838,11 @@
     },
     {
      "label": "~1,500 m",
-     "height_m": 1575,
+     "height_m": 1576,
      "cells": [
       {
-       "kmh": 19,
-       "deg": 349,
+       "kmh": 20,
+       "deg": 353,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -761,7 +853,7 @@
       },
       {
        "kmh": 15,
-       "deg": 0,
+       "deg": 358,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -771,8 +863,8 @@
        ]
       },
       {
-       "kmh": 14,
-       "deg": 1,
+       "kmh": 13,
+       "deg": 4,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -791,11 +883,11 @@
     },
     {
      "label": "~2,000 m",
-     "height_m": 2083,
+     "height_m": 2084,
      "cells": [
       {
-       "kmh": 24,
-       "deg": 318,
+       "kmh": 20,
+       "deg": 326,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -804,9 +896,9 @@
        ]
       },
       {
-       "kmh": 15,
-       "deg": 344,
-       "compass": "NNW",
+       "kmh": 14,
+       "deg": 350,
+       "compass": "N",
        "arrow": "\u2193",
        "models": [
         "gfs_seamless",
@@ -814,8 +906,8 @@
        ]
       },
       {
-       "kmh": 13,
-       "deg": 355,
+       "kmh": 10,
+       "deg": 359,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -832,11 +924,11 @@
     },
     {
      "label": "~3,000 m",
-     "height_m": 3177,
+     "height_m": 3178,
      "cells": [
       {
-       "kmh": 26,
-       "deg": 311,
+       "kmh": 24,
+       "deg": 309,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -846,8 +938,8 @@
        ]
       },
       {
-       "kmh": 22,
-       "deg": 316,
+       "kmh": 21,
+       "deg": 315,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -857,9 +949,9 @@
        ]
       },
       {
-       "kmh": 15,
-       "deg": 326,
-       "compass": "NNW",
+       "kmh": 14,
+       "deg": 323,
+       "compass": "NW",
        "arrow": "\u2198",
        "models": [
         "gfs_seamless",
@@ -883,47 +975,47 @@
     },
     {
      "h": 10,
-     "xc": 42
+     "xc": 44
     },
     {
      "h": 11,
-     "xc": 69
+     "xc": 71
     },
     {
      "h": 12,
-     "xc": 85
-    },
-    {
-     "h": 13,
-     "xc": 74
-    },
-    {
-     "h": 14,
-     "xc": 67
-    },
-    {
-     "h": 15,
-     "xc": 70
-    },
-    {
-     "h": 16,
      "xc": 78
     },
     {
+     "h": 13,
+     "xc": 68
+    },
+    {
+     "h": 14,
+     "xc": 69
+    },
+    {
+     "h": 15,
+     "xc": 71
+    },
+    {
+     "h": 16,
+     "xc": 86
+    },
+    {
      "h": 17,
-     "xc": 89
+     "xc": 88
     }
    ],
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Gusts of 26 km/h breach both hard limits (XC 25, acro 20), forcing poor calls regardless of the good thermal numbers. Models strongly disagree (XC 20% to 97%, ECMWF near zero), so confidence is low; the day may be better than ECMWF suggests.",
+    "reasoning": "Gusts of 25 km/h breach both hard limits (XC 25, acro 20), so both are poor. Models disagree sharply (XC 20 to 97; GFS is an outlier, ECMWF near zero), so confidence is low even though launch wind and rain are fine.",
     "forced": ""
    },
    "summary": {
-    "xc": "Flyable, but gusts near 26 km/h. Best window 11am\u20136pm.",
-    "acro": "Rough or unflyable: gusts near 26 km/h.",
-    "pulled": "gusts near 26 km/h (-65%)",
+    "xc": "Flyable, but gusts near 25 km/h. Best window 11am\u20136pm.",
+    "acro": "N aloft: train higher, you'll drift towards the hill. Rough or unflyable: gusts near 25 km/h and climbs reaching about 1,442 m above launch.",
+    "pulled": "gusts near 25 km/h (-64%)",
     "agreement": "models disagree"
    }
   },
@@ -950,21 +1042,27 @@
     }
    },
    "key": {
-    "wind_kmh": 3.766666666666666,
+    "wind_kmh": 6.633333333333334,
     "wind_dir": "N",
-    "gust_kmh": 27.0,
-    "wind850_kmh": 36.31111111111111,
+    "gust_kmh": 31.933333333333334,
+    "wind850_kmh": 38.427777777777784,
     "wind850_dir": "N",
-    "wind700_kmh": 52.21666666666667,
-    "shear_kmh": 33.82375938102491,
-    "ceiling_asl_m": 1129.638888888889,
-    "cloudbase_agl_m": 435.4166666666667,
+    "wind700_kmh": 51.794444444444444,
+    "shear_kmh": 32.57488953401827,
+    "ceiling_asl_m": 1200.611111111111,
+    "cloudbase_agl_m": 656.25,
     "blh_m": 631.6666666666666,
-    "thermal_ms": 0.7660147548747719,
-    "sw_wm2": 344.5555555555555,
-    "cape": 220.55555555555554,
-    "rain_mm": 4.766666666666667,
-    "low_cloud_pct": 55.944444444444436
+    "thermal_ms": 0.7950646564839355,
+    "sw_wm2": 388.1111111111111,
+    "cape": 225.55555555555554,
+    "rain_mm": 4.433333333333334,
+    "low_cloud_pct": 43.888888888888886,
+    "aloft_kmh": 30.004796197336095,
+    "aloft_u": -7.238352329585514,
+    "aloft_v": -28.922978734410304,
+    "north_aloft_kmh": 29.29890100941219,
+    "west_aloft_kmh": 0.0,
+    "climb_gain_m": 403.6111111111111
    },
    "xc_rules": [
     {
@@ -980,72 +1078,72 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 3.766666666666666,
+     "num": 6.633333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 1.0,
-     "value": "4 km/h (want <20)"
+     "value": "7 km/h (want <20)"
     },
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 27.0,
+     "num": 31.933333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.683,
-     "value": "27 km/h (want <25)"
+     "factor": 0.607,
+     "value": "32 km/h (want <25)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 36.31111111111111,
+     "num": 38.427777777777784,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.329,
-     "value": "36 km/h (want <25)"
+     "factor": 0.271,
+     "value": "38 km/h (want <25)"
     },
     {
      "key": "ceiling",
      "label": "Cloud base / thermal top",
-     "num": 1129.638888888889,
+     "num": 1200.611111111111,
      "unit": " m ASL",
      "nd": 0,
      "want": " (want >2000)",
-     "factor": 0.0,
-     "value": "1130 m ASL (want >2000)"
+     "factor": 0.016,
+     "value": "1201 m ASL (want >2000)"
     },
     {
      "key": "thermals",
      "label": "Thermal strength (est.)",
-     "num": 0.7660147548747719,
+     "num": 0.7950646564839355,
      "unit": " m/s",
      "nd": 1,
      "want": " (want >1.5)",
-     "factor": 0.123,
+     "factor": 0.149,
      "value": "0.8 m/s (want >1.5)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 220.55555555555554,
+     "num": 225.55555555555554,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "221 (want <800)"
+     "value": "226 (want <800)"
     },
     {
      "key": "rain",
      "label": "Rain in window",
-     "num": 4.766666666666667,
+     "num": 4.433333333333334,
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.139,
-     "value": "4.8 mm (want none)"
+     "factor": 0.322,
+     "value": "4.4 mm (want none)"
     }
    ],
    "acro_rules": [
@@ -1062,62 +1160,102 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 3.766666666666666,
+     "num": 6.633333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
      "factor": 1.0,
-     "value": "4 km/h (want <15)"
+     "value": "7 km/h (want <15)"
     },
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 27.0,
+     "num": 31.933333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 0.395,
-     "value": "27 km/h (want <20)"
+     "value": "32 km/h (want <20)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 36.31111111111111,
+     "num": 38.427777777777784,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 0.158,
-     "value": "36 km/h (want <20)"
+     "value": "38 km/h (want <20)"
     },
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 33.82375938102491,
+     "num": 32.57488953401827,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
-     "factor": 0.133,
-     "value": "34 km/h (want <15)"
+     "factor": 0.14,
+     "value": "33 km/h (want <15)"
+    },
+    {
+     "key": "north_aloft",
+     "label": "Northerly wind aloft",
+     "num": 29.29890100941219,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (mild penalty above 5)",
+     "factor": 0.7,
+     "value": "29 km/h (mild penalty above 5)"
+    },
+    {
+     "key": "west_aloft",
+     "label": "Westerly wind aloft (Buffalo)",
+     "num": 0.0,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (want <8)",
+     "factor": 1.0,
+     "value": "0 km/h (want <8)"
+    },
+    {
+     "key": "thermals_strong",
+     "label": "Very strong thermals (est.)",
+     "num": 0.7950646564839355,
+     "unit": " m/s",
+     "nd": 1,
+     "want": " (want <2.5)",
+     "factor": 1.0,
+     "value": "0.8 m/s (want <2.5)"
+    },
+    {
+     "key": "height",
+     "label": "Climb height above launch",
+     "num": 403.6111111111111,
+     "unit": " m",
+     "nd": 0,
+     "want": " (want >1400)",
+     "factor": 0.032,
+     "value": "404 m (want >1400)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 220.55555555555554,
+     "num": 225.55555555555554,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "221 (want <800)"
+     "value": "226 (want <800)"
     },
     {
      "key": "rain",
      "label": "Rain in window",
-     "num": 4.766666666666667,
+     "num": 4.433333333333334,
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.139,
-     "value": "4.8 mm (want none)"
+     "factor": 0.322,
+     "value": "4.4 mm (want none)"
     }
    ],
    "winds": [
@@ -1126,9 +1264,9 @@
      "height_m": null,
      "cells": [
       {
-       "kmh": 2,
-       "deg": 67,
-       "compass": "ENE",
+       "kmh": 3,
+       "deg": 45,
+       "compass": "NE",
        "arrow": "\u2199",
        "models": [
         "gfs_seamless",
@@ -1137,9 +1275,9 @@
        ]
       },
       {
-       "kmh": 3,
-       "deg": 8,
-       "compass": "N",
+       "kmh": 8,
+       "deg": 14,
+       "compass": "NNE",
        "arrow": "\u2193",
        "models": [
         "gfs_seamless",
@@ -1148,10 +1286,10 @@
        ]
       },
       {
-       "kmh": 4,
-       "deg": 21,
-       "compass": "NNE",
-       "arrow": "\u2193",
+       "kmh": 6,
+       "deg": 38,
+       "compass": "NE",
+       "arrow": "\u2199",
        "models": [
         "gfs_seamless",
         "ecmwf_ifs025",
@@ -1168,11 +1306,21 @@
     },
     {
      "label": "~1,000 m",
-     "height_m": 1066,
+     "height_m": 1062,
      "cells": [
       {
        "kmh": 15,
-       "deg": 21,
+       "deg": 29,
+       "compass": "NNE",
+       "arrow": "\u2199",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 25,
+       "deg": 14,
        "compass": "NNE",
        "arrow": "\u2193",
        "models": [
@@ -1181,20 +1329,10 @@
        ]
       },
       {
-       "kmh": 17,
-       "deg": 13,
+       "kmh": 21,
+       "deg": 32,
        "compass": "NNE",
-       "arrow": "\u2193",
-       "models": [
-        "gfs_seamless",
-        "icon_seamless"
-       ]
-      },
-      {
-       "kmh": 13,
-       "deg": 21,
-       "compass": "NNE",
-       "arrow": "\u2193",
+       "arrow": "\u2199",
        "models": [
         "gfs_seamless",
         "icon_seamless"
@@ -1209,10 +1347,21 @@
     },
     {
      "label": "~1,500 m",
-     "height_m": 1548,
+     "height_m": 1547,
      "cells": [
       {
-       "kmh": 39,
+       "kmh": 42,
+       "deg": 17,
+       "compass": "NNE",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 35,
        "deg": 13,
        "compass": "NNE",
        "arrow": "\u2193",
@@ -1223,18 +1372,7 @@
        ]
       },
       {
-       "kmh": 38,
-       "deg": 11,
-       "compass": "N",
-       "arrow": "\u2193",
-       "models": [
-        "gfs_seamless",
-        "ecmwf_ifs025",
-        "icon_seamless"
-       ]
-      },
-      {
-       "kmh": 32,
+       "kmh": 39,
        "deg": 12,
        "compass": "NNE",
        "arrow": "\u2193",
@@ -1254,31 +1392,31 @@
     },
     {
      "label": "~2,000 m",
-     "height_m": 2059,
+     "height_m": 2058,
      "cells": [
-      {
-       "kmh": 45,
-       "deg": 8,
-       "compass": "N",
-       "arrow": "\u2193",
-       "models": [
-        "gfs_seamless",
-        "icon_seamless"
-       ]
-      },
-      {
-       "kmh": 41,
-       "deg": 7,
-       "compass": "N",
-       "arrow": "\u2193",
-       "models": [
-        "gfs_seamless",
-        "icon_seamless"
-       ]
-      },
       {
        "kmh": 43,
        "deg": 10,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 42,
+       "deg": 9,
+       "compass": "N",
+       "arrow": "\u2193",
+       "models": [
+        "gfs_seamless",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 49,
+       "deg": 9,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -1298,8 +1436,8 @@
      "height_m": 3156,
      "cells": [
       {
-       "kmh": 51,
-       "deg": 354,
+       "kmh": 49,
+       "deg": 355,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -1310,7 +1448,7 @@
       },
       {
        "kmh": 50,
-       "deg": 354,
+       "deg": 356,
        "compass": "N",
        "arrow": "\u2193",
        "models": [
@@ -1320,7 +1458,7 @@
        ]
       },
       {
-       "kmh": 51,
+       "kmh": 52,
        "deg": 353,
        "compass": "N",
        "arrow": "\u2193",
@@ -1358,11 +1496,11 @@
     },
     {
      "h": 13,
-     "xc": 23
+     "xc": 28
     },
     {
      "h": 14,
-     "xc": 3
+     "xc": 1
     },
     {
      "h": 15,
@@ -1380,13 +1518,13 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits are breached for both disciplines: 4.8 mm rain in the window, gusts of 27 km/h, and 850 hPa wind of 36 km/h. Cloud base near 1,130 m ASL and weak 0.8 m/s thermals offer little for XC, and the strong northerly winds aloft make the air rough.",
+    "reasoning": "Hard limits breached for both disciplines: 4.4 mm rain in the window, gusts 32 km/h and 850 hPa wind 38 km/h. Thermals are weak (0.8 m/s) with cloud base near 1200 m ASL and strong northerly wind aloft, so climbs are low and rough.",
     "forced": ""
    },
    "summary": {
-    "xc": "Unlikely: thermals topping out near 1,100 m and weak thermals (about 0.8 m/s).",
-    "acro": "Rough or unflyable: 34 km/h of wind shear up to 850 hPa and 4.8 mm of rain.",
-    "pulled": "XC thermals topping out near 1,100 m (-100%) \u00b7 acro 34 km/h of wind shear up to 850 hPa (-87%)",
+    "xc": "Unlikely: thermals topping out near 1,200 m and weak thermals (about 0.8 m/s).",
+    "acro": "NNE aloft: train higher, you'll drift towards the hill. Rough or unflyable: climbs reaching about 404 m above launch and 33 km/h of wind shear up to 850 hPa.",
+    "pulled": "XC thermals topping out near 1,200 m (-98%) \u00b7 acro climbs reaching about 404 m above launch (-97%)",
     "agreement": "models agree"
    }
   },
@@ -1413,21 +1551,27 @@
     }
    },
    "key": {
-    "wind_kmh": 5.3500000000000005,
+    "wind_kmh": 5.561111111111111,
     "wind_dir": "NW",
     "gust_kmh": 25.900000000000002,
-    "wind850_kmh": 21.63888888888889,
+    "wind850_kmh": 21.58888888888889,
     "wind850_dir": "WNW",
-    "wind700_kmh": 45.09444444444444,
-    "shear_kmh": 17.9798332911825,
-    "ceiling_asl_m": 937.9722222222222,
-    "cloudbase_agl_m": 168.05555555555557,
+    "wind700_kmh": 44.84444444444444,
+    "shear_kmh": 17.626410055463094,
+    "ceiling_asl_m": 942.0,
+    "cloudbase_agl_m": 263.19444444444446,
     "blh_m": 335.0,
-    "thermal_ms": 0.6225369027610727,
-    "sw_wm2": 302.11111111111114,
-    "cape": 578.8888888888888,
-    "rain_mm": 11.1,
-    "low_cloud_pct": 79.33333333333333
+    "thermal_ms": 0.6516702551665824,
+    "sw_wm2": 363.1111111111111,
+    "cape": 469.4444444444444,
+    "rain_mm": 10.466666666666667,
+    "low_cloud_pct": 74.3888888888889,
+    "aloft_kmh": 19.158202316329135,
+    "aloft_u": 18.07898970657331,
+    "aloft_v": -6.17646842167822,
+    "north_aloft_kmh": 6.5908553625081865,
+    "west_aloft_kmh": 27.0291975308642,
+    "climb_gain_m": 145.00000000000003
    },
    "xc_rules": [
     {
@@ -1443,12 +1587,12 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 5.3500000000000005,
+     "num": 5.561111111111111,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 1.0,
-     "value": "5 km/h (want <20)"
+     "value": "6 km/h (want <20)"
     },
     {
      "key": "gust",
@@ -1463,52 +1607,52 @@
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 21.63888888888889,
+     "num": 21.58888888888889,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.917,
+     "factor": 0.918,
      "value": "22 km/h (want <25)"
     },
     {
      "key": "ceiling",
      "label": "Cloud base / thermal top",
-     "num": 937.9722222222222,
+     "num": 942.0,
      "unit": " m ASL",
      "nd": 0,
      "want": " (want >2000)",
      "factor": 0.0,
-     "value": "938 m ASL (want >2000)"
+     "value": "942 m ASL (want >2000)"
     },
     {
      "key": "thermals",
      "label": "Thermal strength (est.)",
-     "num": 0.6225369027610727,
+     "num": 0.6516702551665824,
      "unit": " m/s",
      "nd": 1,
      "want": " (want >1.5)",
-     "factor": 0.043,
-     "value": "0.6 m/s (want >1.5)"
+     "factor": 0.066,
+     "value": "0.7 m/s (want >1.5)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 578.8888888888888,
+     "num": 469.4444444444444,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 0.905,
-     "value": "579 (want <800)"
+     "value": "469 (want <800)"
     },
     {
      "key": "rain",
      "label": "Rain in window",
-     "num": 11.1,
+     "num": 10.466666666666667,
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.0,
-     "value": "11.1 mm (want none)"
+     "factor": 0.117,
+     "value": "10.5 mm (want none)"
     }
    ],
    "acro_rules": [
@@ -1525,12 +1669,12 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 5.3500000000000005,
+     "num": 5.561111111111111,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
      "factor": 1.0,
-     "value": "5 km/h (want <15)"
+     "value": "6 km/h (want <15)"
     },
     {
      "key": "gust",
@@ -1545,42 +1689,82 @@
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 21.63888888888889,
+     "num": 21.58888888888889,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.753,
+     "factor": 0.756,
      "value": "22 km/h (want <20)"
     },
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 17.9798332911825,
+     "num": 17.626410055463094,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
-     "factor": 0.712,
+     "factor": 0.727,
      "value": "18 km/h (want <15)"
+    },
+    {
+     "key": "north_aloft",
+     "label": "Northerly wind aloft",
+     "num": 6.5908553625081865,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (mild penalty above 5)",
+     "factor": 0.982,
+     "value": "7 km/h (mild penalty above 5)"
+    },
+    {
+     "key": "west_aloft",
+     "label": "Westerly wind aloft (Buffalo)",
+     "num": 27.0291975308642,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (want <8)",
+     "factor": 0.3,
+     "value": "27 km/h (want <8)"
+    },
+    {
+     "key": "thermals_strong",
+     "label": "Very strong thermals (est.)",
+     "num": 0.6516702551665824,
+     "unit": " m/s",
+     "nd": 1,
+     "want": " (want <2.5)",
+     "factor": 1.0,
+     "value": "0.7 m/s (want <2.5)"
+    },
+    {
+     "key": "height",
+     "label": "Climb height above launch",
+     "num": 145.00000000000003,
+     "unit": " m",
+     "nd": 0,
+     "want": " (want >1400)",
+     "factor": 0.0,
+     "value": "145 m (want >1400)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 578.8888888888888,
+     "num": 469.4444444444444,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 0.905,
-     "value": "579 (want <800)"
+     "value": "469 (want <800)"
     },
     {
      "key": "rain",
      "label": "Rain in window",
-     "num": 11.1,
+     "num": 10.466666666666667,
      "unit": " mm",
      "nd": 1,
      "want": " (want none)",
-     "factor": 0.0,
-     "value": "11.1 mm (want none)"
+     "factor": 0.117,
+     "value": "10.5 mm (want none)"
     }
    ],
    "winds": [
@@ -1589,8 +1773,8 @@
      "height_m": null,
      "cells": [
       {
-       "kmh": 6,
-       "deg": 344,
+       "kmh": 7,
+       "deg": 343,
        "compass": "NNW",
        "arrow": "\u2193",
        "models": [
@@ -1611,8 +1795,8 @@
        ]
       },
       {
-       "kmh": 4,
-       "deg": 314,
+       "kmh": 5,
+       "deg": 311,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -1631,11 +1815,11 @@
     },
     {
      "label": "~1,000 m",
-     "height_m": 968,
+     "height_m": 972,
      "cells": [
       {
-       "kmh": 12,
-       "deg": 317,
+       "kmh": 13,
+       "deg": 318,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -1644,7 +1828,7 @@
        ]
       },
       {
-       "kmh": 11,
+       "kmh": 10,
        "deg": 308,
        "compass": "NW",
        "arrow": "\u2198",
@@ -1654,10 +1838,10 @@
        ]
       },
       {
-       "kmh": 9,
-       "deg": 296,
+       "kmh": 10,
+       "deg": 292,
        "compass": "WNW",
-       "arrow": "\u2198",
+       "arrow": "\u2192",
        "models": [
         "gfs_seamless",
         "icon_seamless"
@@ -1672,11 +1856,11 @@
     },
     {
      "label": "~1,500 m",
-     "height_m": 1447,
+     "height_m": 1450,
      "cells": [
       {
-       "kmh": 30,
-       "deg": 308,
+       "kmh": 32,
+       "deg": 310,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -1697,7 +1881,7 @@
        ]
       },
       {
-       "kmh": 15,
+       "kmh": 14,
        "deg": 273,
        "compass": "W",
        "arrow": "\u2192",
@@ -1717,11 +1901,11 @@
     },
     {
      "label": "~2,000 m",
-     "height_m": 1957,
+     "height_m": 1961,
      "cells": [
       {
-       "kmh": 37,
-       "deg": 284,
+       "kmh": 39,
+       "deg": 292,
        "compass": "WNW",
        "arrow": "\u2192",
        "models": [
@@ -1730,8 +1914,8 @@
        ]
       },
       {
-       "kmh": 33,
-       "deg": 275,
+       "kmh": 31,
+       "deg": 279,
        "compass": "W",
        "arrow": "\u2192",
        "models": [
@@ -1740,8 +1924,8 @@
        ]
       },
       {
-       "kmh": 27,
-       "deg": 273,
+       "kmh": 23,
+       "deg": 276,
        "compass": "W",
        "arrow": "\u2192",
        "models": [
@@ -1758,11 +1942,11 @@
     },
     {
      "label": "~3,000 m",
-     "height_m": 3056,
+     "height_m": 3058,
      "cells": [
       {
        "kmh": 49,
-       "deg": 293,
+       "deg": 297,
        "compass": "WNW",
        "arrow": "\u2198",
        "models": [
@@ -1772,8 +1956,8 @@
        ]
       },
       {
-       "kmh": 52,
-       "deg": 293,
+       "kmh": 51,
+       "deg": 295,
        "compass": "WNW",
        "arrow": "\u2198",
        "models": [
@@ -1783,8 +1967,8 @@
        ]
       },
       {
-       "kmh": 40,
-       "deg": 284,
+       "kmh": 42,
+       "deg": 287,
        "compass": "WNW",
        "arrow": "\u2192",
        "models": [
@@ -1843,20 +2027,20 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limits breached: 11.1 mm rain forecast in the window, gusts 26 km/h, and 850 hPa wind 22 km/h. Thermals are weak (0.6 m/s) with cloud base near 938 m ASL, far below the 2,000 m needed for XC.",
+    "reasoning": "Hard limits breached for both: 10.5 mm rain forecast in the window, gusts 26 km/h, and 850 hPa wind 22 km/h. Thermals are weak (0.7 m/s), cloud base about 942 m ASL and climbs only about 145 m, so there is little height for either discipline.",
     "forced": ""
    },
    "summary": {
-    "xc": "Unlikely: thermals topping out near 900 m and 11.1 mm of rain.",
-    "acro": "Rough or unflyable: 11.1 mm of rain and gusts near 26 km/h.",
-    "pulled": "XC thermals topping out near 900 m (-100%) \u00b7 acro 11.1 mm of rain (-100%)",
+    "xc": "Unlikely: thermals topping out near 900 m and weak thermals (about 0.7 m/s).",
+    "acro": "WNW aloft, rough off Buffalo. Rough or unflyable: climbs reaching about 145 m above launch and 10.5 mm of rain.",
+    "pulled": "XC thermals topping out near 900 m (-100%) \u00b7 acro climbs reaching about 145 m above launch (-100%)",
     "agreement": "models agree"
    }
   },
   {
    "date": "2026-11-29",
    "xc": 37,
-   "acro": 32,
+   "acro": 29,
    "xc_range": [
     0,
     97
@@ -1864,7 +2048,7 @@
    "models": {
     "gfs_seamless": {
      "xc": 97,
-     "acro": 97
+     "acro": 87
     },
     "ecmwf_ifs025": {
      "xc": 14,
@@ -1876,21 +2060,27 @@
     }
    },
    "key": {
-    "wind_kmh": 10.055555555555557,
+    "wind_kmh": 10.294444444444444,
     "wind_dir": "NW",
-    "gust_kmh": 25.900000000000002,
-    "wind850_kmh": 17.438888888888886,
+    "gust_kmh": 26.266666666666666,
+    "wind850_kmh": 17.177777777777777,
     "wind850_dir": "WNW",
-    "wind700_kmh": 35.08888888888889,
-    "shear_kmh": 9.381978178164148,
-    "ceiling_asl_m": 2400.1944444444443,
-    "cloudbase_agl_m": 1616.6666666666667,
+    "wind700_kmh": 36.18333333333333,
+    "shear_kmh": 8.75533257656725,
+    "ceiling_asl_m": 2480.055555555555,
+    "cloudbase_agl_m": 1696.5277777777776,
     "blh_m": 1982.5,
-    "thermal_ms": 1.691568442485255,
-    "sw_wm2": 877.6666666666666,
-    "cape": 66.66666666666667,
+    "thermal_ms": 1.7196136904931025,
+    "sw_wm2": 918.3888888888888,
+    "cape": 59.44444444444445,
     "rain_mm": 0.16666666666666666,
-    "low_cloud_pct": 22.222222222222218
+    "low_cloud_pct": 21.888888888888886,
+    "aloft_kmh": 14.59797208615827,
+    "aloft_u": 13.603589624344579,
+    "aloft_v": -4.755160210258789,
+    "north_aloft_kmh": 4.8183674909663265,
+    "west_aloft_kmh": 15.788395061728396,
+    "climb_gain_m": 1683.0555555555554
    },
    "xc_rules": [
     {
@@ -1906,7 +2096,7 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 10.055555555555557,
+     "num": 10.294444444444444,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
@@ -1916,17 +2106,17 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 25.900000000000002,
+     "num": 26.266666666666666,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.528,
+     "factor": 0.5,
      "value": "26 km/h (want <25)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 17.438888888888886,
+     "num": 17.177777777777777,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
@@ -1936,32 +2126,32 @@
     {
      "key": "ceiling",
      "label": "Cloud base / thermal top",
-     "num": 2400.1944444444443,
+     "num": 2480.055555555555,
      "unit": " m ASL",
      "nd": 0,
      "want": " (want >2000)",
-     "factor": 0.949,
-     "value": "2400 m ASL (want >2000)"
+     "factor": 1.0,
+     "value": "2480 m ASL (want >2000)"
     },
     {
      "key": "thermals",
      "label": "Thermal strength (est.)",
-     "num": 1.691568442485255,
+     "num": 1.7196136904931025,
      "unit": " m/s",
      "nd": 1,
      "want": " (want >1.5)",
-     "factor": 0.986,
+     "factor": 0.996,
      "value": "1.7 m/s (want >1.5)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 66.66666666666667,
+     "num": 59.44444444444445,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "67 (want <800)"
+     "value": "59 (want <800)"
     },
     {
      "key": "rain",
@@ -1988,7 +2178,7 @@
     {
      "key": "wind",
      "label": "Launch wind",
-     "num": 10.055555555555557,
+     "num": 10.294444444444444,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
@@ -1998,17 +2188,17 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 25.900000000000002,
+     "num": 26.266666666666666,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.335,
+     "factor": 0.333,
      "value": "26 km/h (want <20)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 17.438888888888886,
+     "num": 17.177777777777777,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
@@ -2018,7 +2208,7 @@
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 9.381978178164148,
+     "num": 8.75533257656725,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
@@ -2026,14 +2216,54 @@
      "value": "9 km/h (want <15)"
     },
     {
+     "key": "north_aloft",
+     "label": "Northerly wind aloft",
+     "num": 4.8183674909663265,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (mild penalty above 5)",
+     "factor": 0.999,
+     "value": "5 km/h (mild penalty above 5)"
+    },
+    {
+     "key": "west_aloft",
+     "label": "Westerly wind aloft (Buffalo)",
+     "num": 15.788395061728396,
+     "unit": " km/h",
+     "nd": 0,
+     "want": " (want <8)",
+     "factor": 0.533,
+     "value": "16 km/h (want <8)"
+    },
+    {
+     "key": "thermals_strong",
+     "label": "Very strong thermals (est.)",
+     "num": 1.7196136904931025,
+     "unit": " m/s",
+     "nd": 1,
+     "want": " (want <2.5)",
+     "factor": 1.0,
+     "value": "1.7 m/s (want <2.5)"
+    },
+    {
+     "key": "height",
+     "label": "Climb height above launch",
+     "num": 1683.0555555555554,
+     "unit": " m",
+     "nd": 0,
+     "want": " (want >1400)",
+     "factor": 0.966,
+     "value": "1683 m (want >1400)"
+    },
+    {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 66.66666666666667,
+     "num": 59.44444444444445,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "67 (want <800)"
+     "value": "59 (want <800)"
     },
     {
      "key": "rain",
@@ -2053,7 +2283,7 @@
      "cells": [
       {
        "kmh": 6,
-       "deg": 323,
+       "deg": 322,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -2064,7 +2294,7 @@
       },
       {
        "kmh": 10,
-       "deg": 314,
+       "deg": 316,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -2075,7 +2305,7 @@
       },
       {
        "kmh": 11,
-       "deg": 306,
+       "deg": 308,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -2094,11 +2324,11 @@
     },
     {
      "label": "~1,000 m",
-     "height_m": 984,
+     "height_m": 987,
      "cells": [
       {
-       "kmh": 12,
-       "deg": 310,
+       "kmh": 11,
+       "deg": 311,
        "compass": "NW",
        "arrow": "\u2198",
        "models": [
@@ -2108,8 +2338,8 @@
       },
       {
        "kmh": 14,
-       "deg": 298,
-       "compass": "WNW",
+       "deg": 304,
+       "compass": "NW",
        "arrow": "\u2198",
        "models": [
         "gfs_seamless",
@@ -2117,8 +2347,8 @@
        ]
       },
       {
-       "kmh": 15,
-       "deg": 285,
+       "kmh": 16,
+       "deg": 292,
        "compass": "WNW",
        "arrow": "\u2192",
        "models": [
@@ -2135,13 +2365,13 @@
     },
     {
      "label": "~1,500 m",
-     "height_m": 1464,
+     "height_m": 1466,
      "cells": [
       {
-       "kmh": 13,
-       "deg": 289,
+       "kmh": 12,
+       "deg": 295,
        "compass": "WNW",
-       "arrow": "\u2192",
+       "arrow": "\u2198",
        "models": [
         "gfs_seamless",
         "ecmwf_ifs025",
@@ -2150,9 +2380,9 @@
       },
       {
        "kmh": 17,
-       "deg": 291,
+       "deg": 296,
        "compass": "WNW",
-       "arrow": "\u2192",
+       "arrow": "\u2198",
        "models": [
         "gfs_seamless",
         "ecmwf_ifs025",
@@ -2161,7 +2391,7 @@
       },
       {
        "kmh": 19,
-       "deg": 284,
+       "deg": 287,
        "compass": "WNW",
        "arrow": "\u2192",
        "models": [
@@ -2180,12 +2410,12 @@
     },
     {
      "label": "~2,000 m",
-     "height_m": 1962,
+     "height_m": 1966,
      "cells": [
       {
-       "kmh": 10,
-       "deg": 279,
-       "compass": "W",
+       "kmh": 11,
+       "deg": 284,
+       "compass": "WNW",
        "arrow": "\u2192",
        "models": [
         "gfs_seamless",
@@ -2194,8 +2424,8 @@
       },
       {
        "kmh": 12,
-       "deg": 278,
-       "compass": "W",
+       "deg": 283,
+       "compass": "WNW",
        "arrow": "\u2192",
        "models": [
         "gfs_seamless",
@@ -2204,7 +2434,7 @@
       },
       {
        "kmh": 14,
-       "deg": 265,
+       "deg": 271,
        "compass": "W",
        "arrow": "\u2192",
        "models": [
@@ -2221,11 +2451,11 @@
     },
     {
      "label": "~3,000 m",
-     "height_m": 3047,
+     "height_m": 3051,
      "cells": [
       {
-       "kmh": 39,
-       "deg": 277,
+       "kmh": 41,
+       "deg": 281,
        "compass": "W",
        "arrow": "\u2192",
        "models": [
@@ -2235,19 +2465,19 @@
        ]
       },
       {
-       "kmh": 34,
+       "kmh": 35,
+       "deg": 278,
+       "compass": "W",
+       "arrow": "\u2192",
+       "models": [
+        "gfs_seamless",
+        "ecmwf_ifs025",
+        "icon_seamless"
+       ]
+      },
+      {
+       "kmh": 33,
        "deg": 271,
-       "compass": "W",
-       "arrow": "\u2192",
-       "models": [
-        "gfs_seamless",
-        "ecmwf_ifs025",
-        "icon_seamless"
-       ]
-      },
-      {
-       "kmh": 32,
-       "deg": 265,
        "compass": "W",
        "arrow": "\u2192",
        "models": [
@@ -2306,13 +2536,13 @@
    "ai": {
     "xc_call": "poor",
     "acro_call": "poor",
-    "reasoning": "Hard limit breached: forecast gusts of 26 km/h exceed both XC (25) and acro (20) limits. Models strongly disagree (GFS near 97% vs ECMWF and ICON near 0), and the 0.2 mm rain signal and weak ~2,400 m ceiling further weaken the case.",
+    "reasoning": "Gusts of 26 km/h breach both hard limits (XC 25, acro 20), so both are poor. Models disagree sharply (GFS strong, ECMWF and ICON near zero), and westerly aloft around 16 km/h would hurt acro anyway.",
     "forced": ""
    },
    "summary": {
     "xc": "Flyable, but gusts near 26 km/h and wind NW at launch. Best window 11am\u20134pm.",
-    "acro": "Rough or unflyable: gusts near 26 km/h and wind NW at launch.",
-    "pulled": "gusts near 26 km/h (-66%)",
+    "acro": "WNW aloft, rough off Buffalo. Rough or unflyable: gusts near 26 km/h and wind NW at launch.",
+    "pulled": "gusts near 26 km/h (-67%)",
     "agreement": "models disagree"
    }
   }
