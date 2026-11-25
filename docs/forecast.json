@@ -12,7 +12,7 @@
    "models": {
     "gfs_seamless": {
      "xc": 89,
-     "acro": 94
+     "acro": 92
     },
     "ecmwf_ifs025": {
      "xc": 2,
@@ -26,17 +26,17 @@
    "key": {
     "wind_kmh": 9.172222222222222,
     "wind_dir": "N",
-    "gust_kmh": 28.933333333333334,
-    "wind850_kmh": 19.822222222222223,
+    "gust_kmh": 28.433333333333334,
+    "wind850_kmh": 20.07777777777778,
     "wind850_dir": "N",
-    "wind700_kmh": 28.12777777777778,
-    "shear_kmh": 10.871749162796895,
+    "wind700_kmh": 28.894444444444446,
+    "shear_kmh": 11.092319194548205,
     "ceiling_asl_m": 2335.75,
     "cloudbase_agl_m": 1720.1388888888887,
     "blh_m": 1696.6666666666667,
     "thermal_ms": 1.546973412315486,
     "sw_wm2": 820.3333333333334,
-    "cape": 8.333333333333334,
+    "cape": 7.222222222222222,
     "rain_mm": 0.0,
     "low_cloud_pct": 36.888888888888886
    },
@@ -64,17 +64,17 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 28.933333333333334,
+     "num": 28.433333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
      "factor": 0.449,
-     "value": "29 km/h (want <25)"
+     "value": "28 km/h (want <25)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 19.822222222222223,
+     "num": 20.07777777777778,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
@@ -104,12 +104,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 8.333333333333334,
+     "num": 7.222222222222222,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "8 (want <800)"
+     "value": "7 (want <800)"
     },
     {
      "key": "rain",
@@ -146,42 +146,42 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 28.933333333333334,
+     "num": 28.433333333333334,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 0.333,
-     "value": "29 km/h (want <20)"
+     "value": "28 km/h (want <20)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 19.822222222222223,
+     "num": 20.07777777777778,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.89,
+     "factor": 0.884,
      "value": "20 km/h (want <20)"
     },
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 10.871749162796895,
+     "num": 11.092319194548205,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
-     "factor": 0.992,
+     "factor": 0.989,
      "value": "11 km/h (want <15)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 8.333333333333334,
+     "num": 7.222222222222222,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "8 (want <800)"
+     "value": "7 (want <800)"
     },
     {
      "key": "rain",
@@ -221,16 +221,16 @@
     "wind_kmh": 8.061111111111112,
     "wind_dir": "N",
     "gust_kmh": 25.666666666666668,
-    "wind850_kmh": 15.305555555555555,
-    "wind850_dir": "NNE",
-    "wind700_kmh": 21.233333333333334,
-    "shear_kmh": 8.305669381214827,
+    "wind850_kmh": 15.261111111111111,
+    "wind850_dir": "NNW",
+    "wind700_kmh": 19.95,
+    "shear_kmh": 7.8532893147095875,
     "ceiling_asl_m": 2285.6111111111113,
     "cloudbase_agl_m": 1502.7777777777776,
     "blh_m": 1952.5,
     "thermal_ms": 1.6174884827875644,
     "sw_wm2": 790.5,
-    "cape": 76.66666666666667,
+    "cape": 95.55555555555556,
     "rain_mm": 0.03333333333333333,
     "low_cloud_pct": 17.833333333333332
    },
@@ -268,7 +268,7 @@
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 15.305555555555555,
+     "num": 15.261111111111111,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
@@ -298,12 +298,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 76.66666666666667,
+     "num": 95.55555555555556,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "77 (want <800)"
+     "value": "96 (want <800)"
     },
     {
      "key": "rain",
@@ -350,7 +350,7 @@
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 15.305555555555555,
+     "num": 15.261111111111111,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
@@ -360,7 +360,7 @@
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 8.305669381214827,
+     "num": 7.8532893147095875,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
@@ -370,12 +370,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 76.66666666666667,
+     "num": 95.55555555555556,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "77 (want <800)"
+     "value": "96 (want <800)"
     },
     {
      "key": "rain",
@@ -414,17 +414,17 @@
    "key": {
     "wind_kmh": 3.766666666666666,
     "wind_dir": "N",
-    "gust_kmh": 29.633333333333336,
-    "wind850_kmh": 38.57222222222222,
+    "gust_kmh": 27.0,
+    "wind850_kmh": 36.31111111111111,
     "wind850_dir": "N",
-    "wind700_kmh": 53.666666666666664,
-    "shear_kmh": 36.11456712989125,
+    "wind700_kmh": 52.21666666666667,
+    "shear_kmh": 33.82375938102491,
     "ceiling_asl_m": 1129.638888888889,
     "cloudbase_agl_m": 435.4166666666667,
     "blh_m": 631.6666666666666,
     "thermal_ms": 0.7660147548747719,
     "sw_wm2": 344.5555555555555,
-    "cape": 130.0,
+    "cape": 220.55555555555554,
     "rain_mm": 4.766666666666667,
     "low_cloud_pct": 55.944444444444436
    },
@@ -452,22 +452,22 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 29.633333333333336,
+     "num": 27.0,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.575,
-     "value": "30 km/h (want <25)"
+     "factor": 0.683,
+     "value": "27 km/h (want <25)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 38.57222222222222,
+     "num": 36.31111111111111,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.2,
-     "value": "39 km/h (want <25)"
+     "factor": 0.329,
+     "value": "36 km/h (want <25)"
     },
     {
      "key": "ceiling",
@@ -492,12 +492,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 130.0,
+     "num": 220.55555555555554,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "130 (want <800)"
+     "value": "221 (want <800)"
     },
     {
      "key": "rain",
@@ -534,42 +534,42 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 29.633333333333336,
+     "num": 27.0,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.156,
-     "value": "30 km/h (want <20)"
+     "factor": 0.395,
+     "value": "27 km/h (want <20)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 38.57222222222222,
+     "num": 36.31111111111111,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.029,
-     "value": "39 km/h (want <20)"
+     "factor": 0.158,
+     "value": "36 km/h (want <20)"
     },
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 36.11456712989125,
+     "num": 33.82375938102491,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
-     "factor": 0.022,
-     "value": "36 km/h (want <15)"
+     "factor": 0.133,
+     "value": "34 km/h (want <15)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 130.0,
+     "num": 220.55555555555554,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "130 (want <800)"
+     "value": "221 (want <800)"
     },
     {
      "key": "rain",
@@ -608,17 +608,17 @@
    "key": {
     "wind_kmh": 5.3500000000000005,
     "wind_dir": "NW",
-    "gust_kmh": 36.333333333333336,
-    "wind850_kmh": 27.48888888888889,
-    "wind850_dir": "NNW",
-    "wind700_kmh": 51.25,
-    "shear_kmh": 23.628316158633435,
+    "gust_kmh": 25.900000000000002,
+    "wind850_kmh": 21.63888888888889,
+    "wind850_dir": "WNW",
+    "wind700_kmh": 45.09444444444444,
+    "shear_kmh": 17.9798332911825,
     "ceiling_asl_m": 937.9722222222222,
     "cloudbase_agl_m": 168.05555555555557,
     "blh_m": 335.0,
     "thermal_ms": 0.6225369027610727,
     "sw_wm2": 302.11111111111114,
-    "cape": 561.1111111111111,
+    "cape": 578.8888888888888,
     "rain_mm": 11.1,
     "low_cloud_pct": 79.33333333333333
    },
@@ -646,22 +646,22 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 36.333333333333336,
+     "num": 25.900000000000002,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.301,
-     "value": "36 km/h (want <25)"
+     "factor": 0.634,
+     "value": "26 km/h (want <25)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 27.48888888888889,
+     "num": 21.63888888888889,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
-     "factor": 0.734,
-     "value": "27 km/h (want <25)"
+     "factor": 0.917,
+     "value": "22 km/h (want <25)"
     },
     {
      "key": "ceiling",
@@ -686,12 +686,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 561.1111111111111,
+     "num": 578.8888888888888,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 0.905,
-     "value": "561 (want <800)"
+     "value": "579 (want <800)"
     },
     {
      "key": "rain",
@@ -728,42 +728,42 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 36.333333333333336,
+     "num": 25.900000000000002,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.048,
-     "value": "36 km/h (want <20)"
+     "factor": 0.382,
+     "value": "26 km/h (want <20)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 27.48888888888889,
+     "num": 21.63888888888889,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
-     "factor": 0.457,
-     "value": "27 km/h (want <20)"
+     "factor": 0.753,
+     "value": "22 km/h (want <20)"
     },
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 23.628316158633435,
+     "num": 17.9798332911825,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
-     "factor": 0.435,
-     "value": "24 km/h (want <15)"
+     "factor": 0.712,
+     "value": "18 km/h (want <15)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 561.1111111111111,
+     "num": 578.8888888888888,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 0.905,
-     "value": "561 (want <800)"
+     "value": "579 (want <800)"
     },
     {
      "key": "rain",
@@ -802,17 +802,17 @@
    "key": {
     "wind_kmh": 10.055555555555557,
     "wind_dir": "NW",
-    "gust_kmh": 23.96666666666667,
-    "wind850_kmh": 14.85,
-    "wind850_dir": "W",
-    "wind700_kmh": 31.066666666666663,
-    "shear_kmh": 10.341603090848798,
+    "gust_kmh": 25.900000000000002,
+    "wind850_kmh": 17.438888888888886,
+    "wind850_dir": "WNW",
+    "wind700_kmh": 35.08888888888889,
+    "shear_kmh": 9.381978178164148,
     "ceiling_asl_m": 2400.1944444444443,
     "cloudbase_agl_m": 1616.6666666666667,
     "blh_m": 1982.5,
     "thermal_ms": 1.691568442485255,
     "sw_wm2": 877.6666666666666,
-    "cape": 117.22222222222223,
+    "cape": 66.66666666666667,
     "rain_mm": 0.16666666666666666,
     "low_cloud_pct": 22.222222222222218
    },
@@ -840,22 +840,22 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 23.96666666666667,
+     "num": 25.900000000000002,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
      "factor": 0.528,
-     "value": "24 km/h (want <25)"
+     "value": "26 km/h (want <25)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 14.85,
+     "num": 17.438888888888886,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <25)",
      "factor": 0.98,
-     "value": "15 km/h (want <25)"
+     "value": "17 km/h (want <25)"
     },
     {
      "key": "ceiling",
@@ -880,12 +880,12 @@
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 117.22222222222223,
+     "num": 66.66666666666667,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "117 (want <800)"
+     "value": "67 (want <800)"
     },
     {
      "key": "rain",
@@ -922,42 +922,42 @@
     {
      "key": "gust",
      "label": "Gusts",
-     "num": 23.96666666666667,
+     "num": 25.900000000000002,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 0.335,
-     "value": "24 km/h (want <20)"
+     "value": "26 km/h (want <20)"
     },
     {
      "key": "w850",
      "label": "850 hPa wind",
-     "num": 14.85,
+     "num": 17.438888888888886,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <20)",
      "factor": 0.899,
-     "value": "15 km/h (want <20)"
+     "value": "17 km/h (want <20)"
     },
     {
      "key": "shear",
      "label": "Wind shear 10 m to 850 hPa",
-     "num": 10.341603090848798,
+     "num": 9.381978178164148,
      "unit": " km/h",
      "nd": 0,
      "want": " (want <15)",
      "factor": 0.957,
-     "value": "10 km/h (want <15)"
+     "value": "9 km/h (want <15)"
     },
     {
      "key": "cape",
      "label": "CAPE (overdevelopment)",
-     "num": 117.22222222222223,
+     "num": 66.66666666666667,
      "unit": "",
      "nd": 0,
      "want": " (want <800)",
      "factor": 1.0,
-     "value": "117 (want <800)"
+     "value": "67 (want <800)"
     },
     {
      "key": "rain",
