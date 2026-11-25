@@ -15,13 +15,18 @@ VARS = ["wind_speed_10m","wind_direction_10m","wind_gusts_10m","wind_speed_850hP
  "cloud_cover_low","cloud_cover_mid","cloud_cover_high","cape","lifted_index","convective_inhibition",
  "boundary_layer_height","shortwave_radiation","precipitation","pressure_msl"]
 keys = list(cfg["points"]); pts = cfg["points"]
-for attempt in range(4):
-    r = requests.get("https://api.open-meteo.com/v1/forecast", timeout=90, params=dict(
-        latitude=",".join(str(pts[k]["lat"]) for k in keys), longitude=",".join(str(pts[k]["lon"]) for k in keys),
-        hourly=",".join(VARS), models=",".join(MODELS), forecast_days=7, timezone=cfg["timezone"], wind_speed_unit="kmh"))
-    if r.status_code == 200: break
-    time.sleep(30 * (attempt + 1))
-r.raise_for_status()
+r = None
+for attempt in range(6):
+    try:
+        r = requests.get("https://api.open-meteo.com/v1/forecast", timeout=60, params=dict(
+            latitude=",".join(str(pts[k]["lat"]) for k in keys), longitude=",".join(str(pts[k]["lon"]) for k in keys),
+            hourly=",".join(VARS), models=",".join(MODELS), forecast_days=7, timezone=cfg["timezone"], wind_speed_unit="kmh"))
+        if r.status_code == 200: break
+        print("Open-Meteo HTTP", r.status_code, r.text[:150])
+    except requests.RequestException as e:
+        print("Open-Meteo error:", type(e).__name__)
+    time.sleep(20 * (attempt + 1))
+if r is None or r.status_code != 200: sys.exit("Open-Meteo unavailable after retries")
 raw = r.json()
 # 1. archive the raw forecast (this is the real, honest forecast-by-lead record we train on later)
 arch = ROOT/"forecast_archive"; arch.mkdir(exist_ok=True)
