@@ -36,7 +36,8 @@ details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-
 @media(min-width:900px){body{max-width:1300px;font-size:15px}header{height:120px}header div{padding:22px 24px}h1{font-size:22px}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0 4px;align-items:start;padding:0 8px}.dials svg{width:124px;height:124px}.dials div div{font-size:14px}
 .sum{font-size:14px}.row{grid-template-columns:108px repeat(3,1fr);font-size:14px;padding:7px 0}.cell svg{width:20px;height:20px}.strip{height:42px}.more{margin:10px 20px}}
-@media(min-width:2000px){body{max-width:1500px}.grid{grid-template-columns:repeat(3,1fr)}.row{grid-template-columns:100px repeat(3,1fr);font-size:14px}}
+@media(min-width:1200px){body{max-width:1500px}.grid{grid-template-columns:repeat(3,1fr)}.row{grid-template-columns:96px repeat(3,1fr);font-size:13.5px}.dials svg{width:112px;height:112px}}
+.lc{color:#fac775;font-size:11.5px;margin-top:2px}.cd2>.lc{margin:0 0 6px}details[open]>summary .lc{display:none}
 .row>*{min-width:0}.tbl small{display:block;color:var(--mu)}.on{background:#173404}.off{background:#412402}
 """
 SPARK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z"/></svg>'
@@ -136,6 +137,8 @@ document.addEventListener("visibilitychange",function(){if(document.hidden||!nav
 try{var t=+sessionStorage.getItem("r")||0;if(Date.now()-t<18e5)return;sessionStorage.setItem("r",Date.now())}catch(e){}location.reload()})})();
 </script>"""
 
+OPEN_DAYS = 3          # days shown as open cards; later days are collapsed rows marked lower confidence
+
 def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows, generated_utc=None, calib=None):
     faces = {0: "N", 90: "E", 180: "S", 270: "W"}.get(cfg.get("launch_facing_deg", 0), "N")
     upd = local_now.strftime("%-I:%M%p %a").replace("AM", "am").replace("PM", "pm")
@@ -144,11 +147,11 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
     cards = []
     for i, d in enumerate(days):
         nm, tag = day_name(d, today)
-        if i < 2:
+        if i < OPEN_DAYS:
             cards.append(f'<section class="cd"><div class="top"><b>{nm}</b><span class="mu">{E(S.agreement(d))}{tag}</span></div>{card_body(d, cfg, ai_status)}</section>')
         else:
-            cards.append(f'<details class="cd day"><summary><div><div class="nm">{nm}</div><div class="mu">{E(S.headline(d))}</div></div>'
-                         f'<div class="pills">{pill("XC", d["xc"])}{pill("Acro", d["acro"])}{CHEV}</div></summary><div class="cd2">{card_body(d, cfg, ai_status)}</div></details>')
+            cards.append(f'<details class="cd day"><summary><div><div class="nm">{nm}</div><div class="mu">{E(S.headline(d))}</div><div class="lc">Lower confidence: further out</div></div>'
+                         f'<div class="pills">{pill("XC", d["xc"])}{pill("Acro", d["acro"])}{CHEV}</div></summary><div class="cd2"><div class="lc">Lower confidence: forecasts get less reliable further out</div>{card_body(d, cfg, ai_status)}</div></details>')
     track = ('<table class="tbl"><tr><th>Day</th><th>XC</th><th>Acro</th><th>Lead</th></tr>' + "".join(track_rows) + "</table>") if track_rows else '<p class="note">Predictions are logged every update. Outcomes will be compared here once flight data or pilot notes are added.</p>'
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f1722"><meta name="color-scheme" content="dark"><meta name="generated" content="{int(generated_utc.timestamp()) if generated_utc else 0}">
@@ -160,5 +163,5 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
 <div class="grid">{"".join(cards)}</div>
 <details class="more"><summary>Forecast corrections {CHEV}</summary>{corrections_block(cstate, cfg, calib)}</details>
 <details class="more"><summary>Track record {CHEV}</summary>{track}</details>
-<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strips show the XC and acro scores for each hour. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
+<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strips show the XC and acro scores for each hour. Days 4-6 are marked lower confidence because forecasts get less reliable further out. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
 {JS}</body></html>"""

@@ -1,4 +1,4 @@
-"""Fetch today's forecasts, archive the raw response, score the next 5 days, write docs/ (dashboard).
+"""Fetch today's forecasts, archive the raw response, score the next 6 days, write docs/ (dashboard).
 Usage: python scripts/daily_forecast.py [site_id]"""
 import csv, datetime as dt, gzip, html, json, math, os, sys, time, requests, yaml
 from pathlib import Path
@@ -108,7 +108,7 @@ def wind_table(day):
     have = {m for m in MODELS if any(mystic.get(f"wind_speed_10m_{m}", [None])[i] is not None for i in range(len(times)) if times[i][:10] == day)}
     for r in table: r["partial"] = bool(r["models"]) and set(r["models"]) != have
     return table
-for day in [d for d in days if d >= today][:5]:
+for day in [d for d in days if d >= today][:6]:
     per_model = {}
     for m in MODELS:
         idx = [i for i, t in enumerate(times) if t[:10] == day and win[0] <= t[11:16] <= win[1]]
