@@ -30,6 +30,9 @@ jobs:
       - name: Fetch forecasts, score, build dashboard
         id: fc
         continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_OPINION_ENABLED: ${{ vars.AI_OPINION_ENABLED }}   # set to false in Settings > Variables to pause the AI panel
         run: python scripts/daily_forecast.py bright
       - name: Commit new data
         run: |

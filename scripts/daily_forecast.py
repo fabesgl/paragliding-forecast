@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out"
 sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.rules import score_day, compass
-from pgforecast import corrections as corr
+from pgforecast import corrections as corr, ai_opinion
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
 cfg = yaml.safe_load((ROOT/"sites"/f"{site}.yaml").read_text())
 tz = ZoneInfo(cfg["timezone"]); now = dt.datetime.now(dt.UTC); local_now = now.astimezone(tz)
@@ -127,6 +127,12 @@ for day in [d for d in days if d >= today][:5]:
     out_days.append(dict(date=day, xc=avg("xc"), acro=avg("acro"), xc_range=[min(xcs, default=None), max(xcs, default=None)],
         models={m: {"xc": p["xc"], "acro": p["acro"]} for m, p in per_model.items()},
         key=mean_key(per_model, best), xc_rules=merged("xc_rules"), acro_rules=merged("acro_rules"), winds=wind_table(day)))
+# 2b. AI second opinion. Read-only: it never changes the rule scores above, and any failure here just means no panel.
+active = [f"{k.split('|')[1]} {k.split('|')[0]} {k.split('|')[2]} ({k.split('|')[3]}): " + (f"{b['corr']:+.1f}" if b["kind"] == "add" else f"x{b['corr']:.2f}")
+          for k, b in cstate["bins"].items() if corr.status(b) == "active"]
+ai, ai_status = ai_opinion.opinions(out_days, {d["date"]: d["winds"] for d in out_days}, active, corr.summary(cstate), cfg)
+print("AI opinion:", ai_status)
+for d in out_days: d["ai"] = ai.get(d["date"])
 # 3. log predictions (track record)
 logf = OUT/"predictions"/"log.csv"; logf.parent.mkdir(parents=True, exist_ok=True)
 new = not logf.exists()
@@ -136,6 +142,15 @@ with logf.open("a", newline="") as f:
     for d in out_days:
         lead = (dt.date.fromisoformat(d["date"]) - local_now.date()).days
         w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3"])
+aif = OUT/"predictions"/"ai_log.csv"                 # same keys as log.csv, plus the rule scores, so both can be compared with outcomes
+if ai:
+    newf = not aif.exists()
+    with aif.open("a", newline="") as f:
+        w = csv.writer(f)
+        if newf: w.writerow(["made_at_utc", "target_date", "lead_days", "model", "xc_call", "acro_call", "xc_rule_pct", "acro_rule_pct", "reasoning"])
+        for d in out_days:
+            if d["ai"]: w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], (dt.date.fromisoformat(d["date"]) - local_now.date()).days, ai_opinion.MODEL,
+                                    d["ai"]["xc_call"], d["ai"]["acro_call"], d["xc"], d["acro"], d["ai"]["reasoning"]])
 # 4. write the dashboard
 docs = OUT/"docs"; docs.mkdir(parents=True, exist_ok=True)
 (docs/"forecast.json").write_text(json.dumps(dict(updated_local=local_now.strftime("%a %d %b %Y %H:%M %Z"), days=out_days), indent=1))
@@ -147,6 +162,13 @@ def pulled(rules, name):
     if not bad: return f'<p class="pd ok"><b>{name}:</b> no rule pulled it down</p>'
     lis = "".join(f'<li>{html.escape(r["label"])}: {html.escape(r["value"])} <b>-{round(100*(1-r["factor"]))}%</b></li>' for r in bad[:4])
     return f'<p class="pd"><b>{name} pulled down by:</b></p><ul class="why">{lis}</ul>'
+def ai_html(a, status):
+    if status in ("off", "no key"): return ""
+    if not a: return '<div class="ai"><h3>AI second opinion</h3><p class="note">Not available this update.</p></div>'
+    col = {"good": "#2e7d32", "marginal": "#f9a825", "poor": "#c62828"}
+    chip = lambda n, c: f'<span class="chip" style="background:{col[c]}">{n}: {c}</span>'
+    return (f'<div class="ai"><h3>AI second opinion <small>({ai_opinion.MODEL})</small></h3>{chip("XC", a["xc_call"])} {chip("Acro", a["acro_call"])}'
+            f'<p>{html.escape(a["reasoning"])}</p><p class="note">Experimental. It does not change the scores above.</p></div>')
 def wind_html(rows):
     names = {"gfs_seamless": "GFS", "ecmwf_ifs025": "ECMWF", "icon_seamless": "ICON", "bom_access_global": "BOM"}
     out = ['<table class="wt"><tr><th>Height ASL</th>' + "".join(f"<th>{h}</th>" for h in SHOW_HOURS) + "</tr>"]
@@ -198,7 +220,7 @@ for d in out_days:
     cards.append(f"""<section class="card"><h2>{dn}</h2><div class="scores">
 <div class="s" style="border-color:{color(d['xc'])}"><b>{f1(d['xc'])}%</b><span>XC</span><small>models {spread}</small></div>
 <div class="s" style="border-color:{color(d['acro'])}"><b>{f1(d['acro'])}%</b><span>Acro</span><small>experimental</small></div></div>
-{pulled(d['xc_rules'], 'XC')}{pulled(d['acro_rules'], 'Acro')}{wind_html(d['winds'])}
+{pulled(d['xc_rules'], 'XC')}{pulled(d['acro_rules'], 'Acro')}{wind_html(d['winds'])}{ai_html(d.get('ai'), ai_status)}
 <table><tr><td>Launch wind</td><td>{k.get('wind_dir') or ''} {f1(k.get('wind_kmh'),' km/h')} (gust {f1(k.get('gust_kmh'))})</td></tr>
 <tr><td>850 hPa wind</td><td>{k.get('wind850_dir') or ''} {f1(k.get('wind850_kmh'),' km/h')}</td></tr>
 <tr><td>700 hPa wind</td><td>{f1(k.get('wind700_kmh'),' km/h')}</td></tr>
@@ -221,7 +243,7 @@ h1{{font-size:20px;margin:4px 0}} .upd{{color:#5f6368;font-size:13px;margin-bott
 .scores{{display:flex;gap:10px}} .s{{flex:1;border:3px solid;border-radius:10px;padding:8px;text-align:center}}
 .s b{{font-size:28px;display:block}} .s span{{font-weight:600}} .s small{{display:block;color:#5f6368;font-size:11px}}
 .why{{padding-left:18px;margin:8px 0}} table{{width:100%;border-collapse:collapse;font-size:13px}} td{{padding:3px 0;border-top:1px solid #eee}} td:first-child{{color:#5f6368;width:38%}}
-.note{{font-size:12px;color:#5f6368}} .c-active{{background:#e8f5e9}} .c-off{{background:#fff3e0}} .wt small{{display:block}} h3{{font-size:14px;margin:12px 0 4px}} .wt th{{text-align:left;font-size:12px;color:#5f6368;font-weight:600}} .wt td small{{display:block;color:#5f6368;font-size:11px}} .wt td{{white-space:nowrap}} .ar{{font-size:16px;display:inline-block;width:1.1em}} .pd{{margin:8px 0 2px;font-size:13px}} .pd.ok{{color:#2e7d32}} .why li{{font-size:13px}}</style></head><body>
+.note{{font-size:12px;color:#5f6368}} .ai{{border-top:1px solid #eee;margin-top:10px}} .ai h3 small{{font-weight:400;color:#5f6368}} .chip{{color:#fff;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;display:inline-block;margin-right:4px}} .ai p{{margin:6px 0}} .c-active{{background:#e8f5e9}} .c-off{{background:#fff3e0}} .wt small{{display:block}} h3{{font-size:14px;margin:12px 0 4px}} .wt th{{text-align:left;font-size:12px;color:#5f6368;font-weight:600}} .wt td small{{display:block;color:#5f6368;font-size:11px}} .wt td{{white-space:nowrap}} .ar{{font-size:16px;display:inline-block;width:1.1em}} .pd{{margin:8px 0 2px;font-size:13px}} .pd.ok{{color:#2e7d32}} .why li{{font-size:13px}}</style></head><body>
 <h1>Mystic, Bright: flying forecast</h1><div class="upd">Updated {local_now.strftime('%a %d %b %H:%M %Z')} · window 11:00-16:00 · runs {runs_txt} · average of {len(out_days[0]['models']) if out_days else 0} models ({', '.join(out_days[0]['models']) if out_days else ''})</div>
 {''.join(cards)}
 {corrections_html(cstate)}
