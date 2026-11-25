@@ -1,7 +1,11 @@
 name: Daily update
 on:
   schedule:
-    - cron: "30 18 * * *"   # 18:30 UTC = 5:30am AEDT (6:30am AEST in winter)
+    # Open-Meteo has the 12Z runs (ECMWF ~19:20Z, GFS ~20:20Z, ICON ~15:30Z) and the 00Z runs (ECMWF ~07:20Z, GFS ~08:20Z, ICON ~03:30Z)
+    # about that long after they start, so run shortly after: morning 20:45 UTC = 7:45am AEDT, evening 08:45 UTC = 7:45pm AEDT.
+    # The job also waits (up to 75 min) for the newest runs if Open-Meteo is late. Times shift 1 h earlier in winter (AEST).
+    - cron: "45 20 * * *"
+    - cron: "45 8 * * *"
   workflow_dispatch: {}
 permissions:
   contents: write
@@ -9,6 +13,7 @@ concurrency: daily-update
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -18,6 +23,8 @@ jobs:
         id: bom
         continue-on-error: true
         run: python scripts/collect_bom.py bright
+      - name: Wait for the newest ECMWF, GFS and ICON runs
+        run: python scripts/wait_for_models.py
       - name: Fetch forecasts, score, build dashboard
         id: fc
         continue-on-error: true
@@ -26,7 +33,7 @@ jobs:
         run: |
           git config user.name "daily-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add observations forecast_archive predictions docs
+          git add observations forecast_archive predictions model_runs docs
           git diff --cached --quiet || git commit -m "Daily update $(date -u +%F)"
           git pull --rebase -q && git push
       - name: Fail the run if a step failed

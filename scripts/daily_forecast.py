@@ -33,9 +33,11 @@ for attempt in range(6):
 if r is None or r.status_code != 200: sys.exit("Open-Meteo unavailable after retries")
 raw = r.json()
 # 1. archive the raw forecast (this is the real, honest forecast-by-lead record we train on later)
+mr = OUT/"model_runs"/"latest.json"
+runs = json.loads(mr.read_text()) if mr.exists() else {}       # which model run each forecast comes from (written by wait_for_models.py)
 arch = OUT/"forecast_archive"; arch.mkdir(parents=True, exist_ok=True)
 with gzip.open(arch/f"{now:%Y-%m-%dT%H%MZ}.json.gz", "wt") as f:
-    json.dump({"fetched_utc": now.isoformat(), "points": keys, "response": raw}, f, separators=(",", ":"))
+    json.dump({"fetched_utc": now.isoformat(), "model_runs": runs, "points": keys, "response": raw}, f, separators=(",", ":"))
 # 2. score Mystic for each model and day
 mystic = raw[keys.index("mystic_launch")]["hourly"]
 times = mystic["time"]; win = cfg.get("flying_window_local", ["11:00", "16:00"])
@@ -164,6 +166,7 @@ for d in out_days:
 <tr><td>Wind shear to 850</td><td>{f1(k.get('shear_kmh'),' km/h')}</td></tr>
 <tr><td>Thermals (est.)</td><td>{f1(k.get('thermal_ms'),' m/s')} (BL {f1(k.get('blh_m'),' m')})</td></tr>
 <tr><td>CAPE / rain</td><td>{f1(k.get('cape'))} / {f1(k.get('rain_mm'))} mm</td></tr></table></section>""")
+runs_txt = ', '.join(f"{ {'ecmwf_ifs025':'ECMWF','ncep_gfs025':'GFS','dwd_icon':'ICON'}[m] } {v['run_init_utc'][11:13]}Z" for m, v in runs.items()) or 'unknown'
 rows = []
 if logf.exists():
     seen = {}
@@ -179,7 +182,7 @@ h1{{font-size:20px;margin:4px 0}} .upd{{color:#5f6368;font-size:13px;margin-bott
 .s b{{font-size:28px;display:block}} .s span{{font-weight:600}} .s small{{display:block;color:#5f6368;font-size:11px}}
 .why{{padding-left:18px;margin:8px 0}} table{{width:100%;border-collapse:collapse;font-size:13px}} td{{padding:3px 0;border-top:1px solid #eee}} td:first-child{{color:#5f6368;width:38%}}
 .note{{font-size:12px;color:#5f6368}} h3{{font-size:14px;margin:12px 0 4px}} .wt th{{text-align:left;font-size:12px;color:#5f6368;font-weight:600}} .wt td small{{display:block;color:#5f6368;font-size:11px}} .wt td{{white-space:nowrap}} .ar{{font-size:16px;display:inline-block;width:1.1em}} .pd{{margin:8px 0 2px;font-size:13px}} .pd.ok{{color:#2e7d32}} .why li{{font-size:13px}}</style></head><body>
-<h1>Mystic, Bright: flying forecast</h1><div class="upd">Updated {local_now.strftime('%a %d %b %H:%M %Z')} · window 11:00-16:00 · average of {len(out_days[0]['models']) if out_days else 0} models ({', '.join(out_days[0]['models']) if out_days else ''})</div>
+<h1>Mystic, Bright: flying forecast</h1><div class="upd">Updated {local_now.strftime('%a %d %b %H:%M %Z')} · window 11:00-16:00 · runs {runs_txt} · average of {len(out_days[0]['models']) if out_days else 0} models ({', '.join(out_days[0]['models']) if out_days else ''})</div>
 {''.join(cards)}
 <section class="card"><h2>Track record</h2>{'<table><tr><td>Day</td><td>XC</td><td>Acro</td><td>Lead</td></tr>'+''.join(rows)+'</table>' if rows else '<p class="note">Predictions are being logged daily. Outcomes will be compared here once flight data or pilot notes are added.</p>'}</section>
 <p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% (smoothly) and the day's score is set by the weakest rule, so the % beside a rule is how far it holds the score below 100%. Thermal strength is an estimate from sunshine and boundary-layer depth. Read it as a rough guide. Acro is experimental. Forecast data: Open-Meteo.</p></body></html>"""
