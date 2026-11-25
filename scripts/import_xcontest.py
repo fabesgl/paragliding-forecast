@@ -15,7 +15,7 @@ def warn_short(db):
     """Print every site/month whose saved flights (by UTC month) differ from XContest's printed total. Returns the number of short months."""
     bad = 0
     for site, month, exp, have in xcontest.check_totals(db):
-        if have < exp: bad += 1; print(f"  WARNING {site} {month}: saved {have} of {exp} - short by {exp - have}")
+        if have < exp: bad += 1; print(f"  INCOMPLETE {site} {month}: saved {have} of {exp} - short by {exp - have}")
         elif have > exp: print(f"  note    {site} {month}: saved {have}, XContest says {exp} (+{have - exp}; saved pages may come from a later search)")
     print("all months complete" if not bad else f"{bad} month(s) still short"); return bad
 
@@ -27,6 +27,9 @@ def summary(db, week=None):
         m = xcontest.utc_month(d, tm, off); have[(s, m)] += 1; tand[(s, m)] += cl == "T"
     print("flights per month (UTC month, as XContest counts) saved / XContest total:")
     for (s, m), n in sorted(have.items()): print(f"  {s} {m}  {n:4d} / {exp.get((s, m), '?')}   (incl. {tand[(s, m)]} tandem)")
+    inc = q("SELECT site, month, xc_total, saved FROM xc_month_status WHERE complete=0 ORDER BY 1,2")
+    print("incomplete months:", ", ".join(f"{s} {m} ({h}/{e})" for s, m, e, h in inc) or "none")
+    print("days:", ", ".join(f"{st} {n}" for st, n in q("SELECT status, COUNT(*) FROM xc_day_status GROUP BY 1")), "(unknown = month incomplete, so no flights saved does NOT mean nobody flew)")
     print("distinct pilots:", q("SELECT COUNT(DISTINCT pilot_hash) FROM xc_flight")[0][0], "| flying days:", q("SELECT COUNT(DISTINCT date) FROM xc_flight")[0][0],
           "| graded (non-tandem) flights:", q("SELECT COUNT(*) FROM xc_flight_graded")[0][0])
     for cls, n in q("SELECT COALESCE(glider_class,'?'), COUNT(*) FROM xc_flight GROUP BY 1"): print(f"  class {cls}: {n}")

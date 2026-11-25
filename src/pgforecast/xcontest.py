@@ -52,6 +52,27 @@ def check_totals(db):
         k = (s, utc_month(d, tm, off)); have[k] = have.get(k, 0) + 1
     return [(s, m, e, have.get((s, m), 0)) for (s, m), e in sorted(exp.items())]
 
+def refresh_status(db):
+    """Rebuilds xc_month_status (complete = saved >= XContest's total) and xc_day_status for every day from a site's first to last saved flight.
+    A day with flights is 'flew'. A day with none is 'no_flights' only if every UTC month it touches is complete; otherwise 'unknown'
+    (the flight may exist on XContest but not in our saved pages). A month with no saved page at all is unknown too."""
+    db.executescript("""CREATE TABLE IF NOT EXISTS xc_month_status (site TEXT, month TEXT, xc_total INTEGER, saved INTEGER, complete INTEGER, PRIMARY KEY (site, month));
+                        CREATE TABLE IF NOT EXISTS xc_day_status (site TEXT, date TEXT, status TEXT, n_flights INTEGER, PRIMARY KEY (site, date));
+                        DELETE FROM xc_month_status; DELETE FROM xc_day_status;""")
+    complete = {}
+    for site, month, exp, have in check_totals(db):
+        complete[(site, month)] = have >= exp; db.execute("INSERT INTO xc_month_status VALUES (?,?,?,?,?)", (site, month, exp, have, int(have >= exp)))
+    for (site,) in db.execute("SELECT DISTINCT site FROM xc_flight").fetchall():
+        off = db.execute("SELECT utc_offset FROM xc_flight WHERE site=? GROUP BY utc_offset ORDER BY COUNT(*) DESC LIMIT 1", (site,)).fetchone()[0]
+        n = dict(db.execute("SELECT date, COUNT(*) FROM xc_flight WHERE site=? GROUP BY date", (site,)).fetchall())
+        lo, hi = datetime.fromisoformat(min(n)), datetime.fromisoformat(max(n)); d = lo
+        while d <= hi:
+            ds = d.date().isoformat(); k = n.get(ds, 0)
+            months = {utc_month(ds, t, off) for t in ("00:00", "23:59")}
+            st = "flew" if k else ("no_flights" if all(complete.get((site, m)) for m in months) else "unknown")
+            db.execute("INSERT INTO xc_day_status VALUES (?,?,?,?)", (site, ds, st, k)); d += timedelta(days=1)
+    db.commit()
+
 def connect(path):
     db = sqlite3.connect(path); db.executescript(SCHEMA); return db
 
@@ -68,4 +89,4 @@ def import_dir(root, db, pilot_hash, out=print):
                 cur = db.execute("""INSERT OR IGNORE INTO xc_flight (flight_id,site,date,start_time,utc_offset,launch,pilot_hash,route_type,distance_km,points,glider_model,glider_class,src_file)
                                     VALUES (:flight_id,:site,:date,:start_time,:utc_offset,:launch,:pilot_hash,:route_type,:distance_km,:points,:glider_model,:glider_class,:src_file)""", r)
                 stats["added" if cur.rowcount else "duplicates"] += 1
-    db.commit(); return stats
+    refresh_status(db); return stats
