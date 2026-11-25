@@ -30,6 +30,25 @@ def limiters(rules, below=None):
     below = PULLED_BELOW if below is None else below
     return sorted([r for r in rules if r["factor"] is not None and r["factor"] < below], key=lambda r: r["factor"])
 
+NOGO_BELOW = 15       # a score under this is a no-go day: the summary leads with the deal-breaker and skips flying tips
+
+def nogo(p):
+    return p is not None and p < NOGO_BELOW
+
+def dealbreaker(rules):
+    """The rule that sinks the day (heavy rain always leads, as the clearest reason; otherwise the lowest score), worded to lead a sentence; None if nothing is limiting."""
+    lim = sorted(limiters(rules), key=lambda r: (not (r["key"] == "rain" and r["factor"] < 0.5), r["factor"]))
+    if not lim: return None, []
+    r = lim[0]
+    head = f"Rain {r['num']:.1f} mm in the window" if r["key"] == "rain" and r["num"] is not None else phrase(r)[0].upper() + phrase(r)[1:]
+    return head, lim[1:]
+
+def nogo_text(rules):
+    head, rest = dealbreaker(rules)
+    if head is None: return "Conditions are weak overall."
+    also = [phrase(r) for r in rest if r["key"] != "rain"][:1]
+    return head + (f"; also {also[0]}" if also else "") + "."
+
 def _h(h):
     return "12pm" if h == 12 else f"{h}am" if h < 12 else f"{h - 12}pm"
 
@@ -54,6 +73,7 @@ def xc_text(day):
     w = best_window(day["hourly"])
     top = f"thermals reaching about {round(k['ceiling_asl_m'], -2):,.0f} m" if k.get("ceiling_asl_m") else "usable thermals"
     clim = f" at about {k['thermal_ms']:.1f} m/s" if k.get("thermal_ms") else ""
+    if nogo(day["xc"]): return nogo_text(day["xc_rules"])
     if lab == "good":
         return f"{top[0].upper() + top[1:]}{clim}." + (f" Best window {w}." if w else "") + (f" Watch {phrase(lim[0])}." if lim else "")
     if lab == "marginal":
@@ -78,6 +98,7 @@ def aloft_phrase(day):
     return f"{d} aloft at {spd:.0f} km/h"
 
 def acro_text(day):
+    if nogo(day["acro"]): return nogo_text(day["acro_rules"])
     k, lab = day["key"], label(day["acro"]); aloft = aloft_phrase(day)
     lim = [r for r in limiters(day["acro_rules"]) if not (aloft and r["key"] in ("west_aloft", "north_aloft"))]      # already said in the aloft phrase
     head = (aloft[0].upper() + aloft[1:] + ". ") if aloft else ""
@@ -95,10 +116,13 @@ def pulled_text(day):
     for name, rules in (("XC", day["xc_rules"]), ("acro", day["acro_rules"])):
         lim = limiters(rules)
         if lim: parts.append((name, lim[0]))
+    rain = next((r for r in limiters(day["acro_rules"]) if r["key"] == "rain"), None)          # rain is a rule for both; show it when it is a factor even if something else is worse
+    if rain and not any(r["key"] == "rain" for _, r in parts): parts.append(("rain", rain))
     if not parts: return None
-    if len(parts) == 2 and parts[0][1]["key"] == parts[1][1]["key"]:
+    if rain and rain["factor"] < 0.5: parts.sort(key=lambda p: p[0] != "rain")          # heavy rain goes first, same as in the summary line
+    if len(parts) == 2 and parts[1][0] != "rain" and parts[0][1]["key"] == parts[1][1]["key"]:
         r = parts[0][1]; return f"{phrase(r)} (-{round(100 * (1 - min(parts[0][1]['factor'], parts[1][1]['factor'])))}%)"
-    return " · ".join(f"{n} {phrase(r)} (-{round(100 * (1 - r['factor']))}%)" for n, r in parts)
+    return " · ".join(f"{phrase(r) if n == 'rain' else n + ' ' + phrase(r)} (-{round(100 * (1 - r['factor']))}%)" for n, r in parts)
 
 def headline(day):
     """Short subtitle for a collapsed day row."""
