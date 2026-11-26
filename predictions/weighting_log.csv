@@ -1,0 +1,7 @@
+made_at_utc,target_date,lead_days,setting,xc_avg_of_models,acro_avg_of_models,xc_blend_equal,acro_blend_equal,xc_blend_weighted,acro_blend_weighted,models
+2026-11-26T18:38Z,2026-11-27,0,equal,0,0,0,0,0,0,gfs_seamless+ecmwf_ifs025+icon_seamless
+2026-11-26T18:38Z,2026-11-28,1,equal,0,0,0,0,0,0,gfs_seamless+ecmwf_ifs025+icon_seamless
+2026-11-26T18:38Z,2026-11-29,2,equal,0,0,10,10,10,10,gfs_seamless+ecmwf_ifs025+icon_seamless
+2026-11-26T18:38Z,2026-11-30,3,equal,20,20,33,33,33,33,gfs_seamless+ecmwf_ifs025+icon_seamless
+2026-11-26T18:38Z,2026-12-01,4,equal,86,84,99,98,89,89,gfs_seamless+ecmwf_ifs025+icon_seamless
+2026-11-26T18:38Z,2026-12-02,5,equal,34,24,57,30,0,0,gfs_seamless+ecmwf_ifs025+icon_seamless

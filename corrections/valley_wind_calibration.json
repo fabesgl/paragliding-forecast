@@ -1,12 +1,30 @@
 {
- "n_days": 0,
- "k": null,
+ "n_days": 1,
+ "k": 5.78,
  "r2": null,
+ "by_thermal": {
+  "0-1 m/s": {
+   "days": 0,
+   "mean_north_kmh": null
+  },
+  "1-1.5 m/s": {
+   "days": 0,
+   "mean_north_kmh": null
+  },
+  "1.5-2 m/s": {
+   "days": 1,
+   "mean_north_kmh": 9.4
+  },
+  "2-+ m/s": {
+   "days": 0,
+   "mean_north_kmh": null
+  }
+ },
  "ready": false,
  "station": 94889,
  "station_note": "Wangaratta: a WEAK proxy (about 60 km away on the flat). BOM has no Bright station in its free feed. Replace with a station at Bright if one turns up.",
  "current_setting": 6,
  "min_days": 30,
- "updated": "2026-11-26T03:08Z",
+ "updated": "2026-11-26T18:38Z",
  "notified": false
 }

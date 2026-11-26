@@ -1,0 +1,62 @@
+{
+ "updated": "2026-11-26T18:38Z",
+ "min_days": 30,
+ "n_days": 1,
+ "ready": false,
+ "variables": {
+  "dew_point_2m": {
+   "1-2 days": {
+    "n_days": 1,
+    "stations": [
+     "falls_creek",
+     "mount_hotham",
+     "upwind_nw"
+    ],
+    "mean_improvement_pct": 5.7,
+    "p_weighted_better": 1.0,
+    "verdict": "not enough data"
+   }
+  },
+  "temperature_2m": {
+   "1-2 days": {
+    "n_days": 1,
+    "stations": [
+     "falls_creek",
+     "mount_hotham",
+     "upwind_nw"
+    ],
+    "mean_improvement_pct": -5.7,
+    "p_weighted_better": 0.0,
+    "verdict": "not enough data"
+   }
+  },
+  "wind_gusts_10m": {
+   "1-2 days": {
+    "n_days": 1,
+    "stations": [
+     "falls_creek",
+     "mount_hotham",
+     "upwind_nw"
+    ],
+    "mean_improvement_pct": -1.8,
+    "p_weighted_better": 0.0,
+    "verdict": "not enough data"
+   }
+  },
+  "wind_speed_10m": {
+   "1-2 days": {
+    "n_days": 1,
+    "stations": [
+     "falls_creek",
+     "mount_hotham",
+     "upwind_nw"
+    ],
+    "mean_improvement_pct": 1.8,
+    "p_weighted_better": 1.0,
+    "verdict": "not enough data"
+   }
+  }
+ },
+ "score_differences": null,
+ "notified": false
+}
