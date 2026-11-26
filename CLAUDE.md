@@ -15,7 +15,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - **GitHub Actions** (`.github/workflows/daily.yml`, 07:45 and 19:45 Melbourne time): collect BOM observations, update bias corrections, valley-wind calibration check, wait for the newest ECMWF/GFS/ICON runs, fetch forecasts, score, rebuild the dashboard, commit the results back to `main` as "Daily update".
 - **Laptop (by hand)**: everything that isn't the daily job runs here today: downloaders (`fetch_barra2.py`), importers (`import_xcontest.py`, and `import_chats.py` using Haiku via the API, key from `ANTHROPIC_API_KEY`, cost-capped). Weekly jobs are **planned, not built**.
 - **Home desktop (later)**: heavy downloads and local AI (e.g. a local model for the chat importer). Not in use yet.
-- **Where data lives**: the daily job commits only `observations/ forecast_archive/ predictions/ model_runs/ corrections/ docs/`. Everything else is local and git-ignored: `data/` (SQLite: forecasts, chat labels, XContest flights, BARRA-C2 in `data/barra2/`, the hashing salt `data/chat_salt`), `xcontest_pages/`, `chat_exports/`, `igc_files/<pilot>/` (pilots' IGC/GPX tracks, shared with permission; folder = pilot identity). Backed up by hand to Fabian's Pi.
+- **Where data lives**: the daily job commits only `observations/ forecast_archive/ predictions/ model_runs/ corrections/ docs/`. Everything else is local and git-ignored: `data/` (SQLite: forecasts, chat labels, XContest flights, BARRA-C2 in `data/barra2/`, the hashing salt `data/chat_salt`), `xcontest_pages/`, `chat_exports/`, `igc_files/<pilot>/` (pilots' IGC/GPX tracks, shared with permission; folder = pilot identity).
 
 ## Layout
 - `sites/` — one config per site (`bright.yaml`) and a folder with `rules.yaml` + `notes.md`.
