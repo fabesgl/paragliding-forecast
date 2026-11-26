@@ -1,0 +1,5 @@
+# Timezone overrides for places where the automatic lookup (src/pgforecast/tzlookup.py) is wrong or approximate. Checked first.
+# Australia is handled by state-border rules in the code; elsewhere the lookup takes the nearest zone from the system tz database, which fails in big countries
+# (e.g. northern India comes out as Afghanistan, 1 h out). A box is [min, max]. Add a line here when a flight's zone looks wrong.
+overrides:
+  - {name: "Bir Billing area, Himachal Pradesh, India", lat: [30.0, 33.0], lon: [75.5, 78.5], tz: Asia/Kolkata}

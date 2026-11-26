@@ -106,6 +106,27 @@ class ImportTests(unittest.TestCase):
         self.run_import(); self.assertEqual(self.db.execute("SELECT COUNT(*) FROM igc_flight").fetchone()[0], 2)
         self.assertEqual(self.db.execute("SELECT src_file FROM igc_flight_unique").fetchall(), [("pilot1/a.igc",)])   # the IGC wins
 
+    def test_timezone_comes_from_the_launch_coordinates(self):
+        # same UTC clock time, three places: Victoria (+11 in January), Queensland (+10, no daylight saving), Spain (+1)
+        for start, off, hh in (((-36.75855, 146.96575), "+1100", "12:0"), ((-27.47, 153.03), "+1000", "11:0"), ((42.21, 1.33), "+0100", "02:0")):
+            s, _ = igc.analyse(igc.parse_igc(igc_text(track(start=start)))); self.assertEqual(s["utc_offset"], off); self.assertTrue(s["launch_time"].startswith(hh), (start, s["launch_time"]))
+        s, _ = igc.analyse(igc.parse_igc(igc_text(track(start=(-27.47, 153.03)))), tz="Australia/Melbourne"); self.assertEqual((s["utc_offset"], s["tz_method"]), ("+1100", "forced"))
+
+    def test_retime_changes_only_flights_whose_zone_changes(self):
+        (self.root / "pilot1" / "bris.igc").write_text(igc_text(track(start=(-27.47, 153.03)))); (self.root / "pilot1" / "vic.igc").write_text(igc_text(track()))
+        self.assertEqual(igc.import_root(self.root, self.db, MYSTIC, HASH, tz="Australia/Melbourne")["imported"], 2)      # old behaviour: one zone for everything
+        self.assertEqual(self.db.execute("SELECT launch_time FROM igc_flight WHERE src_file='pilot1/bris.igc'").fetchone()[0][:2], "12")
+        r = self.run_import()["retime"]                                                                                    # now by coordinates
+        self.assertEqual(len(r["changed"]), 1)
+        self.assertEqual(r["changed"][0][0], "pilot1/bris.igc")
+        self.assertEqual(self.db.execute("SELECT launch_time, utc_offset, tz FROM igc_flight WHERE src_file='pilot1/bris.igc'").fetchone(), ("11:00", "+1000", "Australia/Brisbane"))
+        self.assertEqual(self.db.execute("SELECT tz FROM igc_flight WHERE src_file='pilot1/vic.igc'").fetchone()[0], "Australia/Melbourne")
+        self.assertEqual(len(self.run_import()["retime"]["changed"]), 0)                                                    # nothing more to do
+
+    def test_no_fix_point_at_0_0_is_ignored(self):
+        tr = track(); txt = igc_text([(3600, 0.0, 0.0, 0)] + tr)
+        s, _ = igc.analyse(igc.parse_igc(txt)); self.assertTrue(abs(s["launch_lat"] + 36.75855) < 0.01)
+
     def test_bad_misplaced_and_other_files(self):
         (self.root / "pilot1" / "ok.gpx").write_text(gpx_text(track(step=12))); (self.root / "pilot1" / "bad.igc").write_text("garbage"); (self.root / "pilot1" / "x.kml").write_text("<kml/>")
         (self.root / "loose.igc").write_text(igc_text(track()))

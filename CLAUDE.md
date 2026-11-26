@@ -18,7 +18,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 
 ## Layout
 - `sites/` — one config per site (`bright.yaml`) and a folder with `rules.yaml` + `notes.md`.
-- `src/pgforecast/` — the code. `rules.py`/`rules_config.py` scoring; `summary.py` plain-English text; `render.py` dashboard; `fronts.py` cold/warm fronts; `valley.py` valley wind; `corrections.py` bias correction; `ai_opinion.py`; `xcontest.py` saved-page parser; `igc.py` IGC/GPX track parser/thermal finder; `chatlog/` chat importer.
+- `src/pgforecast/` — the code. `rules.py`/`rules_config.py` scoring; `summary.py` plain-English text; `render.py` dashboard; `fronts.py` cold/warm fronts; `valley.py` valley wind; `corrections.py` bias correction; `ai_opinion.py`; `xcontest.py` saved-page parser; `igc.py` IGC/GPX track parser/thermal finder; `tzlookup.py` timezone from coordinates; `chatlog/` chat importer.
 - `scripts/` — entry points (below). `scripts/commit.sh` = pull --rebase then push.
 - `tests/` — pytest-style tests, one file per module.
 - `docs/` — the published dashboard (GitHub Pages). Written by the daily job only.
@@ -35,7 +35,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - `python scripts/fetch_barra2.py bright` — BARRA-C2 reanalysis boxes into `data/barra2/` (resumable).
 - `python scripts/import_chats.py chat.txt --default-site bright` — chat labels (`--backend anthropic` for Haiku; `--dry-run` to count).
 - `python scripts/import_xcontest.py --summary` — import saved XContest pages; warns about incomplete months.
-- `python scripts/import_igc.py igc_files` — import `.igc` and `.gpx` tracks from `igc_files/<pilot>/` offline into `data/igc_flights.sqlite` (flights, thermal circles, launch site by coordinates, sample-rate flag). Folder name = pilot (hashed). Re-run safe; prints a summary and lists skipped files.
+- `python scripts/import_igc.py igc_files` — import `.igc` and `.gpx` tracks from `igc_files/<pilot>/` offline into `data/igc_flights.sqlite` (flights, thermal circles, launch site by coordinates, sample-rate flag). Folder name = pilot (hashed). Each flight's local time uses the timezone of its launch coordinates (`tzlookup.py`; overrides in `sites/timezones.yaml`; flights outside Australia are marked approximate). Re-run safe; prints a summary and lists skipped files.
 - `python scripts/thermal_zones.py --split ring` — Emily vs Marcus thermals at Mystic vs BARRA-C2 weather (read-only analysis, pilot1 only by default; writes `data/thermal_zones/`).
 - `scripts/commit.sh "message"` — pull --rebase, add code paths only, commit, push.
 - Tests: `.venv/bin/python -m pytest tests`.
