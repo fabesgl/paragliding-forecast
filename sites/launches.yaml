@@ -1,0 +1,8 @@
+# Known launches, used by the IGC importer to name a flight's launch site by coordinates (nearest launch within radius_m).
+# Anything not matched is stored as "unknown@LAT,LON" (on a ~1 km grid) so repeat launches still group together.
+# status "approx" = placed from where a pilot's tracks actually start, NOT surveyed; Fabian to confirm.
+launches:
+  - {id: mystic,    name: "Mystic launch, Bright (VIC)", lat: -36.75855, lon: 146.96575, radius_m: 600,  status: confirmed}   # same point as sites/bright.yaml
+  - {id: flowerdale, name: "Flowerdale (VIC)",           lat: -37.2962,  lon: 145.2795,  radius_m: 800,  status: approx}
+  - {id: manilla,    name: "Manilla (NSW)",              lat: -30.6724,  lon: 150.6164,  radius_m: 2500, status: approx}      # more than one launch here
+# Not yet seen in any track, coordinates still to come from Fabian: organya (Spain), dandenongs (VIC)

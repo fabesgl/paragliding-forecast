@@ -7,7 +7,7 @@ Tick items off (`[x]`) as we finish them. Order = priority.
 
 ## Next
 1. [ ] Forecast error step vs BARRA-C2, then weight the models by accuracy at Bright, then the correction layer
-2. [ ] Import the ~500 IGC files a pilot gave me
+2. [x] Import the ~500 IGC files a pilot gave me (done 2026-11-26: 510 unique flights; `scripts/import_igc.py`). Still to do: confirm launch names/coords in `sites/launches.yaml`, add Organyà and Dandenongs
 3. [ ] Save another year or two of Mystic flights from XContest (manual; `xcontest_pages/mystic_<year>/`)
 4. [ ] Quick rule wins: check the rules score cloud cover; use the soaring-weather and XC principles docs
 5. [ ] First Creo test, with the rules' deal-breakers as hard limits Creo can't override

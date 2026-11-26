@@ -20,3 +20,7 @@ data/chat_salt
 
 # saved XContest pages (personal login, never commit)
 xcontest_pages/
+
+# IGC flight tracks from pilots (personal data, never commit)
+igc_files/
+*.igc
