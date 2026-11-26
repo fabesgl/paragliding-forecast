@@ -11,7 +11,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - **AI second opinion** = a Claude panel on the dashboard (`src/pgforecast/ai_opinion.py`). It comments; it never changes the scores.
 
 ## How it runs
-- **Model weighting**: the job blends the models per variable with `sites/bright/model_weights.json` (ACCESS-G dropped, GFS out of gusts) and then scores the blend. Switch back to the plain average with the GitHub variable `MODEL_WEIGHTING=equal` (Settings > Variables) or `model_weighting: equal` in `sites/bright.yaml`. Both blends and the old average are logged in `predictions/weighting_log.csv`.
+- **Model weighting**: the job blends the models per variable with `sites/bright/model_weights.json` (ACCESS-G dropped, GFS out of gusts) and then scores the blend. **Currently `model_weighting: equal` (the old method stays live until the one-month review, ~2026-12-26)**; switch with the GitHub variable `MODEL_WEIGHTING` (`weighted` or `equal`, Settings > Variables) or `model_weighting` in `sites/bright.yaml`. Both blends and the old average are logged in `predictions/weighting_log.csv`.
 - **GitHub Actions** (`.github/workflows/daily.yml`, 07:45 and 19:45 Melbourne time): collect BOM observations, update bias corrections, valley-wind calibration check, wait for the newest ECMWF/GFS/ICON runs, fetch forecasts, score, rebuild the dashboard, commit the results back to `main` as "Daily update".
 - **Laptop (by hand)**: everything that isn't the daily job runs here today: downloaders (`fetch_barra2.py`), importers (`import_xcontest.py`, and `import_chats.py` using Haiku via the API, key from `ANTHROPIC_API_KEY`, cost-capped). Weekly jobs are **planned, not built**.
 - **Home desktop (later)**: heavy downloads and local AI (e.g. a local model for the chat importer). Not in use yet.
@@ -72,4 +72,4 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - BARRA-C2 downloader and chat-label importer built; chat labels are weak evidence.
 - XContest importer built; Mystic 2026 imported (Jan and Apr incomplete, flagged); older years to be saved by hand.
 - IGC/GPX importer built; per-pilot folders (`pilot1` 509 unique flights, `pilot2` 620). Flights with a track sample gap over ~5 s are flagged `low_rate` (thermals unreliable). Emily vs Marcus analysis done on pilot1 (`scripts/thermal_zones.py`); not used by the dashboard.
-- Forecast error vs BARRA-C2 and BOM stations done (2026-11-26); per-variable model weights are live (switchable); BARRA-based corrections tested and rejected; correction layer waits for Mystic station readings (see `TODO.md`). Creo not started.
+- Forecast error vs BARRA-C2 and BOM stations done (2026-11-26); per-variable model weights are built and logged but the old method stays published until the review; BARRA-based corrections tested and rejected; correction layer waits for Mystic station readings (see `TODO.md`). Creo not started.
