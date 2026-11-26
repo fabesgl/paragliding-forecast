@@ -67,6 +67,11 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - Months where saved XContest flights < XContest's total are **incomplete**; days with no saved flights there are **unknown**, not "nobody flew" (`xc_day_status`). Tandem (class T) is stored but excluded from XC grading (`xc_flight_graded`).
 - Keep this file, the README-style notes and the tests current when behaviour changes. Log decisions in `DECISIONS.md`; tick `TODO.md`.
 
+## Working style
+- Do only what the prompt asks. Don't suggest extra features, improvements or follow-up ideas.
+- Do report bugs, wrong results, data problems or risks, briefly.
+- TODO.md only holds real actions with a clear result. No ideas or nice-to-haves.
+
 ## Status (2026-11-26)
 - Daily forecast live twice a day: 6 days, XC and acro %, hourly windows, fronts, plain-English summary, AI second opinion.
 - BOM observations and bias corrections run daily; valley-wind calibration is reporting only (rules unchanged).
