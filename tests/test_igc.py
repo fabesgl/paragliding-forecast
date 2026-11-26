@@ -123,6 +123,14 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(self.db.execute("SELECT tz FROM igc_flight WHERE src_file='pilot1/vic.igc'").fetchone()[0], "Australia/Melbourne")
         self.assertEqual(len(self.run_import()["retime"]["changed"]), 0)                                                    # nothing more to do
 
+    def test_adding_a_launch_re_tags_flights_already_imported(self):
+        (self.root / "pilot1" / "a.igc").write_text(igc_text(track()))
+        igc.import_root(self.root, self.db, [], HASH)
+        self.assertTrue(self.db.execute("SELECT launch_site FROM igc_flight").fetchone()[0].startswith("unknown@"))
+        r = igc.import_root(self.root, self.db, MYSTIC, HASH)
+        self.assertEqual(self.db.execute("SELECT launch_site FROM igc_flight").fetchone()[0], "mystic"); self.assertEqual(sum(r["relabeled"].values()), 1)
+        self.assertEqual(igc.import_root(self.root, self.db, MYSTIC, HASH)["relabeled"], {})
+
     def test_no_fix_point_at_0_0_is_ignored(self):
         tr = track(); txt = igc_text([(3600, 0.0, 0.0, 0)] + tr)
         s, _ = igc.analyse(igc.parse_igc(txt)); self.assertTrue(abs(s["launch_lat"] + 36.75855) < 0.01)

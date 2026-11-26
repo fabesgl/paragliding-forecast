@@ -26,6 +26,14 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - `data/`, `xcontest_pages/`, `chat_exports/` — local only. `design/`, `pwa/` — mockups, app icons/manifest.
 - Notes: `BRIGHT_MODEL_BRIEF.md` (original brief), `PHASE3_NOTES.md` (forecast archive sources), `CHAT_IMPORT.md`. Plans: `TODO.md`. Decisions: `DECISIONS.md`.
 
+## Adding a site (any country)
+1. `sites/<id>.yaml`: copy `bright.yaml` — location points, timezone, flying window. Put BOM stations in only for Australian sites.
+2. `sites/<id>/rules.yaml` (limits) and `notes.md`.
+3. `sites/launches.yaml`: one entry per launch, each with `site: <id>`, its own `id`, region, country (ISO), timezone, lat/lon and `radius_m`. Several launches can share one site. Never rename a launch `id` once flights are imported.
+4. Re-run `python scripts/import_igc.py igc_files`: it re-tags every stored flight to the current launch list, so new or moved launches apply to flights already imported.
+5. Weather for past days: **BARRA-C2 is Australia-only** (BOM reanalysis, `scripts/fetch_barra2.py`). Overseas sites (Organyà, Bir...) need **ERA5** (global, ~25 km, hourly, Copernicus CDS), or **CERRA** for Europe (~5.5 km, covers 1984 to about mid-2021; check the CDS page for its end date). Not built yet. Timestamps are UTC in all of them; the site's own timezone is only for display.
+6. Track timezones need no setup: they come from each flight's coordinates (`tzlookup.py`; oddities in `sites/timezones.yaml`).
+
 ## Run the main scripts (from the project root, `.venv` active)
 - `python scripts/daily_forecast.py bright` — fetch, score, rebuild `docs/` (normally run by GitHub).
 - `python scripts/fetch_forecasts.py bright [--until YYYY-MM-DD]` — fetch/archive forecasts.

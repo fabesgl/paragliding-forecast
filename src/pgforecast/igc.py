@@ -339,13 +339,24 @@ def retime(db, root, known_sites, pilot_hasher, tz=None):
     db.commit(); return out
 
 
+def relabel(db, known_sites):
+    """Re-match every stored flight's launch to the current launch list (sites/launches.yaml), so adding or moving a launch updates flights already imported.
+    Returns {(old launch, new launch): number of flights} for the ones that changed."""
+    changed = {}
+    for key, la, lo, old in db.execute("SELECT src_file, launch_lat, launch_lon, launch_site FROM igc_flight WHERE launch_lat IS NOT NULL AND launch_lon IS NOT NULL").fetchall():
+        new = match_site(la, lo, known_sites)
+        if new != old:
+            db.execute("UPDATE igc_flight SET launch_site=? WHERE src_file=?", (new, key)); changed[(old, new)] = changed.get((old, new), 0) + 1
+    db.commit(); return changed
+
+
 def import_root(root, db, known_sites, pilot_hasher, tz=None):
     """Import every .igc/.gpx under root/<pilot>/ . The folder name is the pilot (hashed by `pilot_hasher`); names inside the files are ignored.
     Re-runnable and safe against duplicates: a file already stored (same path) or whose content was already stored for that pilot is skipped.
     tz: None = zone from each flight's launch coordinates. Returns dict(imported, already, same_content, low_rate, failed=[(path, reason)], ignored=[paths of other file types], per_pilot={folder: imported})."""
     root = Path(root); res = dict(imported=0, already=0, same_content=0, low_rate=0, failed=[], ignored=[], per_pilot={})
     mig, _ = migrate_legacy(db, root, pilot_hasher); res["migrated"] = mig; res["backfilled"] = _backfill(db, root, pilot_hasher)
-    res["retime"] = retime(db, root, known_sites, pilot_hasher, tz)
+    res["retime"] = retime(db, root, known_sites, pilot_hasher, tz); res["relabeled"] = relabel(db, known_sites)
     done = {r[0] for r in db.execute("SELECT src_file FROM igc_flight")}
     shas = {(r[0], r[1]) for r in db.execute("SELECT pilot_folder, file_sha1 FROM igc_flight WHERE file_sha1 IS NOT NULL")}
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")

@@ -37,6 +37,8 @@ def summary(db, res=None):
     if res:
         print(f"\nthis run: imported {res['imported']} new ({', '.join(f'{k} {v}' for k, v in res['per_pilot'].items()) or 'none'}), already stored {res['already']}, same content already stored {res['same_content']},"
               f" migrated old rows to folder keys {res.get('migrated', 0)}, back-filled {res.get('backfilled', 0)}; flagged low sample rate this run: {res['low_rate']}")
+        rl = res["relabeled"]
+        if rl: print(f"launches re-tagged for {sum(rl.values())} flights: " + "; ".join(f"{o} -> {n} x{c}" for (o, n), c in sorted(rl.items(), key=lambda x: -x[1])))
         rt = res["retime"]
         print(f"timezones: written for {rt['recorded']} flights whose times did not change; {len(rt['changed'])} flights re-timed because their zone differs from the old one"
               + (f"; {len(rt['missing'])} could not be re-timed (file missing)" if rt["missing"] else ""))

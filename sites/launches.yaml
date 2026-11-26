@@ -1,8 +1,29 @@
-# Known launches, used by the IGC importer to name a flight's launch site by coordinates (nearest launch within radius_m).
+# Known launches, used by the IGC importer to name a flight's launch by coordinates (nearest launch within radius_m).
 # Anything not matched is stored as "unknown@LAT,LON" (on a ~1 km grid) so repeat launches still group together.
-# status "approx" = placed from where a pilot's tracks actually start, NOT surveyed; Fabian to confirm.
+#
+# One entry per LAUNCH. Several launches can belong to one SITE: give them the same `site` and different `id`s (e.g. two Bright launches would both be site: bright).
+# Fields:
+#   id        short unique name of this launch; stored on every imported flight, so do not rename it once flights are imported
+#   site      the site this launch belongs to = the id of its file sites/<site>.yaml (that file may not exist yet for a new site)
+#   name      human name        region  state / province / autonomous community        country  ISO 3166 two-letter code
+#   tz        IANA timezone of the launch (documentation; the importer works the flight's timezone out from its coordinates, see src/pgforecast/tzlookup.py)
+#   lat, lon  launch position   radius_m  a flight starting within this distance of the point counts as this launch (bigger where launches are close together)
+#   kind      hill = foot/slope launch | tow = winch or tow (an airfield, not a hill launch: its flights are not comparable with hill flights)
+#   status    confirmed = checked by Fabian | approx = taken from where a pilot's tracks actually start, not surveyed | placeholder = a guess, replace it
+# After adding or moving a launch, run `python scripts/import_igc.py igc_files`: every stored flight is re-matched to this list (flights matching no launch stay unknown@LAT,LON).
 launches:
-  - {id: mystic,    name: "Mystic launch, Bright (VIC)", lat: -36.75855, lon: 146.96575, radius_m: 600,  status: confirmed}   # same point as sites/bright.yaml
-  - {id: flowerdale, name: "Flowerdale (VIC)",           lat: -37.2962,  lon: 145.2795,  radius_m: 800,  status: approx}
-  - {id: manilla,    name: "Manilla (NSW)",              lat: -30.6724,  lon: 150.6164,  radius_m: 2500, status: approx}      # more than one launch here
-# Not yet seen in any track, coordinates still to come from Fabian: organya (Spain), dandenongs (VIC)
+  # ---- Australia -------------------------------------------------------------------------------------------------------------------------------------------
+  - {id: mystic,     site: bright,     name: "Mystic launch, Bright",  region: Victoria,         country: AU, tz: Australia/Melbourne, kind: hill, lat: -36.75855, lon: 146.96575, radius_m: 600,  status: confirmed}   # same point as sites/bright.yaml
+  - {id: flowerdale, site: flowerdale, name: "Flowerdale",             region: Victoria,         country: AU, tz: Australia/Melbourne, kind: hill, lat: -37.2962,  lon: 145.2795,  radius_m: 800,  status: approx}
+  - {id: manilla,    site: manilla,    name: "Manilla",                region: "New South Wales", country: AU, tz: Australia/Sydney, kind: hill,    lat: -30.6724,  lon: 150.6164,  radius_m: 2500, status: approx}      # more than one launch here: split into several entries once their positions are known
+  - {id: mt_broughton, site: yea,      name: "Mt Broughton (Thistle Hill), near Yea", region: Victoria, country: AU, tz: Australia/Melbourne, kind: hill, lat: -37.12292, lon: 145.41320, radius_m: 300, status: approx}   # 93 flights; 4 odd starts 0.8-1.6 km away stay unknown
+  - {id: mt_elliot,    site: corryong, name: "Mt Elliot, Corryong",                   region: Victoria, country: AU, tz: Australia/Melbourne, kind: hill, lat: -36.18587, lon: 147.97547, radius_m: 300, status: approx}
+  - {id: tawonga_gap,  site: tawonga,  name: "Tawonga Gap",                           region: Victoria, country: AU, tz: Australia/Melbourne, kind: hill, lat: -36.71637, lon: 147.12273, radius_m: 300, status: approx}
+  - {id: gundowring,   site: gundowring, name: "Gundowring (Kiewa Valley)",           region: Victoria, country: AU, tz: Australia/Melbourne, kind: hill, lat: -36.39583, lon: 147.08982, radius_m: 300, status: approx}
+  - {id: porepunkah_airfield, site: bright, name: "Porepunkah Airfield (tow / winch)",  region: Victoria, country: AU, tz: Australia/Melbourne, kind: tow,  lat: -36.72160, lon: 146.88923, radius_m: 400, status: approx}   # same Bright area as Mystic but a tow launch: keep its flights apart from hill-launch analysis
+  # ---- Spain -----------------------------------------------------------------------------------------------------------------------------------------------
+  - {id: organya,    site: organya,    name: "Organyà",                region: Catalonia,        country: ES, tz: Europe/Madrid, kind: hill,       lat: 42.2141,   lon: 1.3306,    radius_m: 3000, status: placeholder}  # village centre, NOT the take-off: replace with the launch position
+  # ---- India -----------------------------------------------------------------------------------------------------------------------------------------------
+  - {id: bir_billing,  site: bir,      name: "Bir Billing",                           region: "Himachal Pradesh", country: IN, tz: Asia/Kolkata, kind: hill, lat: 32.05967, lon: 76.74446, radius_m: 800, status: approx}
+  - {id: ager_montsec, site: montsec,  name: "Àger / Montsec",                        region: Catalonia, country: ES, tz: Europe/Madrid, kind: hill, lat: 42.04600, lon: 0.74612, radius_m: 1300, status: approx}   # ridge: 5 flights started up to 1.1 km apart
+# Not added yet (no coordinates): dandenongs (Victoria)
