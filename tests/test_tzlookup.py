@@ -17,13 +17,22 @@ class TzLookupTests(unittest.TestCase):
         self.assertEqual(self.z(-28.0, 153.4), "Australia/Brisbane")      # Gold Coast: Queensland, no daylight saving
         self.assertEqual(self.z(-28.64, 153.61), "Australia/Sydney")     # Byron Bay: NSW, which has it
 
-    def test_overseas_uses_nearest_and_says_so(self):
-        self.assertEqual(tzlookup.zone_for(42.21, 1.33)[1], "nearest")
-        self.assertIn(self.z(42.21, 1.33), ("Europe/Madrid", "Europe/Andorra", "Europe/Paris"))    # Organya: CET either way
-        self.assertEqual(self.z(35.2, -111.6), "America/Phoenix")
+    def test_timezonefinder_is_used_when_installed(self):
+        if not tzlookup._finder(): self.skipTest("timezonefinder not installed")
+        self.assertEqual(tzlookup.zone_for(42.21, 1.33), ("Europe/Madrid", "timezonefinder"))      # Organya
+        self.assertEqual(self.z(35.2, -111.6), "America/Phoenix"); self.assertEqual(self.z(51.1, -115.3), "America/Edmonton")
+
+    def test_fallback_without_timezonefinder_says_it_is_approximate(self):
+        saved = tzlookup._TF; tzlookup._TF = False
+        try:
+            self.assertEqual(tzlookup.zone_for(42.21, 1.33)[1], "nearest"); self.assertEqual(tzlookup.zone_for(-28.64, 153.61), ("Australia/Sydney", "australia"))
+        finally: tzlookup._TF = saved
 
     def test_override_box_wins(self):
         self.assertEqual(tzlookup.zone_for(32.07, 76.72), ("Asia/Kolkata", "override"))             # Bir Billing (sites/timezones.yaml)
+        saved = tzlookup._OVR; tzlookup._OVR = [{"lat": [-37, -36], "lon": [146, 147], "tz": "Australia/Perth"}]
+        try: self.assertEqual(tzlookup.zone_for(-36.7586, 146.9658), ("Australia/Perth", "override"))
+        finally: tzlookup._OVR = saved
 
 
 if __name__ == "__main__": unittest.main()

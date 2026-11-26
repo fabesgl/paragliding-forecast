@@ -320,10 +320,12 @@ def retime(db, root, known_sites, pilot_hasher, tz=None):
     Flights with no zone yet get it written; if the new zone gives a different UTC offset at that moment, the file is analysed again (date, times, thermal times change).
     Returns dict(recorded=n whose times stayed the same, changed=[(file, old 'date time offset', new 'date time offset', zone)], missing=[files not on disk])."""
     out = dict(recorded=0, changed=[], missing=[]); now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
-    rows = db.execute("SELECT src_file, launch_lat, launch_lon, date, launch_time, utc_offset, tz, pilot_folder, source_fmt, file_sha1 FROM igc_flight WHERE launch_lat IS NOT NULL AND launch_lon IS NOT NULL AND utc_offset IS NOT NULL").fetchall()
-    for key, la, lo, date, lt, off, old_tz, folder, fmt, sha in rows:
+    rows = db.execute("SELECT src_file, launch_lat, launch_lon, date, launch_time, utc_offset, tz, pilot_folder, source_fmt, file_sha1, tz_method FROM igc_flight WHERE launch_lat IS NOT NULL AND launch_lon IS NOT NULL AND utc_offset IS NOT NULL").fetchall()
+    for key, la, lo, date, lt, off, old_tz, folder, fmt, sha, old_method in rows:
         want, method = (tz, "forced") if tz else tzlookup.zone_for(la, lo)
-        if old_tz == want: continue
+        if old_tz == want and old_method == method: continue
+        if old_tz == want:                                               # same zone, better label (e.g. now confirmed by timezonefinder)
+            db.execute("UPDATE igc_flight SET tz_method=? WHERE src_file=?", (method, key)); out["recorded"] += 1; continue
         sign = 1 if off[0] == "+" else -1; offs = sign * (int(off[1:3]) * 3600 + int(off[3:5]) * 60)
         inst = datetime.fromisoformat(f"{date}T{lt}:00").replace(tzinfo=timezone.utc) - timedelta(seconds=offs)
         if inst.astimezone(ZoneInfo(want)).utcoffset() == timedelta(seconds=offs):

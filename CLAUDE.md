@@ -35,7 +35,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - `python scripts/fetch_barra2.py bright` — BARRA-C2 reanalysis boxes into `data/barra2/` (resumable).
 - `python scripts/import_chats.py chat.txt --default-site bright` — chat labels (`--backend anthropic` for Haiku; `--dry-run` to count).
 - `python scripts/import_xcontest.py --summary` — import saved XContest pages; warns about incomplete months.
-- `python scripts/import_igc.py igc_files` — import `.igc` and `.gpx` tracks from `igc_files/<pilot>/` offline into `data/igc_flights.sqlite` (flights, thermal circles, launch site by coordinates, sample-rate flag). Folder name = pilot (hashed). Each flight's local time uses the timezone of its launch coordinates (`tzlookup.py`; overrides in `sites/timezones.yaml`; flights outside Australia are marked approximate). Re-run safe; prints a summary and lists skipped files.
+- `python scripts/import_igc.py igc_files` — import `.igc` and `.gpx` tracks from `igc_files/<pilot>/` offline into `data/igc_flights.sqlite` (flights, thermal circles, launch site by coordinates, sample-rate flag). Folder name = pilot (hashed). Each flight's local time uses the timezone of its launch coordinates (`tzlookup.py` using the `timezonefinder` package, laptop only: `pip install -r requirements-igc.txt`; hand overrides in `sites/timezones.yaml`). Re-run safe; prints a summary and lists skipped files.
 - `python scripts/thermal_zones.py --split ring` — Emily vs Marcus thermals at Mystic vs BARRA-C2 weather (read-only analysis, pilot1 only by default; writes `data/thermal_zones/`).
 - `scripts/commit.sh "message"` — pull --rebase, add code paths only, commit, push.
 - Tests: `.venv/bin/python -m pytest tests`.

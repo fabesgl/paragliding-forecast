@@ -1,11 +1,11 @@
 """Timezone of a point from its coordinates, offline. Used to turn UTC track times into the local time at the launch (Queensland has no daylight saving; Spain is 9-10 h behind Victoria).
-Australia: explicit state-border rules (the nearest-city shortcut puts Byron Bay in Queensland). Everywhere else: the nearest zone in the system tz database's zone1970.tab
-(its representative point per zone), so near a border or on an island the answer can be wrong; that table is the only data used."""
+Order: 1) hand-written boxes in sites/timezones.yaml (for oddities), 2) the `timezonefinder` package (zone polygons, accurate worldwide; pip install -r requirements-igc.txt),
+3) only if that package is missing: Australian state-border rules, then the nearest zone in the system tz database's zone1970.tab, which is approximate (marked 'nearest')."""
 import math, zoneinfo
 from pathlib import Path
 
 OVERRIDES_FILE = Path(__file__).resolve().parent.parent.parent / "sites" / "timezones.yaml"
-_ZONES = None; _OVR = None
+_ZONES = None; _OVR = None; _TF = None
 
 
 def _load():
@@ -58,11 +58,26 @@ def _overrides():
     return _OVR
 
 
+def _finder():
+    """The timezonefinder object, or False if the package is not installed."""
+    global _TF
+    if _TF is None:
+        try:
+            from timezonefinder import TimezoneFinder
+            _TF = TimezoneFinder()
+        except ImportError: _TF = False
+    return _TF
+
+
 def zone_for(lat, lon):
-    """(IANA timezone name, method) for the coordinates. method: 'override' (a box in sites/timezones.yaml), 'australia' (state-border rules, reliable)
-    or 'nearest' (approximate: check flights outside Australia)."""
+    """(IANA timezone name, method) for the coordinates. method: 'override' (a box in sites/timezones.yaml), 'timezonefinder' (zone polygons, accurate),
+    or the fallbacks used only when that package is missing: 'australia' (state-border rules) and 'nearest' (approximate)."""
     for o in _overrides():
         if o["lat"][0] <= lat <= o["lat"][1] and o["lon"][0] <= lon <= o["lon"][1]: return o["tz"], "override"
+    tf = _finder()
+    if tf:
+        z = tf.timezone_at(lat=lat, lng=lon)
+        if z and not z.startswith("Etc/"): return z, "timezonefinder"          # Etc/GMT... = open sea: use the fallbacks instead
     z = _australia(lat, lon)
     if z: return z, "australia"
     return min(_load(), key=lambda t: _km(lat, lon, t[0], t[1]))[2], "nearest"

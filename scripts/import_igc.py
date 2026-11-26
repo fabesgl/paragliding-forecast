@@ -32,7 +32,7 @@ def summary(db, res=None):
     for s, c, d in q(f"SELECT launch_site, COUNT(*), COUNT(DISTINCT date) FROM {U} GROUP BY 1 ORDER BY 2 DESC LIMIT 12"): print(f"  {s:28s} {c:4d} flights, {d:4d} days")
     print("Mystic flights per pilot and year (unique flights):")
     for f, y, c, d in q(f"SELECT pilot_folder, substr(date,1,4), COUNT(*), COUNT(DISTINCT date) FROM {U} WHERE launch_site='mystic' GROUP BY 1,2 ORDER BY 1,2"): print(f"  {f} {y}: {c:3d} flights on {d:3d} days")
-    print("timezone per flight (how many; method):", ", ".join(f"{z or '?'} {c}" + ("" if m in ("australia", "forced", "override") else " [approximate]") for z, m, c in q("SELECT tz, tz_method, COUNT(*) FROM igc_flight GROUP BY 1,2 ORDER BY 3 DESC")))
+    print("timezone per flight (how many; method):", ", ".join(f"{z or '?'} {c}" + ("" if m in ("timezonefinder", "australia", "forced", "override") else " [approximate]") for z, m, c in q("SELECT tz, tz_method, COUNT(*) FROM igc_flight GROUP BY 1,2 ORDER BY 3 DESC")))
     print("thermal reliability: flights usable for thermal work (not low_rate):", q(f"SELECT COUNT(*) FROM {U} WHERE low_rate=0")[0][0], "of", n)
     if res:
         print(f"\nthis run: imported {res['imported']} new ({', '.join(f'{k} {v}' for k, v in res['per_pilot'].items()) or 'none'}), already stored {res['already']}, same content already stored {res['same_content']},"
