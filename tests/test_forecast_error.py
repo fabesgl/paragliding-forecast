@@ -38,6 +38,12 @@ class T(unittest.TestCase):
         self.assertAlmostEqual(FE.height_correction_c(313, 549), 1.534)       # BARRA terrain higher -> add
         self.assertEqual(FE.height_correction_c(500, 500), 0.0)
 
+    def test_height_adjustments_skip_ridge_points(self):
+        pts = {"mystic": {"role": "launch"}, "hotham": {"role": "ridge_ref"}, "flat": {"role": "upwind"}, "nodata": {"role": "landing"}}
+        el = {"mystic": {"barra_m": 588, "openmeteo_m": 786}, "hotham": {"barra_m": 947, "openmeteo_m": 1752}, "flat": {"barra_m": 149, "openmeteo_m": 148}}
+        adj = FE.height_adjustments(pts, el)
+        self.assertAlmostEqual(adj["mystic"], -1.287); self.assertEqual(adj["hotham"], 0.0); self.assertAlmostEqual(adj["flat"], 0.0065); self.assertEqual(adj["nodata"], 0.0)
+
     def test_direction_error_ignores_light_wind(self):
         e = FE.error_columns([10, 10], [350, 350], "dir", bm_speed=[20, 2])
         self.assertAlmostEqual(e[0], 20.0); self.assertTrue(np.isnan(e[1]))

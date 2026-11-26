@@ -96,6 +96,20 @@ def height_correction_c(forecast_elev_m, barra_elev_m, lapse=LAPSE_C_PER_KM):
     return -lapse / 1000.0 * (forecast_elev_m - barra_elev_m)
 
 
+NO_HEIGHT_CORRECTION_ROLES = {"ridge_ref"}     # BARRA's smoothed terrain is 240-800 m below the ridges, so the lapse-rate fix is not reliable there
+
+
+def height_adjustments(points, elevations):
+    """{point: degrees to add to BARRA's 2 m temperature}. Ridge reference points get 0 (left uncorrected); every other point is moved to the
+    elevation Open-Meteo used. points: the site file's points (with 'role'); elevations: {point: {'barra_m', 'openmeteo_m'}}."""
+    out = {}
+    for k, p in points.items():
+        e = elevations.get(k)
+        skip = p.get("role") in NO_HEIGHT_CORRECTION_ROLES or not e or e.get("openmeteo_m") is None
+        out[k] = 0.0 if skip else height_correction_c(e["openmeteo_m"], e["barra_m"])
+    return out
+
+
 def season_of(month):
     return SEASONS[int(month)]
 

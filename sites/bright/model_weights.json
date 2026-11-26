@@ -1,0 +1,88 @@
+{
+ "dropped": [
+  "bom_access_global"
+ ],
+ "made_from": "scripts/model_weights.py (hist lead; stations for 10 m wind, gusts, 2 m temperature, dew point; BARRA-C2 at Mystic for the rest)",
+ "models": [
+  "ecmwf_ifs025",
+  "gfs_seamless",
+  "icon_seamless"
+ ],
+ "provisional": [
+  "cape"
+ ],
+ "status": "approved by Fabian 2026-11-26",
+ "version": 1,
+ "weights": {
+  "boundary_layer_height": {
+   "ecmwf_ifs025": 0.0,
+   "gfs_seamless": 1.0,
+   "icon_seamless": 0.0
+  },
+  "cape": {
+   "ecmwf_ifs025": 0.378,
+   "gfs_seamless": 0.354,
+   "icon_seamless": 0.268
+  },
+  "cloud_base_agl": {
+   "ecmwf_ifs025": 0.42,
+   "gfs_seamless": 0.33,
+   "icon_seamless": 0.25
+  },
+  "dew_point_2m": {
+   "ecmwf_ifs025": 0.342,
+   "gfs_seamless": 0.246,
+   "icon_seamless": 0.412
+  },
+  "temperature_2m": {
+   "ecmwf_ifs025": 0.475,
+   "gfs_seamless": 0.227,
+   "icon_seamless": 0.298
+  },
+  "temperature_700hPa": {
+   "ecmwf_ifs025": 0.371,
+   "gfs_seamless": 0.31,
+   "icon_seamless": 0.32
+  },
+  "temperature_850hPa": {
+   "ecmwf_ifs025": 0.391,
+   "gfs_seamless": 0.169,
+   "icon_seamless": 0.441
+  },
+  "wind_direction_10m": {
+   "ecmwf_ifs025": 0.376,
+   "gfs_seamless": 0.268,
+   "icon_seamless": 0.356
+  },
+  "wind_direction_700hPa": {
+   "ecmwf_ifs025": 0.314,
+   "gfs_seamless": 0.334,
+   "icon_seamless": 0.352
+  },
+  "wind_direction_850hPa": {
+   "ecmwf_ifs025": 0.35,
+   "gfs_seamless": 0.329,
+   "icon_seamless": 0.321
+  },
+  "wind_gusts_10m": {
+   "ecmwf_ifs025": 0.474,
+   "gfs_seamless": 0.0,
+   "icon_seamless": 0.526
+  },
+  "wind_speed_10m": {
+   "ecmwf_ifs025": 0.324,
+   "gfs_seamless": 0.309,
+   "icon_seamless": 0.367
+  },
+  "wind_speed_700hPa": {
+   "ecmwf_ifs025": 0.336,
+   "gfs_seamless": 0.3,
+   "icon_seamless": 0.363
+  },
+  "wind_speed_850hPa": {
+   "ecmwf_ifs025": 0.365,
+   "gfs_seamless": 0.26,
+   "icon_seamless": 0.375
+  }
+ }
+}

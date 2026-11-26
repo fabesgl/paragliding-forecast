@@ -6,7 +6,7 @@ Tick items off (`[x]`) as we finish them. Order = priority.
 - [ ] CLAUDE.md (written, awaiting review and commit)
 
 ## Next
-1. [~] Forecast error step vs BARRA-C2 DONE 2026-11-26 (`data/forecast_error/report.md`); weights PROPOSED (`scripts/model_weights.py`), waiting for Fabian before the daily job uses them; next: wire in the weights and the models by accuracy at Bright, then the correction layer
+1. [~] Forecast error step vs BARRA-C2 DONE 2026-11-26 (`data/forecast_error/report.md`); weights LIVE since 2026-11-26 (switchable); one-month review opens a GitHub issue by itself (~2026-12-26). Correction layer: BARRA-based corrections rejected (made real error worse); the existing station-learned layer (`corrections.py`) works but Mystic has no station. NEXT: get Mystic station readings (item 7 FreeFlightWx or own sensor), write them to `observations/<id>.csv` in the BOM columns and set `bom_station: <id>` on `mystic_launch` in `sites/bright.yaml`; the layer then learns at Mystic by itself (30 days to start). Leave 10 m wind uncorrected until then
 2. [x] Import the ~500 IGC files a pilot gave me (done 2026-11-26: 510 unique flights; `scripts/import_igc.py`). Still to do: confirm launch names/coords in `sites/launches.yaml`, add Organyà and Dandenongs
 3. [ ] Save another year or two of Mystic flights from XContest (manual; `xcontest_pages/mystic_<year>/`)
 4. [ ] Quick rule wins: check the rules score cloud cover; use the soaring-weather and XC principles docs

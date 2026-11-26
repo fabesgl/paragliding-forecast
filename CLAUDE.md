@@ -11,6 +11,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - **AI second opinion** = a Claude panel on the dashboard (`src/pgforecast/ai_opinion.py`). It comments; it never changes the scores.
 
 ## How it runs
+- **Model weighting**: the job blends the models per variable with `sites/bright/model_weights.json` (ACCESS-G dropped, GFS out of gusts) and then scores the blend. Switch back to the plain average with the GitHub variable `MODEL_WEIGHTING=equal` (Settings > Variables) or `model_weighting: equal` in `sites/bright.yaml`. Both blends and the old average are logged in `predictions/weighting_log.csv`.
 - **GitHub Actions** (`.github/workflows/daily.yml`, 07:45 and 19:45 Melbourne time): collect BOM observations, update bias corrections, valley-wind calibration check, wait for the newest ECMWF/GFS/ICON runs, fetch forecasts, score, rebuild the dashboard, commit the results back to `main` as "Daily update".
 - **Laptop (by hand)**: everything that isn't the daily job runs here today: downloaders (`fetch_barra2.py`), importers (`import_xcontest.py`, and `import_chats.py` using Haiku via the API, key from `ANTHROPIC_API_KEY`, cost-capped). Weekly jobs are **planned, not built**.
 - **Home desktop (later)**: heavy downloads and local AI (e.g. a local model for the chat importer). Not in use yet.
@@ -48,7 +49,8 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - `python scripts/forecast_error.py bright` then `python scripts/forecast_error_report.py` — forecast error vs BARRA-C2 (11:00–16:00 local; read-only). Writes `data/forecast_error/` (`error_summary.csv`, `pairs.sqlite`, `priors.json`, `report.md`). Dashboard unchanged.
 - `python scripts/barra_terrain.py bright` — BARRA terrain height vs Open-Meteo elevation per point (`data/forecast_error/elevations.json`; needed by `forecast_error.py`).
 - `python scripts/fetch_bom_dwo.py 202103` then `python scripts/forecast_error_stations.py` — BOM Daily Weather Observations (Hotham, Falls Creek, Wangaratta; ~13 months) and the forecast-vs-station check.
-- `python scripts/model_weights.py` — PROPOSED per-variable model weights (`data/forecast_error/model_weights.json`); the daily job does not use them yet. `sites/bright/priors.json` = slim starting corrections, also unused yet.
+- `python scripts/model_weights.py [--publish]` — per-variable model weights (`data/forecast_error/model_weights.json`); `--publish` writes the committed `sites/bright/model_weights.json` that the daily job reads (approved 2026-11-26). `sites/bright/priors.json` = BARRA-based corrections kept for reference only: **do not apply** (they made real error worse; `scripts/validate_corrections.py`).
+- `python scripts/weighting_review.py bright` — equal vs weighted blends scored against the BOM stations (runs in the daily job; opens one GitHub issue after 30 days). `python scripts/check_observations.py bright` — gaps in the saved BOM observations (also in the job). `python scripts/validate_corrections.py` — tests bias corrections against real station readings.
 - `scripts/commit.sh "message"` — pull --rebase, add code paths only, commit, push.
 - Tests: `.venv/bin/python -m pytest tests`.
 
@@ -70,4 +72,4 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - BARRA-C2 downloader and chat-label importer built; chat labels are weak evidence.
 - XContest importer built; Mystic 2026 imported (Jan and Apr incomplete, flagged); older years to be saved by hand.
 - IGC/GPX importer built; per-pilot folders (`pilot1` 509 unique flights, `pilot2` 620). Flights with a track sample gap over ~5 s are flagged `low_rate` (thermals unreliable). Emily vs Marcus analysis done on pilot1 (`scripts/thermal_zones.py`); not used by the dashboard.
-- Creo not started; next is the forecast-error step vs BARRA-C2 (see `TODO.md`).
+- Forecast error vs BARRA-C2 and BOM stations done (2026-11-26); per-variable model weights are live (switchable); BARRA-based corrections tested and rejected; correction layer waits for Mystic station readings (see `TODO.md`). Creo not started.

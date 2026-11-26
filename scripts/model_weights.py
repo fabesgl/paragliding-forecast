@@ -7,7 +7,9 @@ Weight of model m for a variable = (1 / s_m^2) normalised to sum 1, where s_m is
 Rules from Fabian (2026-11-26): ACCESS-G dropped; GFS left out of gusts; CAPE weights are provisional (BARRA's CAPE definition unchecked).
 Weights come from the 'hist' (near-analysis) lead because ICON has no archived 1-2 day data; d1/d2 agree where both exist.
 Uncertainty: 10th-90th percentile of weights over 300 resamples of days.
-Usage: python scripts/model_weights.py          Writes data/forecast_error/model_weights.json and prints the table."""
+Usage: python scripts/model_weights.py [--publish]   Writes data/forecast_error/model_weights.json and prints the table.
+--publish also writes the slim, committed sites/<site>/model_weights.json that the daily job reads (only after Fabian has approved the numbers).
+Models with no entry for a variable that HAS other entries get weight 0 (e.g. GFS for gusts, ECMWF/ICON for boundary-layer height)."""
 import json, sqlite3, sys
 import numpy as np, pandas as pd
 from pathlib import Path
@@ -112,6 +114,12 @@ def main():
     doc = dict(version=1, status="PROPOSED - not used by the daily job", lead="hist (near-analysis)", models_considered=MODELS, dropped=["bom_access_global"],
                excluded={k: sorted(v) for k, v in EXCLUDE.items()}, variables=res)
     (OUT / "model_weights.json").write_text(json.dumps(doc, indent=1))
+    if "--publish" in sys.argv:
+        site = next((a for a in sys.argv[1:] if not a.startswith("-")), "bright")
+        w = {v: {m: round(r["models"].get(m, {"weight": 0.0})["weight"], 3) for m in MODELS} for v, r in res.items()}
+        pub = dict(version=1, status="approved by Fabian 2026-11-26", made_from="scripts/model_weights.py (hist lead; stations for 10 m wind, gusts, 2 m temperature, dew point; BARRA-C2 at Mystic for the rest)",
+                   models=MODELS, dropped=["bom_access_global"], provisional=sorted(PROVISIONAL), weights=w)
+        (ROOT / "sites" / site / "model_weights.json").write_text(json.dumps(pub, indent=1, sort_keys=True)); print(f"published sites/{site}/model_weights.json")
     short = {"ecmwf_ifs025": "ECMWF", "gfs_seamless": "GFS", "icon_seamless": "ICON"}
     print(f"{'variable':24s} {'source':8s}  " + "  ".join(f"{short[m]:>15s}" for m in MODELS))
     for v, r in res.items():

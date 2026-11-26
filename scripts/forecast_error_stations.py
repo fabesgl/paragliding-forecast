@@ -4,7 +4,7 @@ Stations: Mount Hotham, Falls Creek, Wangaratta (valley stand-in: BOM has no Bri
 nearest forecast point. For the SAME hours the forecast is also scored against BARRA-C2, so the two rankings can be compared directly.
 Score used for ranking = error left after the best simple bias correction (forecast_error.corrected_rmse).
 Usage: python scripts/forecast_error_stations.py [--hour 15]      Writes data/forecast_error/station_summary.csv, station_vs_barra.csv"""
-import io, json, sqlite3, sys
+import io, json, sqlite3, sys, yaml
 import numpy as np, pandas as pd
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,7 +51,8 @@ def main():
     fc = pd.read_sql(q, db, params=pts); fc["time_utc"] = pd.to_datetime(fc["time_utc"])
     fc["lead"] = [("hist" if s == "hist" else f"d{l}") for s, l in zip(fc["source"], fc["lead_days"])]
     bm = pd.read_pickle(OUT / "barra_points.pkl"); bm = bm[bm["point_key"].isin(pts)].copy()
-    bm["temperature_2m"] += bm["point_key"].map({k: FE.height_correction_c(v["openmeteo_m"], v["barra_m"]) for k, v in el.items()})
+    cfg = yaml.safe_load((ROOT / "sites" / "bright.yaml").read_text())
+    bm["temperature_2m"] += bm["point_key"].map(FE.height_adjustments(cfg["points"], el))      # ridge points left uncorrected
     bm["model"] = "barra"
     rows = []
     for st, (sid, pt) in STATIONS.items():

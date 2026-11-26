@@ -33,3 +33,7 @@ valley_wind_station: {id: 94889, note: "Wangaratta: a WEAK proxy (about 60 km aw
 chat_aliases: [bright, mystic, mystic park, ovens valley]   # words that mean this site in pilot chats
 xcontest_launch_names: []            # Phase 2 (later)
 grading: {}                          # Phase 5
+
+# How the models are combined: weighted (per-variable weights in sites/bright/model_weights.json, ACCESS-G dropped) or equal (plain average).
+# The GitHub variable MODEL_WEIGHTING overrides this without a commit. Both blends are logged side by side either way.
+model_weighting: weighted

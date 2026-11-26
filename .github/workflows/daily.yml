@@ -26,8 +26,16 @@ jobs:
         id: bom
         continue-on-error: true
         run: python scripts/collect_bom.py bright
+      - name: Check the saved observations for gaps (report only)
+        continue-on-error: true
+        run: python scripts/check_observations.py bright
       - name: Update bias corrections (forecasts vs BOM observations)
         run: python scripts/update_corrections.py bright
+      - name: Weighting review (equal vs weighted models against BOM stations; opens one issue after 30 days)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/weighting_review.py bright
       - name: Valley-wind calibration check (reports only, never changes the rules)
         continue-on-error: true
         env:
@@ -41,6 +49,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           AI_OPINION_ENABLED: ${{ vars.AI_OPINION_ENABLED }}   # set to false in Settings > Variables to pause the AI panel
+          MODEL_WEIGHTING: ${{ vars.MODEL_WEIGHTING }}         # set to equal in Settings > Variables to go back to the plain model average (empty = use model_weighting in sites/bright.yaml)
         run: python scripts/daily_forecast.py bright
       - name: Commit new data
         run: |

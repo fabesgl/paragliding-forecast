@@ -92,9 +92,9 @@ def main():
     print("BARRA-C2 at the points ..."); bm = barra_at_points()
     print("Forecasts ..."); fc = load_forecasts()
     bm = local_window(bm); fc = local_window(fc)
-    if "--no-height-correction" not in sys.argv:        # move BARRA-C2's 2 m temperature to the elevation Open-Meteo used (6.5 C per km); other variables unchanged
+    if "--no-height-correction" not in sys.argv:        # move BARRA-C2's 2 m temperature to the elevation Open-Meteo used (6.5 C per km) at Mystic, the valley and the flat points only; other variables unchanged
         el = json.loads((OUT / "elevations.json").read_text())        # from scripts/barra_terrain.py
-        adj = bm["point_key"].map({k: FE.height_correction_c(v["openmeteo_m"], v["barra_m"]) for k, v in el.items()})
+        adj = bm["point_key"].map(FE.height_adjustments(cfg["points"], el))      # not at the ridge points (role ridge_ref)
         bm["temperature_2m"] = bm["temperature_2m"] + adj
     bm = bm.rename(columns={c: f"{c}__bm" for c in FE.VARIABLES})
     paired = fc.merge(bm.drop(columns=["date", "season"]), on=["point_key", "time_utc"], how="inner")
@@ -174,7 +174,7 @@ def write_priors(res):
     (OUT / "priors.json").write_text(json.dumps(doc(full, "corr turns a forecast into a BARRA-C2-like value: mul -> forecast*corr, add -> forecast+corr"), indent=1, sort_keys=True))
     slim = slim_priors(res)
     why = "; ".join(f"{k[0]}{'/' + k[1] if k[1] else ''}: {v}" for k, v in SLIM_DROP_CELLS.items())
-    d = doc(slim, "Starting values only; BOM observations should decide. mul -> forecast*corr, add -> forecast+corr. Left out: ACCESS-G; " + why +
+    d = doc(slim, "DO NOT APPLY TO FORECASTS: checked 2026-11-26 against the Wangaratta station (fitted before 2025-10, tested after), these BARRA-based corrections made the real error 11-20% WORSE for temperature, dew point and 10 m wind (scripts/validate_corrections.py). Kept for reference; use corrections learned from real station readings instead. mul -> forecast*corr, add -> forecast+corr. Left out: ACCESS-G; " + why +
             "; 2 m temperature, dew point and cloud base at the mountain points (BARRA terrain far below the ridges). Dew point and cloud base are NOT height-adjusted anywhere. Not read by the daily job yet.")
     (ROOT / "sites" / site / "priors.json").write_text(json.dumps(d, separators=(",", ":"), sort_keys=True))
     print(f"priors: {len(full)} cells (local), {len(slim)} cells (sites/{site}/priors.json)")

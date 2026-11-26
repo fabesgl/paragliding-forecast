@@ -9,7 +9,7 @@ OUT = ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out"
 sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.rules import score_day, compass, acro_window_score
 from pgforecast.rules_config import load_rules
-from pgforecast import corrections as corr, ai_opinion, render, fronts
+from pgforecast import corrections as corr, ai_opinion, render, fronts, blend
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
 cfg = yaml.safe_load((ROOT/"sites"/f"{site}.yaml").read_text())
 tz = ZoneInfo(cfg["timezone"]); now = dt.datetime.now(dt.UTC); local_now = now.astimezone(tz)
@@ -24,6 +24,13 @@ cfg["notes"] = (ROOT / "sites" / site / "notes.md").read_text() if (ROOT / "site
 cfg["rules"] = load_rules(site)                         # sites/<site>/rules.yaml: every rule threshold lives there
 from pgforecast import summary as _summary
 _summary.configure(cfg["rules"])
+# Model weighting: 'weighted' = per-variable weights from sites/<site>/model_weights.json (ACCESS-G dropped); 'equal' = the plain average of the models, as before.
+# Set it in sites/<site>.yaml (model_weighting) or, without a commit, with the GitHub variable MODEL_WEIGHTING. Both blends are always logged side by side.
+WEIGHTING = (os.environ.get("MODEL_WEIGHTING") or cfg.get("model_weighting") or "weighted").strip().lower()
+WTABLE = blend.load(ROOT / "sites" / site / "model_weights.json")
+if WEIGHTING not in ("weighted", "equal"): print("unknown model_weighting", WEIGHTING, "- using equal"); WEIGHTING = "equal"
+if WEIGHTING == "weighted" and not WTABLE: print("model_weights.json missing or unreadable - using equal weights"); WEIGHTING = "equal"
+print("model weighting:", WEIGHTING)
 keys = list(cfg["points"]); pts = cfg["points"]
 HOURLY = ",".join(VARS + [v for v in LEVEL_VARS if v not in VARS])
 def fetch_model(m):
@@ -72,7 +79,7 @@ mystic = raw[keys.index("mystic_launch")]["hourly"]
 times = mystic["time"]; win = cfg.get("flying_window_local", ["11:00", "16:00"])
 days = sorted({t[:10] for t in times})
 today = local_now.date().isoformat()
-out_days = []
+out_days = []; wlog = []
 def fill(day_idx, v, m):
     """Model m's hourly values for variable v; gaps are filled with the mean of the other models (e.g. ECMWF has no boundary-layer height)."""
     own = mystic.get(f"{v}_{m}", [None] * len(times))
@@ -96,10 +103,11 @@ def mean_key(per_model, best):
     return out
 ARROWS = ["↓", "↙", "←", "↖", "↑", "↗", "→", "↘"]   # wind FROM N, NE, E, SE, S, SW, W, NW -> arrow shows where it blows TO
 SHOW_HOURS = ["11:00", "13:00", "15:00"]
-def vec_avg(pairs):
-    """Average (speed, direction-from) pairs as vectors; returns (speed, direction)."""
-    u = sum(-s_ * math.sin(math.radians(d)) for s_, d in pairs) / len(pairs)
-    v = sum(-s_ * math.cos(math.radians(d)) for s_, d in pairs) / len(pairs)
+def vec_avg(pairs, wts=None):
+    """Average (speed, direction-from) pairs as vectors, optionally weighted; returns (speed, direction)."""
+    wts = wts or [1.0] * len(pairs); tot = sum(wts)
+    u = sum(-w * s_ * math.sin(math.radians(d)) for (s_, d), w in zip(pairs, wts)) / tot
+    v = sum(-w * s_ * math.cos(math.radians(d)) for (s_, d), w in zip(pairs, wts)) / tot
     return math.hypot(u, v), math.degrees(math.atan2(-u, -v)) % 360
 def wind_table(day):
     rows = [(f"Launch ({cfg['launch_height_m']} m)", "wind_speed_10m", "wind_direction_10m", None)] + [
@@ -109,18 +117,19 @@ def wind_table(day):
         cells, heights, used = [], [], set()
         for hh in SHOW_HOURS:
             i = next((i for i, t in enumerate(times) if t == f"{day}T{hh}"), None)
-            pairs, ms = [], []
+            pairs, ms, wts = [], [], []
+            mw = blend.weights_for(WTABLE, sv, MODELS, WEIGHTING)           # {model: weight}; in 'equal' mode every model counts the same
             for m in MODELS:
                 if i is None: break
                 sp, dr = mystic.get(f"{sv}_{m}", [None] * len(times))[i], mystic.get(f"{dv}_{m}", [None] * len(times))[i]
-                if sp is None or dr is None: continue
-                pairs.append((sp, dr)); ms.append(m)
+                if sp is None or dr is None or mw.get(m, 0) <= 0: continue
+                pairs.append((sp, dr)); ms.append(m); wts.append(mw[m])
                 if hv and mystic.get(f"{hv}_{m}", [None] * len(times))[i] is not None: heights.append(mystic[f"{hv}_{m}"][i])
             if not pairs: cells.append(None); continue
-            sp, dr = vec_avg(pairs); used.update(ms)
+            sp, dr = vec_avg(pairs, wts); used.update(ms)
             cells.append(dict(kmh=round(sp), deg=round(dr), compass=compass(dr), arrow=ARROWS[int(((dr % 360) + 22.5) // 45) % 8], models=ms))
         table.append(dict(label=lab, height_m=round(sum(heights) / len(heights)) if heights else None, cells=cells, models=sorted(used)))
-    have = {m for m in MODELS if any(mystic.get(f"wind_speed_10m_{m}", [None] * len(times))[i] is not None for i in range(len(times)) if times[i][:10] == day)}
+    have = {m for m in MODELS if (WEIGHTING == "equal" or m in WTABLE["models"]) and any(mystic.get(f"wind_speed_10m_{m}", [None] * len(times))[i] is not None for i in range(len(times)) if times[i][:10] == day)}
     for r in table: r["partial"] = bool(r["models"]) and set(r["models"]) != have
     return table
 for day in [d for d in days if d >= today][:6]:
@@ -151,9 +160,31 @@ for day in [d for d in days if d >= today][:6]:
         acro_w = [acro_window_score(x["acro"], x["key"], cfg["rules"]) for x in sc]      # acro window only: also needs established thermals and climb height
         hourly.append(dict(h=hh, xc=avg_([x["xc"] for x in sc if x["xc"] is not None]), acro=avg_([a for a in acro_w if a is not None])))
     xcs = [p["xc"] for p in per_model.values() if p["xc"] is not None]
-    out_days.append(dict(date=day, xc=avg("xc"), acro=avg("acro"), xc_range=[min(xcs, default=None), max(xcs, default=None)],
+    day_idx = [i for i, t in enumerate(times) if t[:10] == day and win[0] <= t[11:16] <= win[1]]
+    def blended_score(idx, mode):             # blend the models' hourly values per variable first, then apply the rules once
+        return score_day({v: blend.blend_series({m: mystic.get(f"{v}_{m}", [None] * len(times)) for m in per_model}, v, WTABLE, mode, idx) for v in VARS}, cfg["rules"], cfg["launch_height_m"])
+    sc_equal = blended_score(day_idx, "equal"); sc_weighted = blended_score(day_idx, "weighted") if WTABLE else None
+    avg_xc, avg_acro = avg("xc"), avg("acro")                                      # the old way: score each model, then average the scores
+    wlog.append([day, WEIGHTING, avg_xc, avg_acro, sc_equal["xc"], sc_equal["acro"], sc_weighted["xc"] if sc_weighted else "", sc_weighted["acro"] if sc_weighted else "", "+".join(per_model)])
+    entry = dict(date=day, xc=avg_xc, acro=avg_acro, xc_range=[min(xcs, default=None), max(xcs, default=None)],
         models={m: {"xc": p["xc"], "acro": p["acro"]} for m, p in per_model.items()},
-        key=mean_key(per_model, best), xc_rules=merged("xc_rules"), acro_rules=merged("acro_rules"), winds=wind_table(day), hourly=hourly, front=fronts.label_day(front_list, day, cfg["rules"]["fronts"])))
+        key=mean_key(per_model, best), xc_rules=merged("xc_rules"), acro_rules=merged("acro_rules"), winds=wind_table(day), hourly=hourly, front=fronts.label_day(front_list, day, cfg["rules"]["fronts"]))
+    if WEIGHTING == "weighted":                                                    # published numbers come from the weighted blend
+        def finish(rules):                                                         # same display text as merged() gives the averaged rules
+            out = []
+            for r in rules:
+                r = {**r, "factor": None if r["factor"] is None else round(r["factor"], 3)}
+                r["value"] = (r["want"] if r["num"] is None and r["unit"] == "" and r["nd"] == 0 and r["key"] == "direction" else
+                              ("n/a" if r["num"] is None else f'{r["num"]:.{r["nd"]}f}{r["unit"]}') + r["want"])
+                out.append(r)
+            return out
+        entry.update(xc=sc_weighted["xc"], acro=sc_weighted["acro"], key=sc_weighted["key"], xc_rules=finish(sc_weighted["xc_rules"]), acro_rules=finish(sc_weighted["acro_rules"]))
+        entry["hourly"] = []
+        for hh in range(9, 18):
+            i = next((i for i, t in enumerate(times) if t == f"{day}T{hh:02d}:00"), None)
+            x = None if i is None else blended_score([i], "weighted")
+            entry["hourly"].append(dict(h=hh, xc=None if x is None or x["xc"] is None else round(x["xc"]), acro=None if x is None else (lambda a: None if a is None else round(a))(acro_window_score(x["acro"], x["key"], cfg["rules"]))))
+    out_days.append(entry)
 # 2b. AI second opinion. Read-only: it never changes the rule scores above, and any failure here just means no panel.
 active = [f"{k.split('|')[1]} {k.split('|')[0]} {k.split('|')[2]} ({k.split('|')[3]}): " + (f"{b['corr']:+.1f}" if b["kind"] == "add" else f"x{b['corr']:.2f}")
           for k, b in cstate["bins"].items() if corr.status(b) == "active"]
@@ -171,6 +202,13 @@ with logf.open("w", newline="") as f:
     for d in out_days:                               # models = the ones that actually went into the scores (a model that failed to download or had no data is left out)
         lead = (dt.date.fromisoformat(d["date"]) - local_now.date()).days
         w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], lead, d["xc"], d["acro"], "rules-v3", "+".join(d["models"]), d["front"]["status"] or "none", d["front"]["kind"] or "", d["front"]["time"] or ""])
+wf = OUT/"predictions"/"weighting_log.csv"           # the three ways of combining the models, side by side, for the one-month review (scripts/weighting_review.py)
+W_COLS = ["made_at_utc", "target_date", "lead_days", "setting", "xc_avg_of_models", "acro_avg_of_models", "xc_blend_equal", "acro_blend_equal", "xc_blend_weighted", "acro_blend_weighted", "models"]
+new_file = not wf.exists()
+with wf.open("a", newline="") as f:
+    w = csv.writer(f)
+    if new_file: w.writerow(W_COLS)
+    for r in wlog: w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), r[0], (dt.date.fromisoformat(r[0]) - local_now.date()).days, *r[1:]])
 aif = OUT/"predictions"/"ai_log.csv"                 # same keys as log.csv, plus the rule scores, so both can be compared with outcomes
 AI_COLS = ["made_at_utc", "target_date", "lead_days", "model", "xc_call", "acro_call", "xc_rule_pct", "acro_rule_pct", "limit_forced", "reasoning"]
 if ai:
