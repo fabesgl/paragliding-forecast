@@ -31,6 +31,15 @@ class T(unittest.TestCase):
         lab2 = SB.build_day_labels(flights, [], status, set(), "2024-01-04", "2024-01-04")
         self.assertEqual(len(lab2), 0)                                             # tandem-only day in an incomplete month is unknown
 
+    def test_comp_days_are_marked_not_dropped(self):
+        flights = [("2024-02-10", "A", 80.0), ("2024-02-11", "A", 5.0), ("2024-02-20", "A", 40.0)]
+        status = {"2024-02-10": "flew", "2024-02-11": "flew", "2024-02-12": "no_flights", "2024-02-20": "flew"}
+        ev = [{"start": "2024-02-10", "end": "2024-02-12"}]
+        lab = SB.build_day_labels(flights, [], status, {"2024-02"}, "2024-02-10", "2024-02-20", ev, 0.5).set_index("date")
+        self.assertTrue(lab.loc["2024-02-10", "comp"]); self.assertTrue(lab.loc["2024-02-10", "flyable"]); self.assertFalse(lab.loc["2024-02-12", "flyable"])    # flyable kept either way
+        self.assertEqual((lab.loc["2024-02-10", "count_weight"], lab.loc["2024-02-10", "distance_weight"]), (0.0, 0.5)); self.assertEqual(lab.loc["2024-02-10", "n_flights"], 1)   # count stays, weight 0
+        self.assertEqual((lab.loc["2024-02-20", "count_weight"], lab.loc["2024-02-20", "distance_weight"]), (1.0, 1.0)); self.assertFalse(lab.loc["2024-02-20", "comp"])
+
     def test_free_days_and_events(self):
         self.assertTrue(SB.is_free_day("2024-02-03", [])); self.assertFalse(SB.is_free_day("2024-02-05", []))     # Sat / Mon
         self.assertTrue(SB.is_free_day("2024-02-05", ["2024-02-05"]))

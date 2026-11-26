@@ -11,6 +11,7 @@ Tick items off (`[x]`) as we finish them. Order = priority.
 
 6. [ ] Mystic station readings: Fabian will ask the FreeFlightWx station owner in person. Then: write readings to `observations/<id>.csv` in the BOM columns, set `bom_station: <id>` on `mystic_launch`, and the correction layer learns there (30 days to start)
 7. [ ] ~2026-12-26: read the weighting review issue (opens by itself), decide whether to switch to `weighted`
+8. [ ] Check `sites/bright/calendar.yaml`: the 2026 Bright Open dates came from Visit Bright only, the public holidays were typed from memory (2026 AFL Friday is a guess), and `comp_distance_weight: 0.5` is a guess
 
 ## Ongoing
 - [ ] Keep CLAUDE.md, README and tests current

@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 BANDS = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 100)]       # the last band includes 100
+COMP_DISTANCE_WEIGHT = 0.5      # training weight of a comp day's distances (a guess: set in sites/<site>/calendar.yaml as comp_distance_weight)
 MISS_KM = 20.0           # a "short" flight for the false-alarm list: best distance under this
 LOW_PCT, HIGH_PCT = 40, 60
 
@@ -24,11 +25,13 @@ def spearman(x, y):
     return float(d["x"].rank().corr(d["y"].rank()))
 
 
-def build_day_labels(xc_flights, igc_dates, day_status, complete_months, first, last):
+def build_day_labels(xc_flights, igc_dates, day_status, complete_months, first, last, events=(), comp_distance_weight=COMP_DISTANCE_WEIGHT):
     """One row per day from first to last that can be judged.
     xc_flights: rows (date, glider_class, distance_km). igc_dates: dates with a saved track from Mystic. day_status: {date: 'flew'|'no_flights'|'unknown'}
     (XContest day status). complete_months: {'YYYY-MM'} where every XContest flight is saved.
-    Returns DataFrame: date, flown, n_flights, best_km, median_km, source ('xcontest' | 'igc' (a track proves a flight, distance unknown) | 'none'), skipped dates are left out."""
+    Comp days (inside an `events` window, e.g. the Bright Open): `flyable` is kept as it is (flown or not), `count_weight` is 0 (flight counts are not
+    evidence of conditions: a task sends everyone up), `distance_weight` is `comp_distance_weight` (distances are limited by the task, not the weather). Other days: 1 and 1.
+    Returns DataFrame: date, flown, flyable, comp, count_weight, distance_weight, n_flights, best_km, median_km, source ('xcontest' | 'igc' (a track proves a flight, distance unknown) | 'none'), skipped dates are left out."""
     by = {}
     for d, cls, km in xc_flights:
         if cls == "T": continue                                              # tandems never count
@@ -45,7 +48,12 @@ def build_day_labels(xc_flights, igc_dates, day_status, complete_months, first, 
         elif st == "no_flights" or (st == "flew" and s[:7] in complete_months):     # 'flew' with no solo flight = tandem-only day
             rows.append(dict(date=s, flown=False, n_flights=0, best_km=0.0, median_km=0.0, source="none"))
         d += dt.timedelta(days=1)                                                  # anything else is unknown: skipped
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    if out.empty: return out
+    out["flyable"] = out["flown"]
+    out["comp"] = [in_events(d, events) for d in out["date"]]
+    out["count_weight"] = np.where(out["comp"], 0.0, 1.0); out["distance_weight"] = np.where(out["comp"], comp_distance_weight, 1.0)
+    return out
 
 
 def is_free_day(date, holidays):
