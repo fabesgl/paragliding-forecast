@@ -109,11 +109,11 @@ GOLDEN = {
    "w850": 1.0,
    "wind": 1.0
   },
-  "xc": 50,
+  "xc": 67,
   "xc_f": {
    "cape": 1.0,
    "ceiling": 1.0,
-   "direction": 0.5,
+   "direction": 0.667,
    "gust": 1.0,
    "rain": 0.966,
    "thermals": 1.0,
@@ -263,6 +263,20 @@ GOLDEN = {
 
 class T(unittest.TestCase):
     def setUp(self): self.rules = load_rules("bright")
+
+    def test_westerly_launch_is_xc_only_and_needs_the_valley_wind(self):
+        """2026-11-27: a W/WNW 10 m wind is launchable for XC when the valley wind beats it (same check as a southerly). Acro keeps scoring it 0."""
+        dirs = lambda r, k: {x["key"]: x["factor"] for x in r[k]}["direction"]
+        strong = score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[8]*N), self.rules, 797)         # good thermals, light westerly: valley wind wins
+        self.assertGreater(dirs(strong, "xc_rules"), 0.9); self.assertEqual(dirs(strong, "acro_rules"), 0.0)
+        weak = score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[20]*N), self.rules, 797)          # a 20 km/h westerly beats the valley wind: still 0 for XC
+        self.assertEqual(dirs(weak, "xc_rules"), 0.0); self.assertEqual(dirs(weak, "acro_rules"), 0.0)
+        south_syn = score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[8]*N, wind_speed_850hPa=[30]*N, wind_direction_850hPa=[200]*N), self.rules, 797)
+        self.assertEqual(dirs(south_syn, "xc_rules"), 0.0)                                                 # a strong southerly aloft stays a no-go
+        off = {**self.rules, "direction": {k: v for k, v in self.rules["direction"].items() if k != "westerly_launch"}}
+        self.assertEqual(dirs(score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[8]*N), off, 797), "xc_rules"), 0.0)       # without the setting nothing changes
+        bad = {**self.rules, "direction": {**self.rules["direction"], "westerly_launch": {"arc_deg": [247]}}}
+        with self.assertRaises(ValueError): validate(bad)
 
     def test_xc_and_old_acro_rules_unchanged_from_before_the_move(self):
         """Every rule scores exactly what it did before the move, EXCEPT rain, which now scores 100% (not 97%) when there is none, and the new acro rules.

@@ -25,6 +25,9 @@ def validate(r, f="rules.yaml"):
     if not (isinstance(sl, dict) and isinstance(sl.get("arc_deg"), list) and len(sl["arc_deg"]) == 2 and all(isinstance(x, (int, float)) and 0 <= x <= 360 for x in sl["arc_deg"])): raise ValueError(f"{f}: direction.southerly_launch.arc_deg must be [from, to] in degrees 0-360")
     if _num(r, ("direction", "southerly_launch", "valley_wind_kmh_per_thermal_ms"), f) < 0: raise ValueError(f"{f}: direction.southerly_launch.valley_wind_kmh_per_thermal_ms must be 0 or more")
     if _num(r, ("direction", "southerly_launch", "fade_kmh"), f) <= 0: raise ValueError(f"{f}: direction.southerly_launch.fade_kmh must be above 0")
+    wl = r["direction"].get("westerly_launch")                             # optional (XC only)
+    if wl is not None and not (isinstance(wl, dict) and isinstance(wl.get("arc_deg"), list) and len(wl["arc_deg"]) == 2 and all(isinstance(x, (int, float)) and 0 <= x <= 360 for x in wl["arc_deg"])):
+        raise ValueError(f"{f}: direction.westerly_launch.arc_deg must be [from, to] in degrees 0-360")
     under = [("shared", "rain", "limit_mm", "zero_at_mm"), ("shared", "cape", "limit", "zero_at")] + [
         ("xc", "launch_wind", "limit_kmh", "zero_at_kmh"), ("xc", "gusts", "limit_kmh", "zero_at_kmh"), ("xc", "wind_850", "limit_kmh", "zero_at_kmh"),
         ("acro", "launch_wind", "limit_kmh", "zero_at_kmh"), ("acro", "gusts", "limit_kmh", "zero_at_kmh"), ("acro", "wind_850", "limit_kmh", "zero_at_kmh"),

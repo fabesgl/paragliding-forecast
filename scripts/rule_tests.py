@@ -1,10 +1,12 @@
 """Test possible XC rule changes against real flying with the scoreboard data, leave-one-year-out. READ-ONLY: the live rules and the dashboard are never touched;
 each change is applied here, to the per-rule factors that rules.score_day returns (the unchanged scoring is reproduced exactly and checked).
-Variants (pick with --variants, comma separated; default baseline,west,west_valley):
-  baseline     the rules as they are
-  west         XC only: a W/WNW 10 m wind (247-315 deg) counts as launchable at all times (the westerly penalty removed)
-  west_valley  XC only: a W/WNW 10 m wind is launchable when the thermic valley wind is established: the same check the rules use for southerlies
-               (valley wind = estimated thermals x valley_wind_kmh_per_thermal_ms must beat the launch wind, fading over fade_kmh)
+Variants (pick with --variants, comma separated; default baseline,west_off,west):
+  baseline     the rules as they are NOW in sites/<site>/rules.yaml (since 2026-11-27 that includes direction.westerly_launch)
+  west_off     the rules without direction.westerly_launch: the old westerly penalty back (a W/WNW 10 m wind scores 0 for XC)
+  west         XC only: a W/WNW 10 m wind (247-315 deg) counts as launchable at all times (the westerly penalty removed completely)
+  west_valley  XC only: W/WNW launchable when the thermic valley wind is established, the same check the rules use for southerlies
+               (valley wind = estimated thermals x valley_wind_kmh_per_thermal_ms must beat the launch wind, fading over fade_kmh).
+               Identical to baseline while the live rules have westerly_launch on.
   rain         scattered showers (rain in fewer than s window hours; an hour is wet at t mm or more) only lower the score to 1 - wet hours/hours; steady rain keeps today's rule
   west+rain    both of those (west = the full removal)
 Leave-one-year-out: only the rain settings (t in 0.1/0.3/1.0 mm, s in 3/4/5 hours) are tuned, on two years and applied to the third. The westerly variants have nothing to
@@ -21,16 +23,18 @@ from pgforecast import scoreboard as SB
 from pgforecast.rules import _window_features, _in_arc, _smooth, _mean
 
 opt = lambda name, default: args[args.index(name) + 1] if name in args else default
-VARIANTS = {"baseline": dict(west=None, rain=False), "west": dict(west="full", rain=False), "west_valley": dict(west="valley", rain=False),
+VARIANTS = {"baseline": dict(west=None, rain=False), "west_off": dict(west="off", rain=False), "west": dict(west="full", rain=False), "west_valley": dict(west="valley", rain=False),
             "rain": dict(west=None, rain=True), "west+rain": dict(west="full", rain=True)}
-CHOSEN = opt("--variants", "baseline,west,west_valley").split(","); OUTNAME = opt("--out", "rule_tests")
+CHOSEN = opt("--variants", "baseline,west_off,west").split(","); OUTNAME = opt("--out", "rule_tests")
 if any(v not in VARIANTS for v in CHOSEN) or "baseline" not in CHOSEN: sys.exit(f"--variants must include baseline and only use: {', '.join(VARIANTS)}")
 R = M.rules; D = R["direction"]; SL = D["southerly_launch"]
-WEST_ARC = (247, 315)                    # between the southerly arc (ends 247) and the launch arc (starts 315)
+WEST_ARC = tuple(D["westerly_launch"]["arc_deg"]) if D.get("westerly_launch") else (247, 315)      # between the southerly arc (ends 247) and the launch arc (starts 315)
 
 
 def direction_factor(f, west):
-    """The direction rule as in rules.score_day. west: None (as is), 'full' (westerly always launchable) or 'valley' (launchable when the valley wind wins, like a southerly)."""
+    """The direction rule as in rules.score_day (XC). west: None (the live rules), 'off' (no westerly launch), 'full' (westerly always launchable) or
+    'valley' (launchable when the valley wind wins, like a southerly)."""
+    if west is None: west = "valley" if D.get("westerly_launch") else "off"
     k, fade = SL["valley_wind_kmh_per_thermal_ms"], SL["fade_kmh"]
     valley = lambda s, th: _smooth((k * (th or 0.0) - s + fade) / (2 * fade))
     def hour(s, dd, th):

@@ -132,28 +132,34 @@ def score_day(h, rules, launch_elev):
     Every rule gives a factor from 0 to 1; the score is 100 x the LOWEST factor (weakest link: the worst rule sets the score)."""
     d, sh, xr, ar, mg = rules["direction"], rules["shared"], rules["xc"], rules["acro"], rules["smoothing"]["full_score_margin"]
     f = _window_features(h, launch_elev, rules["estimates"])
-    sl = d["southerly_launch"]; k_valley, fade = sl["valley_wind_kmh_per_thermal_ms"], sl["fade_kmh"]; south_ok = False
-    def hour_direction(s_, dd, th):
-        """100% when the wind is in the launch arc or near calm. A southerly is OK when the (estimated) thermic valley wind beats it, fading over +/- fade km/h. Else 0%."""
-        nonlocal south_ok
-        if _in_arc(dd, tuple(d["launch_arc_deg"])) or s_ < d["calm_below_kmh"]: return 1.0
-        if _in_arc(dd, tuple(sl["arc_deg"])):
-            x = _smooth((k_valley * (th or 0.0) - s_ + fade) / (2 * fade)); south_ok |= x > 0.5; return x
-        return 0.0
-    in_arc = _mean([hour_direction(s_, dd, th) for s_, dd, th in f["hours"] if s_ is not None and dd is not None])
+    sl = d["southerly_launch"]; k_valley, fade = sl["valley_wind_kmh_per_thermal_ms"], sl["fade_kmh"]
+    wl = d.get("westerly_launch")                                    # optional, XC only: a westerly at launch is OK when the valley wind beats it, like a southerly
     syn_bad = f["w850"] is not None and f["d850"] is not None and _in_arc(f["d850"], tuple(d["unflyable_arc_deg"])) and f["w850"] > d["unflyable_min_850_kmh"]
-    direction = 0.0 if syn_bad else (in_arc if in_arc is not None else 1.0)         # strong southerly aloft stays a no-go whatever the valley wind does
-    dtxt = (f"strong {compass(f['d850'])} wind aloft" if syn_bad else f"wind {compass(f['wd'])} at launch, valley wind should win" if south_ok and f["wd"] is not None
-            else f"wind {compass(f['wd'])} at launch" if f["wd"] is not None else "no data")
+    def direction_rule(westerly):
+        """(factor, text). 100% when the wind is in the launch arc or near calm. A southerly (and, if `westerly`, a W/WNW wind) is OK when the (estimated)
+        thermic valley wind beats it, fading over +/- fade km/h. Else 0%. A strong southerly aloft stays a no-go whatever the valley wind does."""
+        valley_ok = False
+        def hour_direction(s_, dd, th):
+            nonlocal valley_ok
+            if _in_arc(dd, tuple(d["launch_arc_deg"])) or s_ < d["calm_below_kmh"]: return 1.0
+            if _in_arc(dd, tuple(sl["arc_deg"])) or (westerly and wl and _in_arc(dd, tuple(wl["arc_deg"]))):
+                x = _smooth((k_valley * (th or 0.0) - s_ + fade) / (2 * fade)); valley_ok |= x > 0.5; return x
+            return 0.0
+        in_arc = _mean([hour_direction(s_, dd, th) for s_, dd, th in f["hours"] if s_ is not None and dd is not None])
+        value = 0.0 if syn_bad else (in_arc if in_arc is not None else 1.0)
+        text = (f"strong {compass(f['d850'])} wind aloft" if syn_bad else f"wind {compass(f['wd'])} at launch, valley wind should win" if valley_ok and f["wd"] is not None
+                else f"wind {compass(f['wd'])} at launch" if f["wd"] is not None else "no data")
+        return value, text
+    dir_xc, txt_xc = direction_rule(True); dir_acro, txt_acro = direction_rule(False)
     g = lambda x: f"{x:g}"                                           # 20 -> '20', 1.5 -> '1.5'
     under = lambda x, v: below(x, v[0], v[1], mg)
-    shared = [("direction", "Wind direction", (None, "", 0, dtxt), direction)]
+    direction_row = lambda v, t: ("direction", "Wind direction", (None, "", 0, t), v)
     rain = ("rain", "Rain in window", (f["rain"], " mm", 1, " (want none)"), rain_factor(f["rain"], sh["rain"]["limit_mm"], sh["rain"]["zero_at_mm"], mg))
     cape = ("cape", "CAPE (overdevelopment)", (f["cape"], "", 0, f" (want <{g(sh['cape']['limit'])})"), under(f["cape"], (sh["cape"]["limit"], sh["cape"]["zero_at"])))
     def kmh(key, label, val, sec, name):
         c = sec[name]; return (key, label, (val, " km/h", 0, f" (want <{g(c['limit_kmh'])})"), under(val, (c["limit_kmh"], c["zero_at_kmh"])))
     ce, th = xr["ceiling"], xr["thermals"]
-    xc = shared + [
+    xc = [direction_row(dir_xc, txt_xc)] + [
         kmh("wind", "Launch wind", f["ws"], xr, "launch_wind"), kmh("gust", "Gusts", f["gust"], xr, "gusts"), kmh("w850", "850 hPa wind", f["w850"], xr, "wind_850"),
         ("ceiling", "Cloud base / thermal top", (f["ceiling"], " m ASL", 0, f" (want >{g(ce['min_asl_m'])})"), above(f["ceiling"], ce["min_asl_m"], ce["zero_at_asl_m"], mg)),
         ("thermals", "Thermal strength (est.)", (f["therm"], " m/s", 1, f" (want >{g(th['min_ms'])})"), above(f["therm"], th["min_ms"], th["zero_at_ms"], mg)),
@@ -161,7 +167,7 @@ def score_day(h, rules, launch_elev):
     an, aw, ast, ah = ar["northerly_aloft"], ar["westerly_aloft"], ar["strong_thermals"], ar["height"]
     al = _aloft(h, ar["aloft"]["levels_hpa"], aw["weights"]); gain = None if f["ceiling"] is None else f["ceiling"] - launch_elev
     soft = lambda x, lim, zero, fl: None if x is None else max(fl, below(x, lim, zero, mg))
-    acro = shared + [
+    acro = [direction_row(dir_acro, txt_acro)] + [
         kmh("wind", "Launch wind", f["ws"], ar, "launch_wind"), kmh("gust", "Gusts", f["gust"], ar, "gusts"), kmh("w850", "850 hPa wind", f["w850"], ar, "wind_850"),
         kmh("shear", "Wind shear 10 m to 850 hPa", f["shear"], ar, "shear"),
         ("north_aloft", "Northerly wind aloft", (al["north"], " km/h", 0, f" (mild penalty above {g(an['limit_kmh'])})"), north_factor(al["north"], gain, an)),
