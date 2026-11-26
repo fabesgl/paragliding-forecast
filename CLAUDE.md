@@ -14,11 +14,11 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - **GitHub Actions** (`.github/workflows/daily.yml`, 07:45 and 19:45 Melbourne time): collect BOM observations, update bias corrections, valley-wind calibration check, wait for the newest ECMWF/GFS/ICON runs, fetch forecasts, score, rebuild the dashboard, commit the results back to `main` as "Daily update".
 - **Laptop (by hand)**: everything that isn't the daily job runs here today: downloaders (`fetch_barra2.py`), importers (`import_xcontest.py`, and `import_chats.py` using Haiku via the API, key from `ANTHROPIC_API_KEY`, cost-capped). Weekly jobs are **planned, not built**.
 - **Home desktop (later)**: heavy downloads and local AI (e.g. a local model for the chat importer). Not in use yet.
-- **Where data lives**: the daily job commits only `observations/ forecast_archive/ predictions/ model_runs/ corrections/ docs/`. Everything else is local and git-ignored: `data/` (SQLite: forecasts, chat labels, XContest flights, BARRA-C2 in `data/barra2/`, the hashing salt `data/chat_salt`), `xcontest_pages/`, `chat_exports/`, `igc_files/` (a pilot's IGC tracks, shared with permission). Backed up by hand to Fabian's Pi.
+- **Where data lives**: the daily job commits only `observations/ forecast_archive/ predictions/ model_runs/ corrections/ docs/`. Everything else is local and git-ignored: `data/` (SQLite: forecasts, chat labels, XContest flights, BARRA-C2 in `data/barra2/`, the hashing salt `data/chat_salt`), `xcontest_pages/`, `chat_exports/`, `igc_files/<pilot>/` (pilots' IGC/GPX tracks, shared with permission; folder = pilot identity). Backed up by hand to Fabian's Pi.
 
 ## Layout
 - `sites/` — one config per site (`bright.yaml`) and a folder with `rules.yaml` + `notes.md`.
-- `src/pgforecast/` — the code. `rules.py`/`rules_config.py` scoring; `summary.py` plain-English text; `render.py` dashboard; `fronts.py` cold/warm fronts; `valley.py` valley wind; `corrections.py` bias correction; `ai_opinion.py`; `xcontest.py` saved-page parser; `igc.py` IGC track parser/thermal finder; `chatlog/` chat importer.
+- `src/pgforecast/` — the code. `rules.py`/`rules_config.py` scoring; `summary.py` plain-English text; `render.py` dashboard; `fronts.py` cold/warm fronts; `valley.py` valley wind; `corrections.py` bias correction; `ai_opinion.py`; `xcontest.py` saved-page parser; `igc.py` IGC/GPX track parser/thermal finder; `chatlog/` chat importer.
 - `scripts/` — entry points (below). `scripts/commit.sh` = pull --rebase then push.
 - `tests/` — pytest-style tests, one file per module.
 - `docs/` — the published dashboard (GitHub Pages). Written by the daily job only.
@@ -35,7 +35,8 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - `python scripts/fetch_barra2.py bright` — BARRA-C2 reanalysis boxes into `data/barra2/` (resumable).
 - `python scripts/import_chats.py chat.txt --default-site bright` — chat labels (`--backend anthropic` for Haiku; `--dry-run` to count).
 - `python scripts/import_xcontest.py --summary` — import saved XContest pages; warns about incomplete months.
-- `python scripts/import_igc.py igc_files` — import IGC tracks offline into `data/igc_flights.sqlite` (flights, thermal circles, launch site by coordinates); prints a summary and lists skipped files.
+- `python scripts/import_igc.py igc_files` — import `.igc` and `.gpx` tracks from `igc_files/<pilot>/` offline into `data/igc_flights.sqlite` (flights, thermal circles, launch site by coordinates, sample-rate flag). Folder name = pilot (hashed). Re-run safe; prints a summary and lists skipped files.
+- `python scripts/thermal_zones.py --split ring` — Emily vs Marcus thermals at Mystic vs BARRA-C2 weather (read-only analysis, pilot1 only by default; writes `data/thermal_zones/`).
 - `scripts/commit.sh "message"` — pull --rebase, add code paths only, commit, push.
 - Tests: `.venv/bin/python -m pytest tests`.
 
@@ -56,5 +57,5 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - BOM observations and bias corrections run daily; valley-wind calibration is reporting only (rules unchanged).
 - BARRA-C2 downloader and chat-label importer built; chat labels are weak evidence.
 - XContest importer built; Mystic 2026 imported (Jan and Apr incomplete, flagged); older years to be saved by hand.
-- IGC importer built; one pilot's 526 files imported (510 unique flights, 2017–2026; 328 at Mystic). Thermal circles stored for Emily vs Marcus later.
+- IGC/GPX importer built; per-pilot folders (`pilot1` 509 unique flights, `pilot2` 620). Flights with a track sample gap over ~5 s are flagged `low_rate` (thermals unreliable). Emily vs Marcus analysis done on pilot1 (`scripts/thermal_zones.py`); not used by the dashboard.
 - Creo not started; next is the forecast-error step vs BARRA-C2 (see `TODO.md`).

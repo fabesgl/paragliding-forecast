@@ -13,7 +13,7 @@ Tick items off (`[x]`) as we finish them. Order = priority.
 5. [ ] First Creo test, with the rules' deal-breakers as hard limits Creo can't override
 6. [ ] "Log a day" form with IGC upload, then open to other Bright pilots (Pi endpoint, access code, nicknames, note on what's collected)
 7. [ ] Live "today" panel from FreeFlightWx stations (if the admin agrees)
-8. [ ] Emily vs Marcus thermals from IGC tracks
+8. [~] Emily vs Marcus thermals from IGC tracks (first pass done 2026-11-26, `scripts/thermal_zones.py`; groups differ in size/gain, not in weather; confirm the map with Fabian)
 9. [ ] Proper thermal model from the temperature profile
 10. [ ] Bright extras: sun on the north face, wet ground after rain, bushfire smoke
 11. [ ] Ensemble forecasts for real probabilities
