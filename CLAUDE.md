@@ -18,7 +18,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 
 ## Layout
 - `sites/` — one config per site (`bright.yaml`) and a folder with `rules.yaml` + `notes.md`.
-- `src/pgforecast/` — the code. `rules.py`/`rules_config.py` scoring; `summary.py` plain-English text; `render.py` dashboard; `fronts.py` cold/warm fronts; `valley.py` valley wind; `corrections.py` bias correction; `ai_opinion.py`; `xcontest.py` saved-page parser; `igc.py` IGC/GPX track parser/thermal finder; `tzlookup.py` timezone from coordinates; `chatlog/` chat importer.
+- `src/pgforecast/` — the code. `rules.py`/`rules_config.py` scoring; `summary.py` plain-English text; `render.py` dashboard; `fronts.py` cold/warm fronts; `valley.py` valley wind; `corrections.py` bias correction; `ai_opinion.py`; `xcontest.py` saved-page parser; `forecast_error.py` error vs BARRA-C2 maths; `igc.py` IGC/GPX track parser/thermal finder; `tzlookup.py` timezone from coordinates; `chatlog/` chat importer.
 - `scripts/` — entry points (below). `scripts/commit.sh` = pull --rebase then push.
 - `tests/` — pytest-style tests, one file per module.
 - `docs/` — the published dashboard (GitHub Pages). Written by the daily job only.
@@ -45,6 +45,10 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - `python scripts/import_xcontest.py --summary` — import saved XContest pages; warns about incomplete months.
 - `python scripts/import_igc.py igc_files` — import `.igc` and `.gpx` tracks from `igc_files/<pilot>/` offline into `data/igc_flights.sqlite` (flights, thermal circles, launch site by coordinates, sample-rate flag). Folder name = pilot (hashed). Each flight's local time uses the timezone of its launch coordinates (`tzlookup.py` using the `timezonefinder` package, laptop only: `pip install -r requirements-igc.txt`; hand overrides in `sites/timezones.yaml`). Re-run safe; prints a summary and lists skipped files.
 - `python scripts/thermal_zones.py --split ring` — Emily vs Marcus thermals at Mystic vs BARRA-C2 weather (read-only analysis, pilot1 only by default; writes `data/thermal_zones/`).
+- `python scripts/forecast_error.py bright` then `python scripts/forecast_error_report.py` — forecast error vs BARRA-C2 (11:00–16:00 local; read-only). Writes `data/forecast_error/` (`error_summary.csv`, `pairs.sqlite`, `priors.json`, `report.md`). Dashboard unchanged.
+- `python scripts/barra_terrain.py bright` — BARRA terrain height vs Open-Meteo elevation per point (`data/forecast_error/elevations.json`; needed by `forecast_error.py`).
+- `python scripts/fetch_bom_dwo.py 202103` then `python scripts/forecast_error_stations.py` — BOM Daily Weather Observations (Hotham, Falls Creek, Wangaratta; ~13 months) and the forecast-vs-station check.
+- `python scripts/model_weights.py` — PROPOSED per-variable model weights (`data/forecast_error/model_weights.json`); the daily job does not use them yet. `sites/bright/priors.json` = slim starting corrections, also unused yet.
 - `scripts/commit.sh "message"` — pull --rebase, add code paths only, commit, push.
 - Tests: `.venv/bin/python -m pytest tests`.
 
