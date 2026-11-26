@@ -8,11 +8,10 @@ Tick items off (`[x]`) as we finish them. Order = priority.
 3. [ ] Save another year or two of Mystic flights from XContest (manual; `xcontest_pages/mystic_<year>/`)
 4. [ ] First Creo test, with the rules' deal-breakers as hard limits Creo can't override
 5. [ ] "Log a day" form with IGC upload, then open to other Bright pilots (Pi endpoint, access code, nicknames, note on what's collected)
-6. [~] Emily vs Marcus thermals from IGC tracks (first pass done 2026-11-26, `scripts/thermal_zones.py`; groups differ in size/gain, not in weather; confirm the map with Fabian)
 
-7. [ ] Trigger the daily workflow from the Pi on a cron (`gh workflow run "Daily update"`, workflow_dispatch) because GitHub's scheduled runs start 6-10 h late and unpredictably; keep the GitHub schedule as a backup (the `concurrency` setting already stops overlaps)
-8. [ ] Mystic station readings: Fabian will ask the FreeFlightWx station owner in person. Then: write readings to `observations/<id>.csv` in the BOM columns, set `bom_station: <id>` on `mystic_launch`, and the correction layer learns there (30 days to start)
-9. [ ] ~2026-12-26: read the weighting review issue (opens by itself), decide whether to switch to `weighted`
+6. [ ] Trigger the daily workflow from the Pi on a cron (`gh workflow run "Daily update"`, workflow_dispatch) because GitHub's scheduled runs start 6-10 h late and unpredictably; keep the GitHub schedule as a backup (the `concurrency` setting already stops overlaps)
+7. [ ] Mystic station readings: Fabian will ask the FreeFlightWx station owner in person. Then: write readings to `observations/<id>.csv` in the BOM columns, set `bom_station: <id>` on `mystic_launch`, and the correction layer learns there (30 days to start)
+8. [ ] ~2026-12-26: read the weighting review issue (opens by itself), decide whether to switch to `weighted`
 
 ## Ongoing
 - [ ] Back up `data/` and `xcontest_pages/` to my Pi
