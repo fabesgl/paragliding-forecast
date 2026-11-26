@@ -19,7 +19,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 
 ## Layout
 - `sites/` — one config per site (`bright.yaml`) and a folder with `rules.yaml` + `notes.md`.
-- `src/pgforecast/` — the code. `rules.py`/`rules_config.py` scoring; `summary.py` plain-English text; `render.py` dashboard; `fronts.py` cold/warm fronts; `valley.py` valley wind; `corrections.py` bias correction; `ai_opinion.py`; `xcontest.py` saved-page parser; `forecast_error.py` error vs BARRA-C2 maths; `igc.py` IGC/GPX track parser/thermal finder; `tzlookup.py` timezone from coordinates; `chatlog/` chat importer.
+- `src/pgforecast/` — the code. `rules.py`/`rules_config.py` scoring; `summary.py` plain-English text; `render.py` dashboard; `fronts.py` cold/warm fronts; `valley.py` valley wind; `corrections.py` bias correction; `ai_opinion.py`; `xcontest.py` saved-page parser; `forecast_error.py` error vs BARRA-C2 maths; `igc.py` IGC/GPX track parser/thermal finder; `tzlookup.py` timezone from coordinates; `chatlog/` chat importer; `scoreboard.py` scoreboard maths.
 - `scripts/` — entry points (below). `scripts/commit.sh` = pull --rebase then push.
 - `tests/` — pytest-style tests, one file per module.
 - `docs/` — the published dashboard (GitHub Pages). Written by the daily job only.
@@ -51,6 +51,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - `python scripts/fetch_bom_dwo.py 202103` then `python scripts/forecast_error_stations.py` — BOM Daily Weather Observations (Hotham, Falls Creek, Wangaratta; ~13 months) and the forecast-vs-station check.
 - `python scripts/model_weights.py [--publish]` — per-variable model weights (`data/forecast_error/model_weights.json`); `--publish` writes the committed `sites/bright/model_weights.json` that the daily job reads (approved 2026-11-26). `sites/bright/priors.json` = BARRA-based corrections kept for reference only: **do not apply** (they made real error worse; `scripts/validate_corrections.py`).
 - `python scripts/weighting_review.py bright` — equal vs weighted blends scored against the BOM stations (runs in the daily job; opens one GitHub issue after 30 days). `python scripts/check_observations.py bright` — gaps in the saved BOM observations (also in the job). `python scripts/validate_corrections.py` — tests bias corrections against real station readings.
+- `python scripts/scoreboard.py` — how well the current XC rules predicted real flying at Mystic (2024 on): XC % from the archived forecasts (A) and from BARRA-C2 (B) vs flown / best distance (XContest + IGC, no tandems, unknown days skipped). Bands, seasons, weekends/holidays, with/without Bright Open, biggest misses. Writes `data/scoreboard/report.md` + `days.csv` (local). `--lead d1` scores the day-ahead forecast instead. Holidays and Bright Open weeks are in `sites/bright/calendar.yaml` (check them). Acro: not scoreable until chat labels carry acro days. Read-only; reruns in seconds.
 - `scripts/commit.sh "message"` — pull --rebase, add code paths only, commit, push.
 - Tests: `.venv/bin/python -m pytest tests`.
 
