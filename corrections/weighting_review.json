@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-27T04:31Z",
+ "updated": "2026-11-27T05:11Z",
  "min_days": 30,
  "n_days": 2,
  "ready": false,
@@ -12,8 +12,8 @@
      "mount_hotham",
      "upwind_nw"
     ],
-    "mean_improvement_pct": -0.1,
-    "p_weighted_better": 0.26,
+    "mean_improvement_pct": -0.6,
+    "p_weighted_better": 0.49,
     "verdict": "not enough data"
    }
   },
@@ -25,7 +25,7 @@
      "mount_hotham",
      "upwind_nw"
     ],
-    "mean_improvement_pct": 2.3,
+    "mean_improvement_pct": 2.6,
     "p_weighted_better": 0.47,
     "verdict": "not enough data"
    }
@@ -38,8 +38,8 @@
      "mount_hotham",
      "upwind_nw"
     ],
-    "mean_improvement_pct": 5.0,
-    "p_weighted_better": 0.77,
+    "mean_improvement_pct": 4.0,
+    "p_weighted_better": 0.54,
     "verdict": "not enough data"
    }
   },
@@ -59,9 +59,9 @@
  },
  "score_differences": {
   "n": 6,
-  "mean_abs_xc_diff_avg_vs_weighted": 5.3,
-  "mean_abs_xc_diff_equal_blend_vs_weighted": 8.3,
-  "mean_abs_xc_diff_avg_vs_equal_blend": 5.7
+  "mean_abs_xc_diff_avg_vs_weighted": 6.7,
+  "mean_abs_xc_diff_equal_blend_vs_weighted": 1.2,
+  "mean_abs_xc_diff_avg_vs_equal_blend": 6.5
  },
  "notified": false
 }

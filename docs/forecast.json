@@ -1,5 +1,5 @@
 {
- "updated_local": "Fri 27 Nov 2026 15:31 AEDT",
+ "updated_local": "Fri 27 Nov 2026 16:12 AEDT",
  "days": [
   {
    "date": "2026-11-27",
@@ -1561,7 +1561,7 @@
    },
    "creo": {
     "rating": "Poor",
-    "text": "Decent thermals (about 1.4 m/s) and a westerly wind at launch help, but rain (0.4 mm) will hold it back."
+    "text": "Decent thermals (about 1.4 m/s) help, but rain (0.4 mm) will hold it back."
    },
    "summary": {
     "xc": "Unlikely: wind NW at launch and gusts near 28 km/h.",
@@ -2084,7 +2084,7 @@
    },
    "creo": {
     "rating": "Good",
-    "text": "Decent thermals (about 1.8 m/s), a westerly wind at launch and a westerly wind aloft (11 km/h at 1,500 m) help."
+    "text": "Decent thermals (about 1.8 m/s) and a westerly wind at launch help."
    },
    "summary": {
     "xc": "Flyable, but wind NW at launch. Best window 10am\u20131pm.",
@@ -3130,7 +3130,7 @@
    },
    "creo": {
     "rating": "Poor",
-    "text": "Decent thermals (about 1.8 m/s) and a high cloud base (about 3,100 m) help, but a north-westerly wind higher up (56 km/h at 3,000 m) will hold it back."
+    "text": "Decent thermals (about 1.8 m/s) and a high cloud base (about 3,100 m) help, but a north-westerly wind aloft (30 km/h at 1,500 m) will hold it back."
    },
    "summary": {
     "xc": "Gusts near 39 km/h; also 30 km/h wind at 850 hPa.",
