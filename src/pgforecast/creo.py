@@ -125,18 +125,40 @@ RATINGS = ("Poor", "Fair", "Good", "Great", "Epic")
 
 
 def rating(km, cuts):
-    """Poor/Fair/Good/Great/Epic from the estimate and the four cut points (the 20/40/60/80th percentiles of its predictions over past days; see scripts/creo_train.py)."""
-    return RATINGS[sum(1 for c in cuts if km >= c)] if km is not None else None
+    """Poor/Fair/Good/Great/Epic from the estimate and four cut points (estimates at which the typical actual best flight reaches the next word's bound; see calibrate_cuts).
+    A cut point of None means no estimate ever got there, so that word is never given."""
+    return RATINGS[sum(1 for c in cuts if c is not None and km >= c)] if km is not None else None
 
 
-# which features speak for which physical factor. xc_pct, day of year and the free-day flag are not weather and never appear as a reason.
-GROUPS = {
+def _pav(y):
+    """Pool-adjacent-violators: the closest non-decreasing curve to y."""
+    blocks = []
+    for v in y:
+        blocks.append([float(v), 1])
+        while len(blocks) > 1 and blocks[-2][0] / blocks[-2][1] > blocks[-1][0] / blocks[-1][1]:
+            s_, n_ = blocks.pop(); blocks[-1][0] += s_; blocks[-1][1] += n_
+    return np.concatenate([np.full(n_, s_ / n_) for s_, n_ in blocks])
+
+
+def calibrate_cuts(estimates, actual_km, bounds=(5, 20, 50, 100), k=101):
+    """For past days with a similar estimate, what was the median actual best flight? Returns the estimate at which that median first reaches each bound, so a day's word follows
+    the typical outcome of days like it (Poor under 5 km, Fair 5-20, Good 20-50, Great 50-100, Epic over 100). The median is taken over the `k` days nearest in estimate and made
+    non-decreasing; a bound the median never reaches gives None."""
+    est, act = np.asarray(estimates, float), np.asarray(actual_km, float); order = np.argsort(est, kind="stable"); e, a = est[order], act[order]; n = len(e); k = min(k, n)
+    med = np.array([np.median(a[max(0, min(i - k // 2, n - k)):max(0, min(i - k // 2, n - k)) + k]) for i in range(n)]); iso = _pav(med)
+    return [None if not (iso >= b).any() else round(float(e[int(np.argmax(iso >= b))]), 3) for b in bounds]
+
+
+# Which features speak for which physical piece, and which pieces make up one FACTOR. A factor gets ONE net effect (all its pieces added up), so it can never be listed as both
+# helping and hurting. The sentence describes the piece that pushed the way the factor's net effect went. xc_pct, day of year and the free-day flag are not weather and never appear.
+COMPONENTS = {
     "launch_wind": ("wind10_speed", "rule_wind"), "launch_dir": ("wind10_sin", "wind10_cos", "rule_direction"), "gusts": ("gust", "rule_gust"),
     "wind850": ("wind850_speed", "wind850_sin", "wind850_cos", "rule_w850"), "wind700": ("wind700_speed", "wind700_sin", "wind700_cos"),
     "height": ("cloud_base_asl", "rule_ceiling", "dew_point"), "thermals": ("rule_thermals", "temp", "cloud_low", "cloud_mid", "cloud_high"),
     "storm": ("cape", "rule_cape"), "rain": ("rain", "rule_rain"),
 }
-MIN_REASON = 0.08            # a factor must move the estimate by at least this much (log scale, about 8% in distance) to be mentioned
+FACTORS = {"wind at launch": ("launch_wind", "launch_dir", "gusts"), "wind aloft": ("wind850", "wind700"), "height": ("height",), "thermals": ("thermals",), "storm": ("storm",), "rain": ("rain",)}
+MIN_REASON = 0.08            # a factor must move the estimate by at least this much net (log scale, about 8% in distance) to be mentioned
 _WORD = ["northerly", "north-easterly", "easterly", "south-easterly", "southerly", "south-westerly", "westerly", "north-westerly"]
 
 
@@ -149,13 +171,15 @@ def _word(sin, cos):
 
 
 def _phrase(group, good, f, key):
-    """Noun phrase for one factor with its real value; `good` = it helps. f: the day's features; key: the dashboard day's key numbers."""
+    """Noun phrase for one piece (a COMPONENTS key) with its real value; `good` = it helps. f: the day's features; key: the dashboard day's key numbers."""
     g = lambda n: f.get(n)
     if group == "launch_wind" and g("wind10_speed") is not None: return ("light " if good else "strong ") + f"wind at launch (about {g('wind10_speed'):.0f} km/h)"
     if group == "launch_dir" and _word(g("wind10_sin"), g("wind10_cos")): return f"{_a(_word(g('wind10_sin'), g('wind10_cos')))} wind at launch"
     if group == "gusts" and g("gust") is not None: return ("gentle" if good else "strong") + f" gusts (up to about {g('gust'):.0f} km/h)"
-    if group == "wind850" and g("wind850_speed") is not None and _word(g("wind850_sin"), g("wind850_cos")): return f"{_a(_word(g('wind850_sin'), g('wind850_cos')))} wind aloft ({g('wind850_speed'):.0f} km/h at 1,500 m)"
-    if group == "wind700" and g("wind700_speed") is not None and _word(g("wind700_sin"), g("wind700_cos")): return f"{_a(_word(g('wind700_sin'), g('wind700_cos')))} wind higher up ({g('wind700_speed'):.0f} km/h at 3,000 m)"
+    for grp, spd, sn, cs, where in (("wind850", "wind850_speed", "wind850_sin", "wind850_cos", "aloft"), ("wind700", "wind700_speed", "wind700_sin", "wind700_cos", "higher up")):
+        if group == grp and g(spd) is not None:
+            w = _word(g(sn), g(cs)); lvl = "1,500 m" if grp == "wind850" else "3,000 m"
+            return (f"{_a(w)} wind {where}" if w else f"light wind {where}") + f" ({g(spd):.0f} km/h at {lvl})"
     if group == "height" and g("cloud_base_asl") is not None: return ("a high" if good else "the low") + f" cloud base (about {round(g('cloud_base_asl'), -2):,.0f} m)"
     if group == "thermals":
         t = (key or {}).get("thermal_ms")
@@ -166,13 +190,15 @@ def _phrase(group, good, f, key):
 
 
 def reasons(contrib, f, key=None, n=3):
-    """The strongest 2-3 factors behind the estimate, as [(group, helps?, phrase, push)], biggest first. Contributions of related features are added up (wind speed and direction at one level,
-    a rule's score and the number behind it). Factors that move the estimate less than MIN_REASON are left out."""
-    tot = {grp: sum(contrib.get(c, 0.0) for c in cols) for grp, cols in GROUPS.items()}; out = []
-    for grp, c in sorted(tot.items(), key=lambda kv: -abs(kv[1])):
-        if abs(c) < MIN_REASON: break
-        ph = _phrase(grp, c > 0, f, key)
-        if ph: out.append((grp, c > 0, ph, c))
+    """The strongest 2-3 factors behind the estimate, as [(factor, helps?, phrase, net push, plural?)], biggest net effect first. Each factor's pieces are added up into ONE net effect
+    (wind aloft = 850 and 700 hPa together; wind at launch = speed, direction and gusts together). Factors whose net effect is under MIN_REASON are left out."""
+    comp = {k: sum(contrib.get(c, 0.0) for c in cols) for k, cols in COMPONENTS.items()}; out = []
+    for fac, parts in sorted(FACTORS.items(), key=lambda kv: -abs(sum(comp[p] for p in kv[1]))):
+        net = sum(comp[p] for p in parts)
+        if abs(net) < MIN_REASON: break
+        for p in sorted(parts, key=lambda p: -abs(comp[p])):                       # describe the biggest piece that pushed the same way as the net effect
+            if comp[p] * net > 0 and (ph := _phrase(p, net > 0, f, key)):
+                out.append((fac, net > 0, ph, net, p in PLURAL)); break
         if len(out) == n: break
     return out
 
@@ -181,14 +207,14 @@ def _join(xs):
     return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
 
 
-PLURAL = ("thermals", "gusts")          # groups whose phrase is a plural noun ("thermals help", not "thermals helps")
+PLURAL = ("thermals", "gusts")          # pieces whose phrase is a plural noun ("thermals help", not "thermals helps")
 
 
 def describe(rs, nogo_lead=None):
     """One or two sentences from `reasons`. nogo_lead: the rules' deal-breaker wording (e.g. 'Rain 3.2 mm in the window'); the text then leads with it."""
     good, bad = [r for r in rs if r[1]], [r for r in rs if not r[1]]
     good_ph, bad_ph = [r[2] for r in good], [r[2] for r in bad]
-    verb = lambda items, one, many: many if len(items) > 1 or items[0][0] in PLURAL else one
+    verb = lambda items, one, many: many if len(items) > 1 or items[0][4] else one
     limit = "will limit height" if len(bad) == 1 and bad[0][0] == "height" else "will hold it back"
     cap = lambda t: t[0].upper() + t[1:]
     if nogo_lead: return f"{nogo_lead} rules the day out." + (f" Otherwise {_join(good_ph)} would help." if good else "")

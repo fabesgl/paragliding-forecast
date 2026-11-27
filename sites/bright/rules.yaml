@@ -17,8 +17,6 @@ direction:                       # Is the wind blowing from a direction Mystic c
     arc_deg: [135, 247]          # Launch wind from this arc counts as a southerly: 135 = SE, through S, to 247 = SW.
     valley_wind_kmh_per_thermal_ms: 6   # Estimated valley wind (km/h) for each 1 m/s of estimated thermal strength. A DEFAULT, to be calibrated from observations (see calibrate_valley_wind.py).
     fade_kmh: 3                  # Fade width (km/h): 100% when the valley wind beats the southerly by this much or more, 0% when it falls short by this much, 50% when equal.
-  westerly_launch:               # XC ONLY (acro is unchanged: a westerly there is still 0%). A W/WNW wind at launch (over calm_below_kmh) is OK when the thermic valley wind beats it, using the SAME check and numbers as southerly_launch above.
-    arc_deg: [247, 315]          # Launch wind from this arc counts as a westerly: 247 = WSW, through W, to 315 = NW. (Tested 2026-11-27 on 2024-2026 flights: ranks days better from the forecast; see data/scoreboard/rule_tests.md.)
 
 shared:                          # Rules that apply to BOTH XC and acro.
   rain:                          # Rain in the flying window (total over the window, millimetres). No rain scores 100%; the score eases to about 90% at limit_mm, then falls to 0%.

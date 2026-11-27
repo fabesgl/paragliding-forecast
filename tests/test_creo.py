@@ -39,21 +39,31 @@ class Panel(unittest.TestCase):
     F = dict(wind10_speed=8.0, wind10_sin=0.0, wind10_cos=1.0, wind850_speed=14.0, wind850_sin=-1.0, wind850_cos=0.0, wind700_speed=20.0, wind700_sin=0.0, wind700_cos=0.0,
              gust=18.0, cloud_base_asl=1930.0, cape=50.0, rain=0.0)
 
-    def test_rating_words_from_fifths(self):
+    def test_rating_words_follow_the_calibrated_cuts(self):
         cuts = [0.2, 1.0, 3.0, 14.0]
         self.assertEqual([creo.rating(k, cuts) for k in (0, 0.5, 2, 5, 20)], ["Poor", "Fair", "Good", "Great", "Epic"]); self.assertEqual(creo.rating(14.0, cuts), "Epic"); self.assertIsNone(creo.rating(None, cuts))
+        self.assertEqual(creo.rating(999, [1, 2, 3, None]), "Great")                                 # a word no estimate reaches is never given
 
-    def test_reasons_group_features_and_skip_non_weather(self):
-        c = {"xc_pct": 3.0, "doy": 2.0, "free": 1.0, "wind850_speed": 0.1, "wind850_sin": 0.1, "rule_w850": 0.05, "cloud_base_asl": -0.3, "rule_ceiling": -0.1, "temp": 0.01}
-        rs = creo.reasons(c, self.F); self.assertEqual([r[0] for r in rs], ["height", "wind850"])                       # biggest first; xc_pct, doy and free are never reasons
-        self.assertEqual(creo.reasons({"gust": 0.02, "rain": -0.05}, self.F), [])                                       # too small to mention
+    def test_calibrated_cuts_use_the_median_of_similar_days(self):
+        est = [1, 2, 3, 4, 5, 6] * 30; act = [0, 0, 10, 30, 60, 200] * 30
+        self.assertEqual(creo.calibrate_cuts(est, act, k=11), [3.0, 4.0, 5.0, 6.0])                  # median reaches 5 km at estimate 3, 20 at 4, 50 at 5, 100 at 6
+        self.assertEqual(creo.calibrate_cuts(est, [min(a, 40) for a in act], k=11)[2:], [None, None])  # the median never reaches 50 or 100
+        self.assertTrue(np.all(np.diff(creo._pav([3, 1, 2, 5, 4])) >= 0))
+
+    def test_a_factor_has_one_net_effect(self):
+        c = {"wind850_speed": 0.30, "wind700_speed": -0.12, "cloud_base_asl": -0.3, "xc_pct": 3.0, "doy": 2.0, "free": 1.0, "rule_w850": 0.0, "temp": 0.01}
+        rs = creo.reasons(c, self.F); self.assertEqual([r[0] for r in rs], ["height", "wind aloft"])               # xc_pct, doy and free are never reasons
+        wind = [r for r in rs if r[0] == "wind aloft"][0]; self.assertTrue(wind[1]); self.assertAlmostEqual(wind[3], 0.18)   # 850 and 700 hPa added up: net helps, mentioned once
+        self.assertIn("1,500 m", wind[2])                                                                           # described by the piece that pushed the same way as the net effect
+        both = creo.reasons({"wind850_speed": 0.2, "wind700_speed": -0.5}, self.F); self.assertEqual(len(both), 1); self.assertFalse(both[0][1]); self.assertIn("3,000 m", both[0][2])
+        self.assertEqual([r[0] for r in creo.reasons({"wind10_speed": 0.2, "gust": -0.2, "wind10_cos": 0.01}, self.F)], [])         # speed, direction and gusts cancel into one small net effect
+        self.assertEqual(creo.reasons({"gust": 0.02, "rain": -0.05}, self.F), [])                                   # too small to mention
 
     def test_the_sentence_has_the_real_values(self):
-        c = {"wind850_speed": 0.3, "cloud_base_asl": -0.4}
-        t = creo.describe(creo.reasons(c, self.F)); self.assertEqual(t, "A westerly wind aloft (14 km/h at 1,500 m) helps, but the low cloud base (about 1,900 m) will limit height.")
+        t = creo.describe(creo.reasons({"wind850_speed": 0.3, "cloud_base_asl": -0.4}, self.F)); self.assertEqual(t, "A westerly wind aloft (14 km/h at 1,500 m) helps, but the low cloud base (about 1,900 m) will limit height.")
         self.assertEqual(creo.describe(creo.reasons({"gust": -0.3}, self.F)), "Strong gusts (up to about 18 km/h) hold the day back.")
         self.assertEqual(creo.describe(creo.reasons({"cloud_base_asl": 0.3, "wind10_sin": 0.2}, dict(self.F, wind10_sin=1.0, wind10_cos=0.0))), "A high cloud base (about 1,900 m) and an easterly wind at launch help.")
-        th = creo.describe(creo.reasons({"rule_thermals": 0.3}, self.F, {"thermal_ms": 1.4})); self.assertEqual(th, "Decent thermals (about 1.4 m/s) help.")
+        self.assertEqual(creo.describe(creo.reasons({"rule_thermals": 0.3}, self.F, {"thermal_ms": 1.4})), "Decent thermals (about 1.4 m/s) help.")
         self.assertEqual(creo.describe([]), "Nothing stands out: close to an average day.")
 
     def test_no_go_leads_with_the_deal_breaker(self):

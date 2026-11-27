@@ -11,6 +11,31 @@
     13.834
    ],
    "rating_basis": "20/40/60/80th percentiles of the model's leave-one-year-out estimates over all training days"
+  },
+  "cef1315c": {
+   "trained_through": "2026-11-22",
+   "first_day": "2022-01-01",
+   "days": 1570,
+   "rating_cuts_km": [
+    5.732,
+    13.591,
+    46.045,
+    null
+   ],
+   "rating_bounds_km": [
+    5,
+    20,
+    50,
+    100
+   ],
+   "rating_counts": {
+    "Poor": 1083,
+    "Fair": 173,
+    "Good": 227,
+    "Great": 87,
+    "Epic": 0
+   },
+   "rating_basis": "estimate at which the median actual best flight of past days with a similar leave-one-year-out estimate (101 nearest days, made non-decreasing) reaches 5/20/50/100 km"
   }
  }
 }

@@ -109,11 +109,11 @@ GOLDEN = {
    "w850": 1.0,
    "wind": 1.0
   },
-  "xc": 67,
+  "xc": 50,
   "xc_f": {
    "cape": 1.0,
    "ceiling": 1.0,
-   "direction": 0.667,
+   "direction": 0.5,
    "gust": 1.0,
    "rain": 0.966,
    "thermals": 1.0,
@@ -265,16 +265,16 @@ class T(unittest.TestCase):
     def setUp(self): self.rules = load_rules("bright")
 
     def test_westerly_launch_is_xc_only_and_needs_the_valley_wind(self):
-        """2026-11-27: a W/WNW 10 m wind is launchable for XC when the valley wind beats it (same check as a southerly). Acro keeps scoring it 0."""
+        """The OPTIONAL direction.westerly_launch setting (tried 2026-11-27, reverted the same day; the code stays): a W/WNW 10 m wind is launchable for XC when the valley wind beats it (same check as a southerly). Acro keeps scoring it 0."""
         dirs = lambda r, k: {x["key"]: x["factor"] for x in r[k]}["direction"]
+        live = self.rules; self.rules = {**live, "direction": {**live["direction"], "westerly_launch": {"arc_deg": [247, 315]}}}          # switch it on for this test only
         strong = score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[8]*N), self.rules, 797)         # good thermals, light westerly: valley wind wins
         self.assertGreater(dirs(strong, "xc_rules"), 0.9); self.assertEqual(dirs(strong, "acro_rules"), 0.0)
         weak = score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[20]*N), self.rules, 797)          # a 20 km/h westerly beats the valley wind: still 0 for XC
         self.assertEqual(dirs(weak, "xc_rules"), 0.0); self.assertEqual(dirs(weak, "acro_rules"), 0.0)
         south_syn = score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[8]*N, wind_speed_850hPa=[30]*N, wind_direction_850hPa=[200]*N), self.rules, 797)
         self.assertEqual(dirs(south_syn, "xc_rules"), 0.0)                                                 # a strong southerly aloft stays a no-go
-        off = {**self.rules, "direction": {k: v for k, v in self.rules["direction"].items() if k != "westerly_launch"}}
-        self.assertEqual(dirs(score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[8]*N), off, 797), "xc_rules"), 0.0)       # without the setting nothing changes
+        off = live; self.assertEqual(dirs(score_day(win(wind_direction_10m=[280]*N, wind_speed_10m=[8]*N), off, 797), "xc_rules"), 0.0)       # without the setting (the live rules) nothing changes
         bad = {**self.rules, "direction": {**self.rules["direction"], "westerly_launch": {"arc_deg": [247]}}}
         with self.assertRaises(ValueError): validate(bad)
 

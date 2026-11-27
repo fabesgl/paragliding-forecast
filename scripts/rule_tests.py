@@ -1,12 +1,12 @@
 """Test possible XC rule changes against real flying with the scoreboard data, leave-one-year-out. READ-ONLY: the live rules and the dashboard are never touched;
 each change is applied here, to the per-rule factors that rules.score_day returns (the unchanged scoring is reproduced exactly and checked).
 Variants (pick with --variants, comma separated; default baseline,west_off,west):
-  baseline     the rules as they are NOW in sites/<site>/rules.yaml (since 2026-11-27 that includes direction.westerly_launch)
-  west_off     the rules without direction.westerly_launch: the old westerly penalty back (a W/WNW 10 m wind scores 0 for XC)
+  baseline     the rules as they are NOW in sites/<site>/rules.yaml (the westerly_launch setting was tried 2026-11-27 and reverted, so baseline = no westerly launch)
+  west_off     the rules without direction.westerly_launch: the westerly penalty (a W/WNW 10 m wind scores 0 for XC)
   west         XC only: a W/WNW 10 m wind (247-315 deg) counts as launchable at all times (the westerly penalty removed completely)
   west_valley  XC only: W/WNW launchable when the thermic valley wind is established, the same check the rules use for southerlies
                (valley wind = estimated thermals x valley_wind_kmh_per_thermal_ms must beat the launch wind, fading over fade_kmh).
-               Identical to baseline while the live rules have westerly_launch on.
+               (Identical to baseline only if the live rules have westerly_launch on.)
   rain         scattered showers (rain in fewer than s window hours; an hour is wet at t mm or more) only lower the score to 1 - wet hours/hours; steady rain keeps today's rule
   west+rain    both of those (west = the full removal)
 Leave-one-year-out: only the rain settings (t in 0.1/0.3/1.0 mm, s in 3/4/5 hours) are tuned, on two years and applied to the third. The westerly variants have nothing to

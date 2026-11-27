@@ -8,7 +8,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 ## Names
 - **"The rules"** = Fabian's and his brother's flying limits in `sites/bright/rules.yaml` (each rule scores 0–100%; a day's score is its weakest rule).
 - **Creo** = the planned machine-learning model. Not built yet.
-- **Creo (beta)** = the panel on the dashboard that replaced the AI second opinion on 2026-11-27: a rating word (Poor, Fair, Good, Great, Epic; fifths of Creo's own past estimates, cut points in `sites/bright/creo_model.json`) and one or two sentences from its top 2-3 factors (LightGBM per-feature contributions, with the real values). Never shows km. On a no-go day it leads with the rules' deal-breaker. It never changes the scores.
+- **Creo (beta)** = the panel on the dashboard that replaced the AI second opinion on 2026-11-27: a rating word from the typical outcome of past days with a similar Creo estimate (median actual best flight: Poor under 5 km, Fair 5-20, Good 20-50, Great 50-100, Epic over 100; the estimate cut points and day counts are in `sites/bright/creo_model.json`) and one or two sentences from its top 2-3 factors (LightGBM per-feature contributions added up into one net effect per factor, with the real values). Never shows km. On a no-go day it leads with the rules' deal-breaker. It never changes the scores.
 - **AI second opinion** = retired from the daily job (no API key or cost any more); `src/pgforecast/ai_opinion.py` and its tests stay in the repo, unused.
 
 ## How it runs
@@ -86,4 +86,4 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - XContest importer built; Mystic 2026 imported (Jan and Apr incomplete, flagged); older years to be saved by hand.
 - IGC/GPX importer built; per-pilot folders (`pilot1` 509 unique flights, `pilot2` 620). Flights with a track sample gap over ~5 s are flagged `low_rate` (thermals unreliable). Emily vs Marcus analysis done on pilot1 (`scripts/thermal_zones.py`); not used by the dashboard.
 - Forecast error vs BARRA-C2 and BOM stations done (2026-11-26); per-variable model weights are built and logged but the old method stays published until the review; BARRA-based corrections tested and rejected; correction layer waits for Mystic station readings (see `TODO.md`). Creo not started.
-- 2026-11-27: XC direction rule changed: a W/WNW 10 m wind counts as launchable when the valley wind beats it (`direction.westerly_launch`; acro unchanged). Scoreboard baseline since then: forecast side +0.72 rank correlation (was +0.69). `scripts/rule_tests.py` baseline = the live rules.
+- 2026-11-27: the XC westerly-with-valley-wind rule (`direction.westerly_launch`) was tried and reverted the same day (it only helped on the short-lead archive; on day-ahead forecasts it scored slightly worse). The optional setting stays in the code, off. `scripts/rule_tests.py` baseline = the live rules.
