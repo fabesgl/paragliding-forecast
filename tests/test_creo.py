@@ -33,3 +33,15 @@ class T(unittest.TestCase):
 
 
 if __name__ == "__main__": unittest.main()
+
+
+class Shadow(unittest.TestCase):
+    def test_predict_day_builds_the_row_and_applies_the_hard_limit(self):
+        try: import lightgbm as lgb
+        except ImportError: self.skipTest("lightgbm not installed")
+        names = ["wind10_speed", "xc_pct", "doy", "free"]; rng = np.random.default_rng(0); X = rng.uniform(0, 30, (200, 4))
+        b = lgb.train(dict(objective="regression", num_leaves=4, verbosity=-1, seed=0), lgb.Dataset(X, np.log1p(X[:, 0]), feature_name=names), 20)
+        row = creo.feature_row({"wind10_speed": 7.0, "xc_pct": 55.0}, names, "2026-12-01"); self.assertEqual(row[:2], [7.0, 55.0]); self.assertEqual(row[2], 335); self.assertEqual(row[3], 1.0)   # free-day flag always 1
+        pm = [{"xc_pct": 60, "wind10_speed": 8.0, "wind10_u": 1.0, "wind10_v": 1.0}, {"xc_pct": 50, "wind10_speed": 6.0, "wind10_u": 1.0, "wind10_v": 1.0}]
+        p = creo.predict_day(b, pm, "2026-12-01", published_xc=55); self.assertFalse(p["no_go"]); self.assertEqual(p["creo_km"], p["creo_raw_km"]); self.assertEqual(p["xc_feature"], 55)
+        z = creo.predict_day(b, pm, "2026-12-01", published_xc=0); self.assertTrue(z["no_go"]); self.assertEqual(z["creo_km"], 0.0); self.assertGreaterEqual(z["creo_raw_km"], 0.0)

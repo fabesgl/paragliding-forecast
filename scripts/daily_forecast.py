@@ -10,6 +10,8 @@ sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.rules import score_day, compass, acro_window_score
 from pgforecast.rules_config import load_rules
 from pgforecast import corrections as corr, ai_opinion, render, fronts, blend
+try: from pgforecast import creo                   # needs numpy (comes with lightgbm); without it the Creo shadow step is simply skipped
+except Exception: creo = None
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
 cfg = yaml.safe_load((ROOT/"sites"/f"{site}.yaml").read_text())
 tz = ZoneInfo(cfg["timezone"]); now = dt.datetime.now(dt.UTC); local_now = now.astimezone(tz)
@@ -79,7 +81,7 @@ mystic = raw[keys.index("mystic_launch")]["hourly"]
 times = mystic["time"]; win = cfg.get("flying_window_local", ["11:00", "16:00"])
 days = sorted({t[:10] for t in times})
 today = local_now.date().isoformat()
-out_days = []; wlog = []
+out_days = []; wlog = []; creo_feats = {}                  # creo_feats: day -> each model's Creo input features (shadow mode, step 3b)
 def fill(day_idx, v, m):
     """Model m's hourly values for variable v; gaps are filled with the mean of the other models (e.g. ECMWF has no boundary-layer height)."""
     own = mystic.get(f"{v}_{m}", [None] * len(times))
@@ -139,6 +141,9 @@ for day in [d for d in days if d >= today][:6]:
         if all(mystic.get(f"wind_speed_10m_{m}", [None] * len(times))[i] is None for i in idx): continue   # model has no data (e.g. BOM ACCESS-G)
         h = {v: fill(idx, v, m) for v in VARS}
         per_model[m] = score_day(h, cfg["rules"], cfg["launch_height_m"])
+        try:
+            if creo: creo_feats.setdefault(day, []).append(creo.model_features(h, per_model[m], cfg["launch_height_m"]))
+        except Exception as e: print("Creo shadow: features failed for", day, m, type(e).__name__, e)      # shadow mode must never stop the job
     def avg(k):
         v = [p[k] for p in per_model.values() if p[k] is not None]; return round(sum(v)/len(v)) if v else None
     best = per_model.get("gfs_seamless") or next(iter(per_model.values()), None)
@@ -221,6 +226,27 @@ if ai:
         for d in out_days:
             if d["ai"]: w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], (dt.date.fromisoformat(d["date"]) - local_now.date()).days, ai_opinion.MODEL,
                                     d["ai"]["xc_call"], d["ai"]["acro_call"], d["xc"], d["acro"], d["ai"].get("forced", ""), d["ai"]["reasoning"]])
+# 3b. Creo in SHADOW MODE: predict each day's best distance and log it next to the rules' XC %. It is never shown on the dashboard, never changes a score, and a failure here never stops the job.
+CREO_COLS = ["made_at_utc", "target_date", "lead_days", "rules_xc_pct", "creo_km", "creo_raw_km", "no_go", "n_models", "model"]
+try:
+    import hashlib, lightgbm as lgb
+    if creo is None: raise ImportError("creo helpers need numpy")
+    cm = ROOT / "sites" / site / "creo_model.txt"
+    booster = lgb.Booster(model_file=str(cm)); version = hashlib.sha1(cm.read_bytes()).hexdigest()[:8]
+    crows = []
+    for d in out_days:
+        fs = creo_feats.get(d["date"])
+        if not fs: continue
+        p_ = creo.predict_day(booster, fs, d["date"], d["xc"])
+        crows.append([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], (dt.date.fromisoformat(d["date"]) - local_now.date()).days, d["xc"], round(p_["creo_km"], 1), round(p_["creo_raw_km"], 1), int(p_["no_go"]), len(fs), version])
+    cf_ = OUT/"predictions"/"creo_log.csv"; new_ = not cf_.exists()
+    with cf_.open("a", newline="") as f:
+        w = csv.writer(f)
+        if new_: w.writerow(CREO_COLS)
+        w.writerows(crows)
+    print("Creo shadow: logged", [(r[1], r[3], r[4]) for r in crows])
+except Exception as e:
+    print("Creo shadow skipped:", type(e).__name__, e)
 # 4. write the dashboard
 docs = OUT/"docs"; docs.mkdir(parents=True, exist_ok=True)
 (docs/"forecast.json").write_text(json.dumps(dict(updated_local=local_now.strftime("%a %d %b %Y %H:%M %Z"), days=out_days), indent=1))
