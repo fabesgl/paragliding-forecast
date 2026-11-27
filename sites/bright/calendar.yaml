@@ -43,3 +43,10 @@ bright_open:
 
 # Training weight of distances flown in comp weeks (the task limits distance, not the weather). Flight counts on comp days get weight 0 and `flyable` is kept. A guess: change it if you like.
 comp_distance_weight: 0.5
+
+# Months to treat as UNKNOWN: left out of the scoreboard and of Creo's training completely, flown days included. Why: the site may have been closed in these months (no XContest
+# page was saved for 2025-09, and October and November have only 10 and 7 flights), so "nobody flew" does not mean the weather was bad. Remove a month here once it is confirmed open.
+unknown_months:
+  - 2025-09
+  - 2025-10
+  - 2025-11

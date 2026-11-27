@@ -40,6 +40,12 @@ class T(unittest.TestCase):
         self.assertEqual((lab.loc["2024-02-10", "count_weight"], lab.loc["2024-02-10", "distance_weight"]), (0.0, 0.5)); self.assertEqual(lab.loc["2024-02-10", "n_flights"], 1)   # count stays, weight 0
         self.assertEqual((lab.loc["2024-02-20", "count_weight"], lab.loc["2024-02-20", "distance_weight"]), (1.0, 1.0)); self.assertFalse(lab.loc["2024-02-20", "comp"])
 
+    def test_unknown_months_are_left_out_entirely(self):
+        flights = [("2025-10-05", "A", 30.0), ("2025-11-03", "A", 5.0), ("2025-12-01", "A", 20.0)]
+        status = {"2025-10-05": "flew", "2025-10-06": "no_flights", "2025-11-03": "flew", "2025-12-01": "flew"}
+        lab = SB.build_day_labels(flights, [], status, {"2025-10", "2025-11", "2025-12"}, "2025-10-05", "2025-12-01", unknown_months={"2025-10", "2025-11"})
+        self.assertEqual(lab["date"].tolist(), ["2025-12-01"])                         # flown days in an unknown month go too, not only the no-flight days
+
     def test_free_days_and_events(self):
         self.assertTrue(SB.is_free_day("2024-02-03", [])); self.assertFalse(SB.is_free_day("2024-02-05", []))     # Sat / Mon
         self.assertTrue(SB.is_free_day("2024-02-05", ["2024-02-05"]))

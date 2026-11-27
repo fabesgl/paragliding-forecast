@@ -25,12 +25,13 @@ def spearman(x, y):
     return float(d["x"].rank().corr(d["y"].rank()))
 
 
-def build_day_labels(xc_flights, igc_dates, day_status, complete_months, first, last, events=(), comp_distance_weight=COMP_DISTANCE_WEIGHT):
+def build_day_labels(xc_flights, igc_dates, day_status, complete_months, first, last, events=(), comp_distance_weight=COMP_DISTANCE_WEIGHT, unknown_months=()):
     """One row per day from first to last that can be judged.
     xc_flights: rows (date, glider_class, distance_km). igc_dates: dates with a saved track from Mystic. day_status: {date: 'flew'|'no_flights'|'unknown'}
     (XContest day status). complete_months: {'YYYY-MM'} where every XContest flight is saved.
     Comp days (inside an `events` window, e.g. the Bright Open): `flyable` is kept as it is (flown or not), `count_weight` is 0 (flight counts are not
     evidence of conditions: a task sends everyone up), `distance_weight` is `comp_distance_weight` (distances are limited by the task, not the weather). Other days: 1 and 1.
+    unknown_months: months ('YYYY-MM') to leave out entirely, flown days included (e.g. the site may have been closed and nobody could fly).
     Returns DataFrame: date, flown, flyable, month_complete, comp, count_weight, distance_weight, n_flights, best_km, median_km, source ('xcontest' | 'igc' (a track proves a flight, distance unknown) | 'none'), skipped dates are left out."""
     by = {}
     for d, cls, km in xc_flights:
@@ -39,7 +40,9 @@ def build_day_labels(xc_flights, igc_dates, day_status, complete_months, first, 
     igc = set(igc_dates); rows = []
     d = dt.date.fromisoformat(first)
     while d <= dt.date.fromisoformat(last):
-        s = d.isoformat(); kms = [k for k in by.get(s, []) if not np.isnan(k)]; n = len(by.get(s, []))
+        s = d.isoformat()
+        if s[:7] in unknown_months: d += dt.timedelta(days=1); continue
+        kms = [k for k in by.get(s, []) if not np.isnan(k)]; n = len(by.get(s, []))
         st = day_status.get(s)
         if n:
             rows.append(dict(date=s, flown=True, n_flights=n, best_km=max(kms) if kms else np.nan, median_km=float(np.median(kms)) if kms else np.nan, source="xcontest"))

@@ -138,7 +138,7 @@ def labels():
         g = sqlite3.connect(ROOT / "data" / "igc_flights.sqlite")
         igc = [d for (d,) in g.execute("SELECT DISTINCT date FROM igc_flight WHERE launch_site=? AND date>=?", (LAUNCH_ID, FIRST))]
     last = max(status) if status else FIRST
-    return SB.build_day_labels(flights, igc, status, complete, FIRST, last, EVENTS, cal.get("comp_distance_weight", SB.COMP_DISTANCE_WEIGHT)), len(status), sum(1 for d in status if d >= FIRST and status[d] == "unknown")
+    return SB.build_day_labels(flights, igc, status, complete, FIRST, last, EVENTS, cal.get("comp_distance_weight", SB.COMP_DISTANCE_WEIGHT), {str(m) for m in cal.get("unknown_months", [])}), len(status), sum(1 for d in status if d >= FIRST and status[d] == "unknown")
 
 
 def season(date): return FE.season_of(int(date[5:7]))

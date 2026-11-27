@@ -34,6 +34,29 @@
     "Great": 87
    },
    "rating_basis": "estimate at which the median actual best flight of past days with a similar leave-one-year-out estimate (101 nearest days, made non-decreasing) reaches 5/20/50/100 km"
+  },
+  "ba547fb9": {
+   "trained_through": "2026-11-22",
+   "first_day": "2022-01-01",
+   "days": 1510,
+   "rating_cuts_km": [
+    5.838,
+    13.632,
+    49.344
+   ],
+   "rating_bounds_km": [
+    5,
+    20,
+    50,
+    100
+   ],
+   "rating_counts": {
+    "Poor": 1019,
+    "Fair": 177,
+    "Good": 225,
+    "Great": 89
+   },
+   "rating_basis": "estimate at which the median actual best flight of past days with a similar leave-one-year-out estimate (101 nearest days, made non-decreasing) reaches 5/20/50/100 km"
   }
  }
 }
