@@ -226,3 +226,9 @@ made_at_utc,target_date,lead_days,xc_pct,acro_pct,method,models,front_status,fro
 2026-11-27T05:20Z,2026-11-30,3,55,46,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,post,cold,2026-11-28T14:00
 2026-11-27T05:20Z,2026-12-01,4,90,88,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,none,,
 2026-11-27T05:20Z,2026-12-02,5,3,0,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,none,,
+2026-11-27T18:27Z,2026-11-28,0,0,0,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,none,,
+2026-11-27T18:27Z,2026-11-29,1,6,6,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,none,,
+2026-11-27T18:27Z,2026-11-30,2,48,48,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,none,,
+2026-11-27T18:27Z,2026-12-01,3,89,83,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,none,,
+2026-11-27T18:27Z,2026-12-02,4,0,0,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,none,,
+2026-11-27T18:27Z,2026-12-03,5,5,5,rules-v3,gfs_seamless+ecmwf_ifs025+icon_seamless,none,,
