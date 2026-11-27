@@ -281,8 +281,8 @@ def panel_lines(rating_word, share, window, rs_all, rules_pct, disagree_rs=None,
     head = f"Best: {window}" if window else "Best: no clear window today"
     line = head + (", " if window else "; ") + climbs if climbs else head
     if best and best[0] != "thermals": line += f", helped by {best[2]}"            # thermals are already said in the climbs
-    out.append(line + ".")
-    out.append("Watch: " + (watch[2] + "." if watch else "nothing stands out."))
+    best_line = line + "."; watch_line = "Watch: " + (watch[2] + "." if watch else "nothing stands out.")
+    out += [watch_line, best_line] if rating_word == "Poor" else [best_line, watch_line]          # on a Poor day the drag comes first
     low_rules, high_rules = rules_pct is not None and rules_pct < 35, rules_pct is not None and rules_pct >= 65
     if (high_rules and rating_word == "Poor") or (low_rules and rating_word in ("Good", "Great")):
         up = low_rules; pick = next((r for r in (disagree_rs or []) if r[1] == up), None)

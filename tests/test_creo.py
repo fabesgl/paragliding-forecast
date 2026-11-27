@@ -82,15 +82,15 @@ class Lines(unittest.TestCase):
         self.assertLessEqual(len(" ".join(r).split()), 50)
         helper = ("wind at launch", True, "light wind at launch (6 km/h)", 0.4, False)
         self.assertEqual(creo.panel_lines("Good", 0.5, "12-3pm", [helper, self.R_GOOD], 55, climb_top_m=2420, climb_ms=1.8)[1], "Best: 12-3pm, climbs to about 2,400 m at 1.8 m/s, helped by light wind at launch (6 km/h).")
-        self.assertEqual(creo.panel_lines("Poor", 0.02, None, [], 20, climb_top_m=2900, climb_ms=1.1)[:3], ["Similar past days rarely went XC (20 km+).", "Best: no clear window today; climbs to about 2,900 m at 1.1 m/s.", "Watch: nothing stands out."])
-        self.assertEqual(creo.panel_lines("Poor", 0.02, "12-3pm", [], 20)[1], "Best: 12-3pm.")                                       # no climb numbers: just the window
+        self.assertEqual(creo.panel_lines("Poor", 0.02, None, [], 20, climb_top_m=2900, climb_ms=1.1)[:3], ["Similar past days rarely went XC (20 km+).", "Watch: nothing stands out.", "Best: no clear window today; climbs to about 2,900 m at 1.1 m/s."])      # Poor: Watch first
+        self.assertEqual(creo.panel_lines("Poor", 0.02, "12-3pm", [], 20)[2], "Best: 12-3pm.")                                       # no climb numbers: just the window
         self.assertEqual(creo.panel_lines("Poor", 0.12, "12-3pm", [], 20)[0], "Similar past days went XC (20 km+) about 1 time in 10.")
         self.assertEqual(creo.panel_lines("Great", 0.99, "11am-4pm", [self.R_GOOD], 90, climb_ms=2.6)[0], "Similar past days nearly always went XC (20 km+).")
         self.assertEqual(creo.panel_lines("Great", 0.99, "11am-4pm", [self.R_GOOD], 90, climb_ms=2.6)[1], "Best: 11am-4pm, climbs at 2.6 m/s.")
 
     def test_the_disagreement_line_only_when_clear(self):
         dis_bad = [("height", False, "the low cloud base (about 1,900 m)", -0.3, False)]
-        t = creo.panel_lines("Poor", 0.3, "12-3pm", [self.R_GOOD], 80, dis_bad)               # rules say good, Creo says Poor
+        t = creo.panel_lines("Poor", 0.3, "12-3pm", [self.R_GOOD], 80, dis_bad)               # rules say good, Creo says Poor (the disagreement line stays last)
         self.assertEqual(t[-1], "Creo is more cautious than the rules: past days with the low cloud base (about 1,900 m) tended to go badly.")
         up = creo.panel_lines("Good", 0.8, "12-3pm", [self.R_GOOD], 20, [self.R_GOOD])        # rules say poor, Creo says Good
         self.assertEqual(up[-1], "Creo is more upbeat than the rules: past days with decent thermals (about 1.8 m/s) tended to go well.")
