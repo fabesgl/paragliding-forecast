@@ -1,5 +1,5 @@
 {
- "updated_local": "Fri 27 Nov 2026 16:12 AEDT",
+ "updated_local": "Fri 27 Nov 2026 16:20 AEDT",
  "days": [
   {
    "date": "2026-11-27",
@@ -515,6 +515,9 @@
    },
    "creo": {
     "rating": "Poor",
+    "lines": [
+     "Rain 1.3 mm in the window rules the day out."
+    ],
     "text": "Rain 1.3 mm in the window rules the day out."
    },
    "summary": {
@@ -1038,6 +1041,9 @@
    },
    "creo": {
     "rating": "Poor",
+    "lines": [
+     "Rain 12.5 mm in the window rules the day out."
+    ],
     "text": "Rain 12.5 mm in the window rules the day out."
    },
    "summary": {
@@ -1561,7 +1567,12 @@
    },
    "creo": {
     "rating": "Poor",
-    "text": "Decent thermals (about 1.4 m/s) help, but rain (0.4 mm) will hold it back."
+    "lines": [
+     "Similar past days went XC (20 km+) about 2 times in 10.",
+     "Watch: rain (0.4 mm).",
+     "Best: 11am\u201312pm, climbs to about 1,900 m at 1.4 m/s."
+    ],
+    "text": "Similar past days went XC (20 km+) about 2 times in 10. Watch: rain (0.4 mm). Best: 11am\u201312pm, climbs to about 1,900 m at 1.4 m/s."
    },
    "summary": {
     "xc": "Unlikely: wind NW at launch and gusts near 28 km/h.",
@@ -2084,7 +2095,12 @@
    },
    "creo": {
     "rating": "Good",
-    "text": "Decent thermals (about 1.8 m/s) and a westerly wind at launch help."
+    "lines": [
+     "Similar past days went XC (20 km+) about 6 times in 10.",
+     "Best: 10am\u20131pm, climbs to about 2,700 m at 1.8 m/s.",
+     "Watch: nothing stands out."
+    ],
+    "text": "Similar past days went XC (20 km+) about 6 times in 10. Best: 10am\u20131pm, climbs to about 2,700 m at 1.8 m/s. Watch: nothing stands out."
    },
    "summary": {
     "xc": "Flyable, but wind NW at launch. Best window 10am\u20131pm.",
@@ -2607,7 +2623,12 @@
    },
    "creo": {
     "rating": "Good",
-    "text": "Decent thermals (about 1.6 m/s) and a north-westerly wind aloft (8 km/h at 1,500 m) help."
+    "lines": [
+     "Similar past days went XC (20 km+) about 6 times in 10.",
+     "Best: 11am\u20136pm, climbs to about 2,400 m at 1.6 m/s.",
+     "Watch: nothing stands out."
+    ],
+    "text": "Similar past days went XC (20 km+) about 6 times in 10. Best: 11am\u20136pm, climbs to about 2,400 m at 1.6 m/s. Watch: nothing stands out."
    },
    "summary": {
     "xc": "Thermals reaching about 2,400 m at about 1.6 m/s. Best window 11am\u20136pm.",
@@ -3130,7 +3151,12 @@
    },
    "creo": {
     "rating": "Poor",
-    "text": "Decent thermals (about 1.8 m/s) and a high cloud base (about 3,100 m) help, but a north-westerly wind aloft (30 km/h at 1,500 m) will hold it back."
+    "lines": [
+     "Similar past days rarely went XC (20 km+).",
+     "Watch: a north-westerly wind aloft (53 km/h at about 2,900 m).",
+     "Best: 10\u201311am, climbs to about 2,900 m at 1.8 m/s."
+    ],
+    "text": "Similar past days rarely went XC (20 km+). Watch: a north-westerly wind aloft (53 km/h at about 2,900 m). Best: 10\u201311am, climbs to about 2,900 m at 1.8 m/s."
    },
    "summary": {
     "xc": "Gusts near 39 km/h; also 30 km/h wind at 850 hPa.",
