@@ -29,6 +29,7 @@ def single_run_frames():
     for f in sorted(glob.glob(str(ROOT / "data" / "single_runs" / "*.json"))):
         j = json.loads(Path(f).read_text()); h = j["hourly"]; t = pd.to_datetime(h["time"]); run = pd.Timestamp(j["run"]).normalize()
         for m in SR_MODELS:
+            if f"wind_speed_10m_{m}" not in h: continue                    # this model's run is missing from the archive for that day (recorded as `missing` in the file)
             df = pd.DataFrame({"model": m, "time_utc": t, **{v: h.get(f"{v}_{m}", [None] * len(t)) for v in COLS}})
             for lead in (1, 2): out[lead].append(df[df["time_utc"].dt.normalize() == run + pd.Timedelta(days=lead)])
     return {lead: M.window(pd.concat(parts, ignore_index=True)) for lead, parts in out.items() if parts}
@@ -88,9 +89,10 @@ def main():
     pr = previous_run_frames(); train_b = CT.dataset(CT.features_from_raw(CT.load_hist_raw(), BLANK_B))[0]
     feats_b = [c for c in CT.FEATURES if train_b[c].notna().any()]; test_b = test_table(pr, BLANK_B, lab); res_b, fits_b = walk(train_b, test_b, feats_b)
     parts.append(("B. Previous Runs API (reduced variables), from December 2025", res_b, fits_b, train_b, "GFS, ECMWF 0.25 (ACCESS-G to July 2025). NO 850/700 hPa winds, cloud cover or boundary-layer height: Creo is trained without them and the rules cannot score their 850 hPa wind rule, so BOTH are weaker than in Part A."))
+    parts_start = START if True else None
     for name, res, fits, train, note in parts:
         if res.empty: L += [f"## {name}", "", note, "", "No scorable days yet (no complete month with downloaded forecasts).", ""]; continue
-        ok = res["date"].nunique(); L += [f"## {name}", "", note, "", f"{ok} days tested ({res['date'].min()} to {res['date'].max()}), {len(res)} predictions, {fits} weekly retrainings (training pool {train[train['date'] < res['date'].min()].shape[0]} days at the start, growing each week). Incomplete months are skipped: {', '.join(sorted(set(M.labels()[0].query('not month_complete')['date'].str[:7]) & set(pd.date_range(res['date'].min(), res['date'].max()).strftime('%Y-%m')))) or 'none'}.", ""]
+        ok = res["date"].nunique(); L += [f"## {name}", "", note, "", f"{ok} days tested ({res['date'].min()} to {res['date'].max()}), {len(res)} predictions, {fits} weekly retrainings (training pool {train[train['date'] < res['date'].min()].shape[0]} days at the start, growing each week). Incomplete months skipped: {', '.join(sorted(set(M.labels()[0].query('not month_complete')['date'].str[:7]) & set(pd.date_range(START if name.startswith('B') else '2026-04-01', res['date'].max()).strftime('%Y-%m')))) or 'none'}.", ""]
         a, b = tables(res); L += ["### By forecast lead (the same days at 1 and 2 days ahead)", "", a, "", "### By month (both leads together)", "", b, ""]
     if len(parts) == 2 and not parts[0][1].empty and not parts[1][1].empty:
         both = parts[1][1][parts[1][1]["date"] >= parts[0][1]["date"].min()]; a = parts[0][1]
