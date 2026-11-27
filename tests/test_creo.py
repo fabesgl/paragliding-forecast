@@ -40,14 +40,14 @@ class Panel(unittest.TestCase):
              gust=18.0, cloud_base_asl=1930.0, cape=50.0, rain=0.0)
 
     def test_rating_words_follow_the_calibrated_cuts(self):
-        cuts = [0.2, 1.0, 3.0, 14.0]
-        self.assertEqual([creo.rating(k, cuts) for k in (0, 0.5, 2, 5, 20)], ["Poor", "Fair", "Good", "Great", "Epic"]); self.assertEqual(creo.rating(14.0, cuts), "Epic"); self.assertIsNone(creo.rating(None, cuts))
-        self.assertEqual(creo.rating(999, [1, 2, 3, None]), "Great")                                 # a word no estimate reaches is never given
+        cuts = [0.2, 1.0, 3.0]
+        self.assertEqual([creo.rating(k, cuts) for k in (0, 0.5, 2, 5, 20)], ["Poor", "Fair", "Good", "Great", "Great"]); self.assertEqual(creo.rating(3.0, cuts), "Great"); self.assertIsNone(creo.rating(None, cuts))
+        self.assertEqual(creo.rating(999, [1, 2, None]), "Good")                                     # a word no estimate reaches is never given
 
     def test_calibrated_cuts_use_the_median_of_similar_days(self):
         est = [1, 2, 3, 4, 5, 6] * 30; act = [0, 0, 10, 30, 60, 200] * 30
-        self.assertEqual(creo.calibrate_cuts(est, act, k=11), [3.0, 4.0, 5.0, 6.0])                  # median reaches 5 km at estimate 3, 20 at 4, 50 at 5, 100 at 6
-        self.assertEqual(creo.calibrate_cuts(est, [min(a, 40) for a in act], k=11)[2:], [None, None])  # the median never reaches 50 or 100
+        self.assertEqual(creo.calibrate_cuts(est, act, k=11), [3.0, 4.0, 5.0])                       # median reaches 5 km at estimate 3, 20 at 4, 50 at 5
+        self.assertEqual(creo.calibrate_cuts(est, [min(a, 40) for a in act], k=11)[2:], [None])         # the median never reaches 50
         self.assertTrue(np.all(np.diff(creo._pav([3, 1, 2, 5, 4])) >= 0))
 
     def test_a_factor_has_one_net_effect(self):

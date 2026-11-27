@@ -15,5 +15,5 @@ class T(unittest.TestCase):
     def test_creo_panel(self):
         h = R.creo_box({"rating": "Good", "text": "<script>alert(1)</script> helps."}); self.assertNotIn("<script>", h); self.assertIn("Creo (beta)", h); self.assertIn("Good", h)
         self.assertEqual(R.creo_box(None), ""); self.assertEqual(R.creo_box({"rating": None, "text": "x"}), "")
-        self.assertNotIn(" km", R.creo_box({"rating": "Epic", "text": "A westerly wind aloft (14 km/h at 1,500 m) helps."}).replace("km/h", ""))      # speeds in km/h are fine; no distances
+        self.assertNotIn(" km", R.creo_box({"rating": "Great", "text": "A westerly wind aloft (14 km/h at 1,500 m) helps."}).replace("km/h", ""))      # speeds in km/h are fine; no distances
 if __name__ == "__main__": unittest.main()

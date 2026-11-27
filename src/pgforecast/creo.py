@@ -121,11 +121,11 @@ def week_start(date, first):
 
 
 # ---------------------------------------------------------------- the dashboard panel: a rating word and a short "why"
-RATINGS = ("Poor", "Fair", "Good", "Great", "Epic")
+RATINGS = ("Poor", "Fair", "Good", "Great")
 
 
 def rating(km, cuts):
-    """Poor/Fair/Good/Great/Epic from the estimate and four cut points (estimates at which the typical actual best flight reaches the next word's bound; see calibrate_cuts).
+    """Poor/Fair/Good/Great from the estimate and three cut points (estimates at which the typical actual best flight reaches the next word's bound; see calibrate_cuts).
     A cut point of None means no estimate ever got there, so that word is never given."""
     return RATINGS[sum(1 for c in cuts if c is not None and km >= c)] if km is not None else None
 
@@ -140,9 +140,9 @@ def _pav(y):
     return np.concatenate([np.full(n_, s_ / n_) for s_, n_ in blocks])
 
 
-def calibrate_cuts(estimates, actual_km, bounds=(5, 20, 50, 100), k=101):
+def calibrate_cuts(estimates, actual_km, bounds=(5, 20, 50), k=101):
     """For past days with a similar estimate, what was the median actual best flight? Returns the estimate at which that median first reaches each bound, so a day's word follows
-    the typical outcome of days like it (Poor under 5 km, Fair 5-20, Good 20-50, Great 50-100, Epic over 100). The median is taken over the `k` days nearest in estimate and made
+    the typical outcome of days like it (Poor under 5 km, Fair 5-20, Good 20-50, Great 50 or more). The median is taken over the `k` days nearest in estimate and made
     non-decreasing; a bound the median never reaches gives None."""
     est, act = np.asarray(estimates, float), np.asarray(actual_km, float); order = np.argsort(est, kind="stable"); e, a = est[order], act[order]; n = len(e); k = min(k, n)
     med = np.array([np.median(a[max(0, min(i - k // 2, n - k)):max(0, min(i - k // 2, n - k)) + k]) for i in range(n)]); iso = _pav(med)

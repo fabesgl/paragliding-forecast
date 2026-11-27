@@ -19,8 +19,7 @@
    "rating_cuts_km": [
     5.732,
     13.591,
-    46.045,
-    null
+    46.045
    ],
    "rating_bounds_km": [
     5,
@@ -32,8 +31,7 @@
     "Poor": 1083,
     "Fair": 173,
     "Good": 227,
-    "Great": 87,
-    "Epic": 0
+    "Great": 87
    },
    "rating_basis": "estimate at which the median actual best flight of past days with a similar leave-one-year-out estimate (101 nearest days, made non-decreasing) reaches 5/20/50/100 km"
   }

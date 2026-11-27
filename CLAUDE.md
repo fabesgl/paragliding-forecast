@@ -8,7 +8,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 ## Names
 - **"The rules"** = Fabian's and his brother's flying limits in `sites/bright/rules.yaml` (each rule scores 0–100%; a day's score is its weakest rule).
 - **Creo** = the planned machine-learning model. Not built yet.
-- **Creo (beta)** = the panel on the dashboard that replaced the AI second opinion on 2026-11-27: a rating word from the typical outcome of past days with a similar Creo estimate (median actual best flight: Poor under 5 km, Fair 5-20, Good 20-50, Great 50-100, Epic over 100; the estimate cut points and day counts are in `sites/bright/creo_model.json`) and one or two sentences from its top 2-3 factors (LightGBM per-feature contributions added up into one net effect per factor, with the real values). Never shows km. On a no-go day it leads with the rules' deal-breaker. It never changes the scores.
+- **Creo (beta)** = the panel on the dashboard that replaced the AI second opinion on 2026-11-27: a rating word from the typical outcome of past days with a similar Creo estimate (median actual best flight: Poor under 5 km, Fair 5-20, Good 20-50, Great 50 or more, Great being the top word; the estimate cut points and day counts are in `sites/bright/creo_model.json`) and one or two sentences from its top 2-3 factors (LightGBM per-feature contributions added up into one net effect per factor, with the real values). Never shows km. On a no-go day it leads with the rules' deal-breaker. It never changes the scores.
 - **AI second opinion** = retired from the daily job (no API key or cost any more); `src/pgforecast/ai_opinion.py` and its tests stay in the repo, unused.
 
 ## How it runs

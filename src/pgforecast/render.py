@@ -78,7 +78,7 @@ def ladder(rows, launch_m):
     out.append("</div>" + ('<div class="note">* some models lack this level; the others are averaged</div>' if partial else ""))
     return "".join(out)
 
-CREO_TONE = {"Poor": "poor", "Fair": "marginal", "Good": "good", "Great": "good", "Epic": "good"}
+CREO_TONE = {"Poor": "poor", "Fair": "marginal", "Good": "good", "Great": "good"}
 
 def creo_box(c):
     """The Creo (beta) panel: a rating word and a short why. Never shows distances. Nothing if Creo had no estimate this update."""
@@ -176,5 +176,5 @@ def render_page(days, cfg, local_now, today, cstate, runs, track_rows, generated
 {warn}<div class="grid">{"".join(cards)}</div>
 <details class="more"><summary>Forecast corrections {CHEV}</summary>{corrections_block(cstate, cfg, calib)}</details>
 <details class="more"><summary>Track record {CHEV}</summary>{track}</details>
-<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strips show the XC and acro scores for each hour. Days 4-6 are marked lower confidence because forecasts get less reliable further out. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. Creo (beta) is a model trained on past Mystic flights: it rates the day from Poor to Epic against its own past estimates and says why. It is experimental and never changes the scores.</p></details>
+<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strips show the XC and acro scores for each hour. Days 4-6 are marked lower confidence because forecasts get less reliable further out. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. Creo (beta) is a model trained on past Mystic flights: it rates the day from Poor to Great against its own past estimates and says why. It is experimental and never changes the scores.</p></details>
 {JS}</body></html>"""
