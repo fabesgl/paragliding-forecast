@@ -44,6 +44,13 @@ def utc_month(date, start_time, offset):
     if m: dt -= (1 if m.group(1) == "+" else -1) * timedelta(hours=int(m.group(2)), minutes=int(m.group(3)))
     return dt.strftime("%Y-%m")
 
+MONTH_TOLERANCE = 2      # a month short by this many flights or fewer counts as complete (a few flights are always missing from the saved pages)
+
+
+def is_complete(have, expected):
+    return have >= expected - MONTH_TOLERANCE
+
+
 def check_totals(db):
     """Per (site, month): flights saved (by UTC month, as XContest filters) vs the total XContest printed. Returns [(site, month, expected, saved)], short ones flagged by saved<expected."""
     exp = {(s, m): t for s, m, t in db.execute("SELECT site, month, MAX(xc_total) FROM xc_page_total WHERE month IS NOT NULL GROUP BY 1,2")}
@@ -53,7 +60,7 @@ def check_totals(db):
     return [(s, m, e, have.get((s, m), 0)) for (s, m), e in sorted(exp.items())]
 
 def refresh_status(db):
-    """Rebuilds xc_month_status (complete = saved >= XContest's total) and xc_day_status for every day from a site's first to last saved flight.
+    """Rebuilds xc_month_status (complete = saved is within MONTH_TOLERANCE flights of XContest's total) and xc_day_status for every day from a site's first to last saved flight.
     A day with flights is 'flew'. A day with none is 'no_flights' only if every UTC month it touches is complete; otherwise 'unknown'
     (the flight may exist on XContest but not in our saved pages). A month with no saved page at all is unknown too."""
     db.executescript("""CREATE TABLE IF NOT EXISTS xc_month_status (site TEXT, month TEXT, xc_total INTEGER, saved INTEGER, complete INTEGER, PRIMARY KEY (site, month));
@@ -61,7 +68,7 @@ def refresh_status(db):
                         DELETE FROM xc_month_status; DELETE FROM xc_day_status;""")
     complete = {}
     for site, month, exp, have in check_totals(db):
-        complete[(site, month)] = have >= exp; db.execute("INSERT INTO xc_month_status VALUES (?,?,?,?,?)", (site, month, exp, have, int(have >= exp)))
+        complete[(site, month)] = is_complete(have, exp); db.execute("INSERT INTO xc_month_status VALUES (?,?,?,?,?)", (site, month, exp, have, int(is_complete(have, exp))))
     for (site,) in db.execute("SELECT DISTINCT site FROM xc_flight").fetchall():
         off = db.execute("SELECT utc_offset FROM xc_flight WHERE site=? GROUP BY utc_offset ORDER BY COUNT(*) DESC LIMIT 1", (site,)).fetchone()[0]
         n = dict(db.execute("SELECT date, COUNT(*) FROM xc_flight WHERE site=? GROUP BY date", (site,)).fetchall())

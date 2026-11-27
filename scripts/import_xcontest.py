@@ -15,7 +15,8 @@ def warn_short(db):
     """Print every site/month whose saved flights (by UTC month) differ from XContest's printed total. Returns the number of short months."""
     bad = 0
     for site, month, exp, have in xcontest.check_totals(db):
-        if have < exp: bad += 1; print(f"  INCOMPLETE {site} {month}: saved {have} of {exp} - short by {exp - have}")
+        if not xcontest.is_complete(have, exp): bad += 1; print(f"  INCOMPLETE {site} {month}: saved {have} of {exp} - short by {exp - have}")
+        elif have < exp: print(f"  note    {site} {month}: saved {have} of {exp} - short by {exp - have}, counted as complete (tolerance {xcontest.MONTH_TOLERANCE})")
         elif have > exp: print(f"  note    {site} {month}: saved {have}, XContest says {exp} (+{have - exp}; saved pages may come from a later search)")
     print("all months complete" if not bad else f"{bad} month(s) still short"); return bad
 

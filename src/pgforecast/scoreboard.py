@@ -31,7 +31,7 @@ def build_day_labels(xc_flights, igc_dates, day_status, complete_months, first, 
     (XContest day status). complete_months: {'YYYY-MM'} where every XContest flight is saved.
     Comp days (inside an `events` window, e.g. the Bright Open): `flyable` is kept as it is (flown or not), `count_weight` is 0 (flight counts are not
     evidence of conditions: a task sends everyone up), `distance_weight` is `comp_distance_weight` (distances are limited by the task, not the weather). Other days: 1 and 1.
-    Returns DataFrame: date, flown, flyable, comp, count_weight, distance_weight, n_flights, best_km, median_km, source ('xcontest' | 'igc' (a track proves a flight, distance unknown) | 'none'), skipped dates are left out."""
+    Returns DataFrame: date, flown, flyable, month_complete, comp, count_weight, distance_weight, n_flights, best_km, median_km, source ('xcontest' | 'igc' (a track proves a flight, distance unknown) | 'none'), skipped dates are left out."""
     by = {}
     for d, cls, km in xc_flights:
         if cls == "T": continue                                              # tandems never count
@@ -51,6 +51,7 @@ def build_day_labels(xc_flights, igc_dates, day_status, complete_months, first, 
     out = pd.DataFrame(rows)
     if out.empty: return out
     out["flyable"] = out["flown"]
+    out["month_complete"] = [d[:7] in complete_months for d in out["date"]]       # False: only flown days survive in an incomplete month, so training drops the whole month
     out["comp"] = [in_events(d, events) for d in out["date"]]
     out["count_weight"] = np.where(out["comp"], 0.0, 1.0); out["distance_weight"] = np.where(out["comp"], comp_distance_weight, 1.0)
     return out
