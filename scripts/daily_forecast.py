@@ -9,7 +9,7 @@ OUT = ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out"
 sys.path.insert(0, str(ROOT / "src"))
 from pgforecast.rules import score_day, compass, acro_window_score
 from pgforecast.rules_config import load_rules
-from pgforecast import corrections as corr, ai_opinion, render, fronts, blend
+from pgforecast import corrections as corr, render, fronts, blend
 try: from pgforecast import creo                   # needs numpy (comes with lightgbm); without it the Creo shadow step is simply skipped
 except Exception: creo = None
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
@@ -22,7 +22,7 @@ VARS = ["wind_speed_10m","wind_direction_10m","wind_gusts_10m","wind_speed_850hP
  "boundary_layer_height","shortwave_radiation","precipitation","pressure_msl"]
 LEVELS = [("~1,000 m", 900), ("~1,500 m", 850), ("~2,000 m", 800), ("~3,000 m", 700)]   # nominal height ASL, pressure level
 LEVEL_VARS = [f"{a}_{l}hPa" for _, l in LEVELS for a in ("wind_speed", "wind_direction", "geopotential_height")]
-cfg["notes"] = (ROOT / "sites" / site / "notes.md").read_text() if (ROOT / "sites" / site / "notes.md").exists() else ""   # local pilot knowledge for the AI second opinion
+cfg["notes"] = (ROOT / "sites" / site / "notes.md").read_text() if (ROOT / "sites" / site / "notes.md").exists() else ""   # local pilot knowledge (not used by the scoring)
 cfg["rules"] = load_rules(site)                         # sites/<site>/rules.yaml: every rule threshold lives there
 from pgforecast import summary as _summary
 _summary.configure(cfg["rules"])
@@ -190,12 +190,6 @@ for day in [d for d in days if d >= today][:6]:
             x = None if i is None else blended_score([i], "weighted")
             entry["hourly"].append(dict(h=hh, xc=None if x is None or x["xc"] is None else round(x["xc"]), acro=None if x is None else (lambda a: None if a is None else round(a))(acro_window_score(x["acro"], x["key"], cfg["rules"]))))
     out_days.append(entry)
-# 2b. AI second opinion. Read-only: it never changes the rule scores above, and any failure here just means no panel.
-active = [f"{k.split('|')[1]} {k.split('|')[0]} {k.split('|')[2]} ({k.split('|')[3]}): " + (f"{b['corr']:+.1f}" if b["kind"] == "add" else f"x{b['corr']:.2f}")
-          for k, b in cstate["bins"].items() if corr.status(b) == "active"]
-ai, ai_status = ai_opinion.opinions(out_days, {d["date"]: d["winds"] for d in out_days}, active, corr.summary(cstate), cfg)
-print("AI opinion:", ai_status)
-for d in out_days: d["ai"] = ai.get(d["date"])
 # 3. log predictions (track record)
 logf = OUT/"predictions"/"log.csv"; logf.parent.mkdir(parents=True, exist_ok=True)
 LOG_COLS = ["made_at_utc", "target_date", "lead_days", "xc_pct", "acro_pct", "method", "models", "front_status", "front_kind", "front_time"]
@@ -214,30 +208,25 @@ with wf.open("a", newline="") as f:
     w = csv.writer(f)
     if new_file: w.writerow(W_COLS)
     for r in wlog: w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), r[0], (dt.date.fromisoformat(r[0]) - local_now.date()).days, *r[1:]])
-aif = OUT/"predictions"/"ai_log.csv"                 # same keys as log.csv, plus the rule scores, so both can be compared with outcomes
-AI_COLS = ["made_at_utc", "target_date", "lead_days", "model", "xc_call", "acro_call", "xc_rule_pct", "acro_rule_pct", "limit_forced", "reasoning"]
-if ai:
-    rows_old = []
-    if aif.exists():                                  # older files lack limit_forced: add the column (blank for old rows)
-        with aif.open(newline="") as f: rd = list(csv.DictReader(f))
-        rows_old = [[r.get(c, "") for c in AI_COLS] for r in rd]
-    with aif.open("w", newline="") as f:
-        w = csv.writer(f); w.writerow(AI_COLS); w.writerows(rows_old)
-        for d in out_days:
-            if d["ai"]: w.writerow([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], (dt.date.fromisoformat(d["date"]) - local_now.date()).days, ai_opinion.MODEL,
-                                    d["ai"]["xc_call"], d["ai"]["acro_call"], d["xc"], d["acro"], d["ai"].get("forced", ""), d["ai"]["reasoning"]])
-# 3b. Creo in SHADOW MODE: predict each day's best distance and log it next to the rules' XC %. It is never shown on the dashboard, never changes a score, and a failure here never stops the job.
+# 3b. Creo (beta): predict each day's best distance, log it next to the rules' XC % (the shadow log, kept for creo_review.py) and give the dashboard a rating word and a short why (never km).
+# It never changes a score, and a failure here never stops the job: the panel is just left out.
 CREO_COLS = ["made_at_utc", "target_date", "lead_days", "rules_xc_pct", "creo_km", "creo_raw_km", "no_go", "n_models", "model"]
 try:
     import hashlib, lightgbm as lgb
     if creo is None: raise ImportError("creo helpers need numpy")
     cm = ROOT / "sites" / site / "creo_model.txt"
     booster = lgb.Booster(model_file=str(cm)); version = hashlib.sha1(cm.read_bytes()).hexdigest()[:8]
+    cuts = json.loads((ROOT / "sites" / site / "creo_model.json").read_text())["versions"][version]["rating_cuts_km"]
     crows = []
     for d in out_days:
         fs = creo_feats.get(d["date"])
         if not fs: continue
         p_ = creo.predict_day(booster, fs, d["date"], d["xc"])
+        try:                                                  # the dashboard panel: rating word + why, no km
+            lead = None
+            if p_["no_go"]: lead = _summary.dealbreaker(d["xc_rules"])[0] or "The rules' deal-breaker"
+            d["creo"] = dict(rating=creo.rating(p_["creo_km"], cuts), text=creo.describe(creo.reasons(p_["contrib"], p_["day"], d.get("key")), lead))
+        except Exception as e: print("Creo panel failed for", d["date"], type(e).__name__, e)
         crows.append([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], (dt.date.fromisoformat(d["date"]) - local_now.date()).days, d["xc"], round(p_["creo_km"], 1), round(p_["creo_raw_km"], 1), int(p_["no_go"]), len(fs), version])
     cf_ = OUT/"predictions"/"creo_log.csv"; new_ = not cf_.exists()
     with cf_.open("a", newline="") as f:
@@ -259,7 +248,7 @@ if logf.exists():
     for r_ in csv.DictReader(logf.open()):
         if r_["target_date"] < today: seen[r_["target_date"]] = r_   # last prediction made for each past day
     track_rows = [f'<tr><td>{d}</td><td>{r_["xc_pct"]}%</td><td>{r_["acro_pct"]}%</td><td>{r_["lead_days"]} d</td></tr>' for d, r_ in sorted(seen.items())[-14:]]
-(docs/"index.html").write_text(render.render_page(out_days, cfg, local_now, local_now.date(), cstate, runs, ai_status, track_rows, generated_utc=now, failed_models=failed_models, calib=(json.loads((OUT/"corrections"/"valley_wind_calibration.json").read_text()) if (OUT/"corrections"/"valley_wind_calibration.json").exists() else None)))
+(docs/"index.html").write_text(render.render_page(out_days, cfg, local_now, local_now.date(), cstate, runs, track_rows, generated_utc=now, failed_models=failed_models, calib=(json.loads((OUT/"corrections"/"valley_wind_calibration.json").read_text()) if (OUT/"corrections"/"valley_wind_calibration.json").exists() else None)))
 import shutil
 shutil.copytree(ROOT/"pwa", docs, dirs_exist_ok=True)     # app manifest, service worker and icons (kept in pwa/ and published with the page)
 print("ok", [(d["date"], d["xc"], d["acro"]) for d in out_days])

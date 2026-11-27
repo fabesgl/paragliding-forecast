@@ -94,10 +94,12 @@ def predict_day(booster, per_model, target_date, published_xc=None):
     Returns dict: creo_raw_km (the model alone), creo_km (after the rules' hard limit), no_go (True when the rules say 0%), xc_feature (the XC % fed to the model)."""
     day = day_features(per_model); xcs = [p["xc_pct"] for p in per_model if p.get("xc_pct") is not None]
     day["xc_pct"] = float(round(sum(xcs) / len(xcs))) if xcs else None
-    raw = float(np.expm1(booster.predict(np.array([feature_row(day, booster.feature_name(), target_date)]))[0])); raw = max(raw, 0.0)
+    names = booster.feature_name(); x = np.array([feature_row(day, names, target_date)])
+    raw = float(np.expm1(booster.predict(x)[0])); raw = max(raw, 0.0)
+    contrib = dict(zip(names, (float(v) for v in booster.predict(x, pred_contrib=True)[0][:-1])))         # per-feature push on log(1 + km); the last column is the base value
     rules_xc = published_xc if published_xc is not None else day["xc_pct"]
     no_go = rules_xc is not None and rules_xc <= 0
-    return dict(creo_raw_km=raw, creo_km=0.0 if no_go else raw, no_go=bool(no_go), xc_feature=day["xc_pct"])
+    return dict(creo_raw_km=raw, creo_km=0.0 if no_go else raw, no_go=bool(no_go), xc_feature=day["xc_pct"], contrib=contrib, day=day)
 
 
 def cluster_bootstrap_diff(groups, truth, score_a, score_b, n=1000, seed=1):
@@ -116,3 +118,81 @@ def week_start(date, first):
     """Start (ISO date) of the 7-day block containing `date`, counting blocks from `first`."""
     f = dt.date.fromisoformat(first); d = dt.date.fromisoformat(date)
     return (f + dt.timedelta(days=7 * ((d - f).days // 7))).isoformat()
+
+
+# ---------------------------------------------------------------- the dashboard panel: a rating word and a short "why"
+RATINGS = ("Poor", "Fair", "Good", "Great", "Epic")
+
+
+def rating(km, cuts):
+    """Poor/Fair/Good/Great/Epic from the estimate and the four cut points (the 20/40/60/80th percentiles of its predictions over past days; see scripts/creo_train.py)."""
+    return RATINGS[sum(1 for c in cuts if km >= c)] if km is not None else None
+
+
+# which features speak for which physical factor. xc_pct, day of year and the free-day flag are not weather and never appear as a reason.
+GROUPS = {
+    "launch_wind": ("wind10_speed", "rule_wind"), "launch_dir": ("wind10_sin", "wind10_cos", "rule_direction"), "gusts": ("gust", "rule_gust"),
+    "wind850": ("wind850_speed", "wind850_sin", "wind850_cos", "rule_w850"), "wind700": ("wind700_speed", "wind700_sin", "wind700_cos"),
+    "height": ("cloud_base_asl", "rule_ceiling", "dew_point"), "thermals": ("rule_thermals", "temp", "cloud_low", "cloud_mid", "cloud_high"),
+    "storm": ("cape", "rule_cape"), "rain": ("rain", "rule_rain"),
+}
+MIN_REASON = 0.08            # a factor must move the estimate by at least this much (log scale, about 8% in distance) to be mentioned
+_WORD = ["northerly", "north-easterly", "easterly", "south-easterly", "southerly", "south-westerly", "westerly", "north-westerly"]
+
+
+def _a(word):
+    return ("an " if word[0] in "aeiou" else "a ") + word
+
+
+def _word(sin, cos):
+    return None if sin is None or cos is None or (sin == 0 and cos == 0) else _WORD[int(((math.degrees(math.atan2(sin, cos)) % 360) + 22.5) // 45) % 8]
+
+
+def _phrase(group, good, f, key):
+    """Noun phrase for one factor with its real value; `good` = it helps. f: the day's features; key: the dashboard day's key numbers."""
+    g = lambda n: f.get(n)
+    if group == "launch_wind" and g("wind10_speed") is not None: return ("light " if good else "strong ") + f"wind at launch (about {g('wind10_speed'):.0f} km/h)"
+    if group == "launch_dir" and _word(g("wind10_sin"), g("wind10_cos")): return f"{_a(_word(g('wind10_sin'), g('wind10_cos')))} wind at launch"
+    if group == "gusts" and g("gust") is not None: return ("gentle" if good else "strong") + f" gusts (up to about {g('gust'):.0f} km/h)"
+    if group == "wind850" and g("wind850_speed") is not None and _word(g("wind850_sin"), g("wind850_cos")): return f"{_a(_word(g('wind850_sin'), g('wind850_cos')))} wind aloft ({g('wind850_speed'):.0f} km/h at 1,500 m)"
+    if group == "wind700" and g("wind700_speed") is not None and _word(g("wind700_sin"), g("wind700_cos")): return f"{_a(_word(g('wind700_sin'), g('wind700_cos')))} wind higher up ({g('wind700_speed'):.0f} km/h at 3,000 m)"
+    if group == "height" and g("cloud_base_asl") is not None: return ("a high" if good else "the low") + f" cloud base (about {round(g('cloud_base_asl'), -2):,.0f} m)"
+    if group == "thermals":
+        t = (key or {}).get("thermal_ms")
+        return (("strong" if t is not None and t >= 2.5 else "decent") if good else "weak") + " thermals" + (f" (about {t:.1f} m/s)" if t is not None else "")
+    if group == "storm" and g("cape") is not None: return ("some lift from instability" if good else "storm risk") + f" (CAPE {g('cape'):.0f})"
+    if group == "rain": return "a dry day" if good else f"rain ({g('rain') or 0:.1f} mm)"
+    return None
+
+
+def reasons(contrib, f, key=None, n=3):
+    """The strongest 2-3 factors behind the estimate, as [(group, helps?, phrase, push)], biggest first. Contributions of related features are added up (wind speed and direction at one level,
+    a rule's score and the number behind it). Factors that move the estimate less than MIN_REASON are left out."""
+    tot = {grp: sum(contrib.get(c, 0.0) for c in cols) for grp, cols in GROUPS.items()}; out = []
+    for grp, c in sorted(tot.items(), key=lambda kv: -abs(kv[1])):
+        if abs(c) < MIN_REASON: break
+        ph = _phrase(grp, c > 0, f, key)
+        if ph: out.append((grp, c > 0, ph, c))
+        if len(out) == n: break
+    return out
+
+
+def _join(xs):
+    return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
+PLURAL = ("thermals", "gusts")          # groups whose phrase is a plural noun ("thermals help", not "thermals helps")
+
+
+def describe(rs, nogo_lead=None):
+    """One or two sentences from `reasons`. nogo_lead: the rules' deal-breaker wording (e.g. 'Rain 3.2 mm in the window'); the text then leads with it."""
+    good, bad = [r for r in rs if r[1]], [r for r in rs if not r[1]]
+    good_ph, bad_ph = [r[2] for r in good], [r[2] for r in bad]
+    verb = lambda items, one, many: many if len(items) > 1 or items[0][0] in PLURAL else one
+    limit = "will limit height" if len(bad) == 1 and bad[0][0] == "height" else "will hold it back"
+    cap = lambda t: t[0].upper() + t[1:]
+    if nogo_lead: return f"{nogo_lead} rules the day out." + (f" Otherwise {_join(good_ph)} would help." if good else "")
+    if good and bad: return f"{cap(_join(good_ph))} {verb(good, 'helps', 'help')}, but {_join(bad_ph)} {limit}."
+    if good: return f"{cap(_join(good_ph))} {verb(good, 'helps', 'help')}."
+    if bad: return f"{cap(_join(bad_ph))} {verb(bad, 'holds', 'hold')} the day back."
+    return "Nothing stands out: close to an average day."

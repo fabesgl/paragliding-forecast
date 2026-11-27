@@ -35,6 +35,32 @@ class T(unittest.TestCase):
 if __name__ == "__main__": unittest.main()
 
 
+class Panel(unittest.TestCase):
+    F = dict(wind10_speed=8.0, wind10_sin=0.0, wind10_cos=1.0, wind850_speed=14.0, wind850_sin=-1.0, wind850_cos=0.0, wind700_speed=20.0, wind700_sin=0.0, wind700_cos=0.0,
+             gust=18.0, cloud_base_asl=1930.0, cape=50.0, rain=0.0)
+
+    def test_rating_words_from_fifths(self):
+        cuts = [0.2, 1.0, 3.0, 14.0]
+        self.assertEqual([creo.rating(k, cuts) for k in (0, 0.5, 2, 5, 20)], ["Poor", "Fair", "Good", "Great", "Epic"]); self.assertEqual(creo.rating(14.0, cuts), "Epic"); self.assertIsNone(creo.rating(None, cuts))
+
+    def test_reasons_group_features_and_skip_non_weather(self):
+        c = {"xc_pct": 3.0, "doy": 2.0, "free": 1.0, "wind850_speed": 0.1, "wind850_sin": 0.1, "rule_w850": 0.05, "cloud_base_asl": -0.3, "rule_ceiling": -0.1, "temp": 0.01}
+        rs = creo.reasons(c, self.F); self.assertEqual([r[0] for r in rs], ["height", "wind850"])                       # biggest first; xc_pct, doy and free are never reasons
+        self.assertEqual(creo.reasons({"gust": 0.02, "rain": -0.05}, self.F), [])                                       # too small to mention
+
+    def test_the_sentence_has_the_real_values(self):
+        c = {"wind850_speed": 0.3, "cloud_base_asl": -0.4}
+        t = creo.describe(creo.reasons(c, self.F)); self.assertEqual(t, "A westerly wind aloft (14 km/h at 1,500 m) helps, but the low cloud base (about 1,900 m) will limit height.")
+        self.assertEqual(creo.describe(creo.reasons({"gust": -0.3}, self.F)), "Strong gusts (up to about 18 km/h) hold the day back.")
+        self.assertEqual(creo.describe(creo.reasons({"cloud_base_asl": 0.3, "wind10_sin": 0.2}, dict(self.F, wind10_sin=1.0, wind10_cos=0.0))), "A high cloud base (about 1,900 m) and an easterly wind at launch help.")
+        th = creo.describe(creo.reasons({"rule_thermals": 0.3}, self.F, {"thermal_ms": 1.4})); self.assertEqual(th, "Decent thermals (about 1.4 m/s) help.")
+        self.assertEqual(creo.describe([]), "Nothing stands out: close to an average day.")
+
+    def test_no_go_leads_with_the_deal_breaker(self):
+        t = creo.describe(creo.reasons({"cloud_base_asl": 0.3}, self.F), nogo_lead="Rain 3.2 mm in the window"); self.assertTrue(t.startswith("Rain 3.2 mm in the window rules the day out."))
+        self.assertIn("Otherwise a high cloud base", t); self.assertEqual(creo.describe([], nogo_lead="Strong S wind aloft"), "Strong S wind aloft rules the day out.")
+
+
 class Walk(unittest.TestCase):
     def test_week_blocks_and_cluster_bootstrap(self):
         self.assertEqual(creo.week_start("2025-12-01", "2025-12-01"), "2025-12-01"); self.assertEqual(creo.week_start("2025-12-07", "2025-12-01"), "2025-12-01")

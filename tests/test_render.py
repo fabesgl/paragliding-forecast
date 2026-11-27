@@ -12,7 +12,8 @@ class T(unittest.TestCase):
     def test_dial_and_arrow(self):
         d = R.dial(82, "XC"); self.assertIn("Good", d); self.assertIn("206 251", d)
         self.assertIn("rotate(180deg)", R.arrow(0, 10)); self.assertIn("#e24b4a", R.arrow(300, 40))        # wind from N points down; strong wind is red
-    def test_ai_text_is_escaped(self):
-        h = R.ai_box({"xc_call": "good", "acro_call": "poor", "reasoning": "<script>alert(1)</script>"}, "ok"); self.assertNotIn("<script>", h)
-        self.assertEqual(R.ai_box(None, "off"), "")
+    def test_creo_panel(self):
+        h = R.creo_box({"rating": "Good", "text": "<script>alert(1)</script> helps."}); self.assertNotIn("<script>", h); self.assertIn("Creo (beta)", h); self.assertIn("Good", h)
+        self.assertEqual(R.creo_box(None), ""); self.assertEqual(R.creo_box({"rating": None, "text": "x"}), "")
+        self.assertNotIn(" km", R.creo_box({"rating": "Epic", "text": "A westerly wind aloft (14 km/h at 1,500 m) helps."}).replace("km/h", ""))      # speeds in km/h are fine; no distances
 if __name__ == "__main__": unittest.main()

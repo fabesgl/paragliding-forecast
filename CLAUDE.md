@@ -8,12 +8,13 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 ## Names
 - **"The rules"** = Fabian's and his brother's flying limits in `sites/bright/rules.yaml` (each rule scores 0–100%; a day's score is its weakest rule).
 - **Creo** = the planned machine-learning model. Not built yet.
-- **AI second opinion** = a Claude panel on the dashboard (`src/pgforecast/ai_opinion.py`). It comments; it never changes the scores.
+- **Creo (beta)** = the panel on the dashboard that replaced the AI second opinion on 2026-11-27: a rating word (Poor, Fair, Good, Great, Epic; fifths of Creo's own past estimates, cut points in `sites/bright/creo_model.json`) and one or two sentences from its top 2-3 factors (LightGBM per-feature contributions, with the real values). Never shows km. On a no-go day it leads with the rules' deal-breaker. It never changes the scores.
+- **AI second opinion** = retired from the daily job (no API key or cost any more); `src/pgforecast/ai_opinion.py` and its tests stay in the repo, unused.
 
 ## How it runs
 - **Model weighting**: the job blends the models per variable with `sites/bright/model_weights.json` (ACCESS-G dropped, GFS out of gusts) and then scores the blend. **Currently `model_weighting: equal` (the old method stays live until the one-month review, ~2026-12-26)**; switch with the GitHub variable `MODEL_WEIGHTING` (`weighted` or `equal`, Settings > Variables) or `model_weighting` in `sites/bright.yaml`. Both blends and the old average are logged in `predictions/weighting_log.csv`.
 - **GitHub Actions** (`.github/workflows/daily.yml`, 07:45 and 19:45 Melbourne time): collect BOM observations, update bias corrections, valley-wind calibration check, wait for the newest ECMWF/GFS/ICON runs, fetch forecasts, score, rebuild the dashboard, commit the results back to `main` as "Daily update".
-- **Creo in shadow mode**: each daily run also predicts the best distance for every forecast day with `sites/bright/creo_model.txt` and appends it to `predictions/creo_log.csv` next to the rules' XC %. It is never shown on the dashboard, never changes a score, and any failure there is skipped (the job installs LightGBM in its own non-blocking step). Retrain with `scripts/creo_train.py` (writes the model and `creo_model.json`, which records each version's training cut-off), commit, and the job picks it up.
+- **Creo (beta)**: each daily run predicts the best distance for every forecast day with `sites/bright/creo_model.txt`, appends it to `predictions/creo_log.csv` next to the rules' XC % (the shadow log that `creo_review.py` scores) and puts the rating word and the why on the dashboard (no km). It never changes a score, and any failure there is skipped (the panel is left out) (the job installs LightGBM in its own non-blocking step). Retrain with `scripts/creo_train.py` (writes the model and `creo_model.json`, which records each version's training cut-off), commit, and the job picks it up.
 - **Laptop (by hand)**: everything that isn't the daily job runs here today: downloaders (`fetch_barra2.py`), importers (`import_xcontest.py`, and `import_chats.py` using Haiku via the API, key from `ANTHROPIC_API_KEY`, cost-capped). Weekly jobs are **planned, not built**.
 - **Home desktop (later)**: heavy downloads and local AI (e.g. a local model for the chat importer). Not in use yet.
 - **Where data lives**: the daily job commits only `observations/ forecast_archive/ predictions/ model_runs/ corrections/ docs/`. Everything else is local and git-ignored: `data/` (SQLite: forecasts, chat labels, XContest flights, BARRA-C2 in `data/barra2/`, the hashing salt `data/chat_salt`), `xcontest_pages/`, `chat_exports/`, `igc_files/<pilot>/` (pilots' IGC/GPX tracks, shared with permission; folder = pilot identity).
@@ -68,7 +69,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - **Pilot names are always hashed** (`store.pilot_hash`, salt in `data/chat_salt`); never store or print raw names.
 - **Ask first** before anything that costs money (paid APIs, big downloads), deletes data, or changes the live site in a big way.
 - Units: **km/h, metres, Victorian local time** (Australia/Melbourne, AEST/AEDT). Heights ASL unless stated.
-- The AI second opinion **never changes scores**. Neither does Creo (shadow mode: logged only, not on the dashboard).
+- **Creo (beta) never changes scores** (it only adds the rating and the why to the dashboard; every run is also logged to `predictions/creo_log.csv` for `scripts/creo_review.py`).
 - The rules' **deal-breakers are hard limits**: no model (including Creo) may override them.
 - Months where saved XContest flights are more than 2 short of XContest's total are **incomplete** (a month short by 1–2 counts as complete; `xcontest.MONTH_TOLERANCE`); for Creo training every day of an incomplete month is dropped, flown days included (they would make the month look 100% flown); days with no saved flights there are **unknown**, not "nobody flew" (`xc_day_status`). Tandem (class T) is stored but excluded from XC grading (`xc_flight_graded`).
 - Keep this file, the README-style notes and the tests current when behaviour changes. Log decisions in `DECISIONS.md`; tick `TODO.md`.
@@ -79,7 +80,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - TODO.md only holds real actions with a clear result. No ideas or nice-to-haves.
 
 ## Status (2026-11-26)
-- Daily forecast live twice a day: 6 days, XC and acro %, hourly windows, fronts, plain-English summary, AI second opinion.
+- Daily forecast live twice a day: 6 days, XC and acro %, hourly windows, fronts, plain-English summary, Creo (beta) rating.
 - BOM observations and bias corrections run daily; valley-wind calibration is reporting only (rules unchanged).
 - BARRA-C2 downloader and chat-label importer built; chat labels are weak evidence.
 - XContest importer built; Mystic 2026 imported (Jan and Apr incomplete, flagged); older years to be saved by hand.

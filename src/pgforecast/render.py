@@ -25,7 +25,7 @@ header div{position:relative;padding:16px}h1{margin:0;font-size:19px;font-weight
 h3{margin:16px 0 0;font-size:12px;font-weight:500;color:var(--mu)}
 .row{display:grid;grid-template-columns:92px repeat(3,1fr);align-items:center;padding:6px 0;border-top:.5px solid var(--ln);font-size:13px}.row:first-of-type{border-top:0}
 .cell{display:flex;align-items:center;gap:5px;white-space:nowrap}.cell svg{width:18px;height:18px;flex:none}.cell small{color:var(--mu);font-size:11px}
-.ai{margin-top:14px;background:#1d2b40;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5}.ai .mu{display:flex;align-items:center;gap:5px;margin-bottom:3px}.ai p{margin:4px 0 0}
+.ai{margin-top:14px;background:#1d2b40;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5}.ai .mu{display:flex;align-items:center;gap:5px;margin-bottom:3px}.ai .cr{display:block;font-size:15px;margin-bottom:2px}.ai p{margin:4px 0 0}
 details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-marker{display:none}
 .day summary{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0}.day .nm{font-weight:600}.day .pills{display:flex;gap:6px;align-items:center;flex:none}
 .pill{border-radius:6px;padding:3px 8px;font-size:12px;white-space:nowrap}.chev{width:16px;height:16px;transition:transform .15s}details[open]>summary .chev{transform:rotate(180deg)}
@@ -78,25 +78,27 @@ def ladder(rows, launch_m):
     out.append("</div>" + ('<div class="note">* some models lack this level; the others are averaged</div>' if partial else ""))
     return "".join(out)
 
-def ai_box(a, status):
-    if status in ("off", "no key"): return ""
-    if not a: return f'<div class="ai"><div class="mu">{SPARK} AI second opinion</div>Not available this update.</div>'
-    tag = " · ".join(f'<span style="color:{TONE[a[k]][1]}">{n} {a[k]}</span>' for k, n in (("xc_call", "XC"), ("acro_call", "Acro")))
-    return f'<div class="ai"><div class="mu">{SPARK} AI second opinion</div>{tag}<p>{E(a["reasoning"])}</p></div>'
+CREO_TONE = {"Poor": "poor", "Fair": "marginal", "Good": "good", "Great": "good", "Epic": "good"}
+
+def creo_box(c):
+    """The Creo (beta) panel: a rating word and a short why. Never shows distances. Nothing if Creo had no estimate this update."""
+    if not c or not c.get("rating"): return ""
+    col = TONE[CREO_TONE[c["rating"]]][1]
+    return f'<div class="ai"><div class="mu">{SPARK} Creo (beta)</div><b class="cr" style="color:{col}">{E(c["rating"])}</b><p>{E(c["text"])}</p></div>'
 
 def front_line(f):
     if not f or not f.get("status"): return ""
     col = "#fac775" if f["status"] == "passing" else "#8fa0b5"
     return f'<div class="front" style="color:{col}">{FRONT}<span>{E(f["text"])}{" (possible)" if f["strength"] == "likely" else ""}</span></div>'
 
-def card_body(d, cfg, ai_status):
+def card_body(d, cfg):
     pull = S.pulled_text(d)
     return (f'<div class="dials">{dial(d["xc"], "XC")}{dial(d["acro"], "Acro")}</div>'
             f'<p class="sum"><b style="color:{TONE[S.label(d["xc"])][1]}">XC:</b> {E(S.xc_text(d))}</p>'
             f'<p class="sum" style="margin-top:0"><b style="color:{TONE[S.label(d["acro"])][1]}">Acro:</b> {E(S.acro_text(d))}</p>'
             f'{front_line(d.get("front"))}'
             f'<div class="pull mu">{DOWN}<span>{("Pulled down by: " + E(pull)) if pull else "Nothing is pulling it down"}</span></div>'
-            f'{strip(d["hourly"], "xc", "XC", d["xc"])}{strip(d["hourly"], "acro", "Acro", d["acro"]) if any(x.get("acro") is not None for x in d["hourly"]) else ""}{ladder(d["winds"], cfg["launch_height_m"])}{ai_box(d.get("ai"), ai_status)}')
+            f'{strip(d["hourly"], "xc", "XC", d["xc"])}{strip(d["hourly"], "acro", "Acro", d["acro"]) if any(x.get("acro") is not None for x in d["hourly"]) else ""}{ladder(d["winds"], cfg["launch_height_m"])}{creo_box(d.get("creo"))}')
 
 def pill(n, p):
     lab = S.label(p); return f'<span class="pill" style="background:{TONE[lab][2]};color:{TONE[lab][3]}">{n} {"n/a" if p is None else f"{p}%"}</span>'
@@ -148,7 +150,7 @@ try{var t=+sessionStorage.getItem("r")||0;if(Date.now()-t<18e5)return;sessionSto
 
 OPEN_DAYS = 3          # days shown as open cards; later days are collapsed rows marked lower confidence
 
-def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows, generated_utc=None, calib=None, failed_models=()):
+def render_page(days, cfg, local_now, today, cstate, runs, track_rows, generated_utc=None, calib=None, failed_models=()):
     faces = {0: "N", 90: "E", 180: "S", 270: "W"}.get(cfg.get("launch_facing_deg", 0), "N")
     upd = local_now.strftime("%-I:%M%p %a").replace("AM", "am").replace("PM", "pm")
     names = {"ecmwf_ifs025": "ECMWF", "ncep_gfs025": "GFS", "dwd_icon": "ICON"}
@@ -159,10 +161,10 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
     for i, d in enumerate(days):
         nm, tag = day_name(d, today)
         if i < OPEN_DAYS:
-            cards.append(f'<section class="cd"><div class="top"><b>{nm}</b><span class="mu">{E(S.agreement(d))}{tag}</span></div>{card_body(d, cfg, ai_status)}</section>')
+            cards.append(f'<section class="cd"><div class="top"><b>{nm}</b><span class="mu">{E(S.agreement(d))}{tag}</span></div>{card_body(d, cfg)}</section>')
         else:
             cards.append(f'<details class="cd day"><summary><div><div class="nm">{nm}</div><div class="mu">{E(S.headline(d))}</div>{("<div class='mu fr'>" + E(d["front"]["text"]) + "</div>") if (d.get("front") or {}).get("status") else ""}<div class="lc">Lower confidence: further out</div></div>'
-                         f'<div class="pills">{pill("XC", d["xc"])}{pill("Acro", d["acro"])}{CHEV}</div></summary><div class="cd2"><div class="lc">Lower confidence: forecasts get less reliable further out</div>{card_body(d, cfg, ai_status)}</div></details>')
+                         f'<div class="pills">{pill("XC", d["xc"])}{pill("Acro", d["acro"])}{CHEV}</div></summary><div class="cd2"><div class="lc">Lower confidence: forecasts get less reliable further out</div>{card_body(d, cfg)}</div></details>')
     track = ('<table class="tbl"><tr><th>Day</th><th>XC</th><th>Acro</th><th>Lead</th></tr>' + "".join(track_rows) + "</table>") if track_rows else '<p class="note">Predictions are logged every update. Outcomes will be compared here once flight data or pilot notes are added.</p>'
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f1722"><meta name="color-scheme" content="dark"><meta name="generated" content="{int(generated_utc.timestamp()) if generated_utc else 0}">
@@ -174,5 +176,5 @@ def render_page(days, cfg, local_now, today, cstate, runs, ai_status, track_rows
 {warn}<div class="grid">{"".join(cards)}</div>
 <details class="more"><summary>Forecast corrections {CHEV}</summary>{corrections_block(cstate, cfg, calib)}</details>
 <details class="more"><summary>Track record {CHEV}</summary>{track}</details>
-<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strips show the XC and acro scores for each hour. Days 4-6 are marked lower confidence because forecasts get less reliable further out. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. The AI note is experimental and never changes the scores.</p></details>
+<details class="more"><summary>How the scores work {CHEV}</summary><p class="note">Scores come from hand-written rules, not yet learned from flights or calibrated. Each rule scores 0-100% smoothly and the day's score is set by the weakest rule. Good is {S.GOOD_MIN}% or more, marginal {S.MARGINAL_MIN}-{S.GOOD_MIN - 1}%, poor under {S.MARGINAL_MIN}%. Thermal strength is an estimate from sunshine and boundary-layer depth. The hourly strips show the XC and acro scores for each hour. Days 4-6 are marked lower confidence because forecasts get less reliable further out. Averages of {len(days[0]["models"]) if days else 0} models; model runs: {E(runs_txt)}. Forecast data: Open-Meteo. Creo (beta) is a model trained on past Mystic flights: it rates the day from Poor to Epic against its own past estimates and says why. It is experimental and never changes the scores.</p></details>
 {JS}</body></html>"""

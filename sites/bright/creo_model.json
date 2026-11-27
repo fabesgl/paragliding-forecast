@@ -3,7 +3,14 @@
   "8a7f80f5": {
    "trained_through": "2026-11-22",
    "first_day": "2022-01-01",
-   "days": 1570
+   "days": 1570,
+   "rating_cuts_km": [
+    0.218,
+    0.956,
+    3.05,
+    13.834
+   ],
+   "rating_basis": "20/40/60/80th percentiles of the model's leave-one-year-out estimates over all training days"
   }
  }
 }

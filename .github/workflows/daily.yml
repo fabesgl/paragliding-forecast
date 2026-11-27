@@ -50,8 +50,6 @@ jobs:
         id: fc
         continue-on-error: true
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          AI_OPINION_ENABLED: ${{ vars.AI_OPINION_ENABLED }}   # set to false in Settings > Variables to pause the AI panel
           MODEL_WEIGHTING: ${{ vars.MODEL_WEIGHTING }}         # set to equal in Settings > Variables to go back to the plain model average (empty = use model_weighting in sites/bright.yaml)
         run: python scripts/daily_forecast.py bright
       - name: Commit new data

@@ -8,16 +8,22 @@ as it was issued 1 and 2 days ahead, add the week, retrain, move on. The rules a
           so Creo and the rules are both run without them (Creo trained with the same variables blanked; the rules' 850 hPa rule cannot score).
   Days: complete months only (incomplete months skipped), tandems excluded, nobody flew = 0 km. Free-day flag 1 at prediction; a rules no-go (XC % 0) forces Creo to 0; comp weights used.
   Scores: rank correlation with the day's best distance; Creo minus rules with a 95% range from resampling whole days (a day counted at 1 and 2 days ahead is resampled as one).
-Usage: python scripts/creo_walkforward.py      Writes data/creo/walkforward.md"""
+Options: --embargo-days N   train only on days at least N days before the week (a check on labels that reach the archive late: flights are uploaded days after the day);
+         --old-westerly     score everything with the rules as they were before the westerly change (a check on that rule having been picked after seeing 2024-2026 flights);
+         --out NAME         write data/creo/NAME.md instead of walkforward.md.
+Usage: python scripts/creo_walkforward.py [options]      Writes data/creo/walkforward.md"""
 import glob, importlib.util, json, sqlite3, sys
 from pathlib import Path
 import numpy as np, pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
+args = sys.argv[1:]                       # read before creo_test is imported (it rewrites sys.argv for the scoreboard script)
 spec = importlib.util.spec_from_file_location("creo_test_script", ROOT / "scripts" / "creo_test.py"); CT = importlib.util.module_from_spec(spec); spec.loader.exec_module(CT)
 import lightgbm as lgb
 from pgforecast import creo, scoreboard as SB
 M = CT.M
-START = "2025-12-01"; MIN_TRAIN_DAYS = 300
+opt = lambda n, d: args[args.index(n) + 1] if n in args else d
+START = "2025-12-01"; MIN_TRAIN_DAYS = 300; EMBARGO = int(opt("--embargo-days", "0")); OUTNAME = opt("--out", "walkforward")
+if "--old-westerly" in args: M.rules["direction"].pop("westerly_launch", None)          # features, rules and training all use the old rule
 COLS = list(dict.fromkeys(M.VARS + CT.EXTRA))
 SR_MODELS = ["gfs_seamless", "ecmwf_ifs025", "icon_seamless"]
 BLANK_B = ["wind_speed_850hPa", "wind_direction_850hPa", "wind_speed_700hPa", "wind_direction_700hPa", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "boundary_layer_height"]   # not in the Previous Runs API
@@ -58,7 +64,8 @@ def walk(train, test, features):
     """Weekly walk-forward. Returns the test rows with creo (km) and the number of retrainings."""
     test = test.copy(); test["week"] = [creo.week_start(d, START) for d in test["date"]]; out = []; fits = 0
     for wk, te in test.groupby("week"):
-        tr = train[train["date"] < wk]
+        cutoff = (pd.Timestamp(wk) - pd.Timedelta(days=EMBARGO)).strftime("%Y-%m-%d"); tr = train[train["date"] < cutoff]
+        assert tr.empty or tr["date"].max() < wk and not set(tr["date"]) & set(te["date"]), "training days must all be before the week"
         if len(tr) < MIN_TRAIN_DAYS: continue
         model = lgb.train(CT.PARAMS, lgb.Dataset(tr[features], tr["y"], weight=tr["distance_weight"]), num_boost_round=CT.ROUNDS); fits += 1
         te = te.copy(); te["creo_raw"] = np.clip(np.expm1(model.predict(te[features])), 0, None); te["creo"] = creo.hard_limit(te["creo_raw"], te["xc_pct"]); out.append(te)
@@ -99,7 +106,7 @@ def main():
         L += ["## What the missing variables cost (same months, Part A vs Part B)", "", SB.md_table(pd.DataFrame([dict(version="A: full variables", **{k: v for k, v in row("", a).items() if k in ("days", "rules", "creo", "difference", "range_95")}),
               dict(version="B: reduced variables", **{k: v for k, v in row("", both[both["date"].isin(a["date"].unique())]).items() if k in ("days", "rules", "creo", "difference", "range_95")})]),
               {"rules": lambda v: f"{v:+.3f}", "creo": lambda v: f"{v:+.3f}", "difference": lambda v: f"{v:+.3f}"}), ""]
-    (CT.OUT / "walkforward.md").write_text("\n".join(L)); print("\n".join(L)); print(f"\nWritten: {CT.OUT / 'walkforward.md'}")
+    (CT.OUT / f"{OUTNAME}.md").write_text("\n".join(L)); print("\n".join(L)); print(f"\nWritten: {CT.OUT / (OUTNAME + '.md')}")
 
 
 if __name__ == "__main__": main()
