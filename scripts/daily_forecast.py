@@ -216,16 +216,20 @@ try:
     if creo is None: raise ImportError("creo helpers need numpy")
     cm = ROOT / "sites" / site / "creo_model.txt"
     booster = lgb.Booster(model_file=str(cm)); version = hashlib.sha1(cm.read_bytes()).hexdigest()[:8]
-    cuts = json.loads((ROOT / "sites" / site / "creo_model.json").read_text())["versions"][version]["rating_cuts_km"]
+    calib = json.loads((ROOT / "sites" / site / "creo_model.json").read_text())["versions"][version]; cuts = calib["rating_cuts_km"]
     crows = []
     for d in out_days:
         fs = creo_feats.get(d["date"])
         if not fs: continue
         p_ = creo.predict_day(booster, fs, d["date"], d["xc"])
-        try:                                                  # the dashboard panel: rating word + why, no km
-            lead = None
-            if p_["no_go"]: lead = _summary.dealbreaker(d["xc_rules"])[0] or "The rules' deal-breaker"
-            d["creo"] = dict(rating=creo.rating(p_["creo_km"], cuts), text=creo.describe(creo.reasons(p_["contrib"], p_["day"], d.get("key")), lead))
+        try:                                                  # the dashboard panel: a rating word and up to four short lines (templates, no km)
+            key = d.get("key"); word = creo.rating(p_["creo_km"], cuts)
+            aloft = creo.wind_at_height(d.get("winds"), (key or {}).get("ceiling_asl_m"))            # wind aloft is described at the top of the day's climbs; the model still sees 850 and 700 hPa
+            weather = {k_: v_ for k_, v_ in p_["contrib"].items() if not (k_.startswith("rule_") or k_ == "xc_pct")}      # what the weather alone says, for the "why Creo differs" line
+            nogo = creo.describe(creo.reasons(p_["contrib"], p_["day"], key), _summary.dealbreaker(d["xc_rules"])[0] or "The rules' deal-breaker") if p_["no_go"] else None
+            lines = creo.panel_lines(word, creo.curve_share(calib["xc_curve"], p_["creo_raw_km"]), _summary.best_window(d["hourly"], "xc"), creo.reasons(p_["contrib"], p_["day"], key, n=6, aloft=aloft),
+                                     d["xc"], creo.reasons(weather, p_["day"], key, n=6, aloft=aloft), nogo, (key or {}).get("ceiling_asl_m"), (key or {}).get("thermal_ms"))
+            d["creo"] = dict(rating=word, lines=lines, text=" ".join(lines))
         except Exception as e: print("Creo panel failed for", d["date"], type(e).__name__, e)
         crows.append([now.strftime("%Y-%m-%dT%H:%MZ"), d["date"], (dt.date.fromisoformat(d["date"]) - local_now.date()).days, d["xc"], round(p_["creo_km"], 1), round(p_["creo_raw_km"], 1), int(p_["no_go"]), len(fs), version])
     cf_ = OUT/"predictions"/"creo_log.csv"; new_ = not cf_.exists()

@@ -149,6 +149,19 @@ def calibrate_cuts(estimates, actual_km, bounds=(5, 20, 50), k=101):
     return [None if not (iso >= b).any() else round(float(e[int(np.argmax(iso >= b))]), 3) for b in bounds]
 
 
+def calibrate_share(estimates, flags, k=101, points=25):
+    """How often did past days with a similar estimate have the outcome `flags` (e.g. a best flight of 20 km or more)? Share among the `k` days nearest in estimate, made
+    non-decreasing, sampled at `points` places as [[estimate, share], ...] (stored with the model; `curve_share` reads it)."""
+    est, fl = np.asarray(estimates, float), np.asarray(flags, float); order = np.argsort(est, kind="stable"); e, f = est[order], fl[order]; n = len(e); k = min(k, n)
+    share = np.array([f[max(0, min(i - k // 2, n - k)):max(0, min(i - k // 2, n - k)) + k].mean() for i in range(n)]); iso = _pav(share)
+    idx = np.unique(np.linspace(0, n - 1, points).astype(int)); return [[round(float(e[i]), 3), round(float(iso[i]), 3)] for i in idx]
+
+
+def curve_share(curve, estimate):
+    """Share (0-1) of past days like this with the outcome, from the stored curve."""
+    xs, ys = zip(*curve); return float(np.interp(estimate, xs, ys))
+
+
 # Which features speak for which physical piece, and which pieces make up one FACTOR. A factor gets ONE net effect (all its pieces added up), so it can never be listed as both
 # helping and hurting. The sentence describes the piece that pushed the way the factor's net effect went. xc_pct, day of year and the free-day flag are not weather and never appear.
 COMPONENTS = {
@@ -189,13 +202,40 @@ def _phrase(group, good, f, key):
     return None
 
 
-def reasons(contrib, f, key=None, n=3):
+def wind_at_height(winds, height_m):
+    """Wind interpolated to `height_m` from the dashboard's winds-by-height table (rows with height_m and cells of km/h and direction at 11, 13 and 15h). Returns
+    {'speed', 'deg', 'height'} (the height is held between the lowest and highest level), or None when the table cannot give it."""
+    pts = []
+    for row in winds or []:
+        cells = [c for c in row.get("cells", []) if c]
+        if not row.get("height_m") or not cells: continue
+        u = sum(-c["kmh"] * math.sin(math.radians(c["deg"])) for c in cells) / len(cells); v = sum(-c["kmh"] * math.cos(math.radians(c["deg"])) for c in cells) / len(cells)
+        pts.append((float(row["height_m"]), u, v))
+    if len(pts) < 2 or height_m is None: return None
+    pts.sort(); h = min(max(float(height_m), pts[0][0]), pts[-1][0])
+    for (h0, u0, v0), (h1, u1, v1) in zip(pts, pts[1:]):
+        if h0 <= h <= h1:
+            t = 0.0 if h1 == h0 else (h - h0) / (h1 - h0); u, v = u0 + t * (u1 - u0), v0 + t * (v1 - v0)
+            return dict(speed=math.hypot(u, v), deg=math.degrees(math.atan2(-u, -v)) % 360, height=h)
+
+
+def _aloft_phrase(a):
+    """The wind aloft at the forecast top of the climbs, with the real height."""
+    w = _word(math.sin(math.radians(a["deg"])), math.cos(math.radians(a["deg"]))) if a["speed"] >= 1 else None
+    return (f"{_a(w)} wind aloft" if w else "light wind aloft") + f" ({a['speed']:.0f} km/h at about {round(a['height'], -2):,.0f} m)"
+
+
+def reasons(contrib, f, key=None, n=3, aloft=None):
     """The strongest 2-3 factors behind the estimate, as [(factor, helps?, phrase, net push, plural?)], biggest net effect first. Each factor's pieces are added up into ONE net effect
     (wind aloft = 850 and 700 hPa together; wind at launch = speed, direction and gusts together). Factors whose net effect is under MIN_REASON are left out."""
     comp = {k: sum(contrib.get(c, 0.0) for c in cols) for k, cols in COMPONENTS.items()}; out = []
     for fac, parts in sorted(FACTORS.items(), key=lambda kv: -abs(sum(comp[p] for p in kv[1]))):
         net = sum(comp[p] for p in parts)
         if abs(net) < MIN_REASON: break
+        if fac == "wind aloft" and aloft:                                           # described at the top of the climbs; the model itself still sees 850 and 700 hPa
+            out.append((fac, net > 0, _aloft_phrase(aloft), net, False))
+            if len(out) == n: break
+            continue
         for p in sorted(parts, key=lambda p: -abs(comp[p])):                       # describe the biggest piece that pushed the same way as the net effect
             if comp[p] * net > 0 and (ph := _phrase(p, net > 0, f, key)):
                 out.append((fac, net > 0, ph, net, p in PLURAL)); break
@@ -222,3 +262,29 @@ def describe(rs, nogo_lead=None):
     if good: return f"{cap(_join(good_ph))} {verb(good, 'helps', 'help')}."
     if bad: return f"{cap(_join(bad_ph))} {verb(bad, 'holds', 'hold')} the day back."
     return "Nothing stands out: close to an average day."
+
+
+# ---------------------------------------------------------------- the panel text: up to four short lines from templates
+def _xc_times(share):
+    x = round(share * 10)
+    return "rarely went XC (20 km+)" if x <= 0 else "nearly always went XC (20 km+)" if x >= 10 else f"went XC (20 km+) about {x} {'time' if x == 1 else 'times'} in 10"
+
+
+def panel_lines(rating_word, share, window, rs_all, rules_pct, disagree_rs=None, nogo_text=None, climb_top_m=None, climb_ms=None):
+    """The dashboard text as a list of lines (about 50 words at most). rs_all: `reasons` for all factors. rules_pct: the rules' XC %. disagree_rs: `reasons` from the weather
+    alone (no rule scores), used only when Creo and the rules clearly disagree. nogo_text: the no-go sentence; the panel then is just that."""
+    if nogo_text: return [nogo_text]
+    out = [f"Similar past days {_xc_times(share)}."]
+    best = next((r for r in rs_all if r[1]), None); watch = next((r for r in rs_all if not r[1]), None)
+    climbs = (f"climbs to about {round(climb_top_m, -2):,.0f} m" if climb_top_m is not None else "climbs") + (f" at {climb_ms:.1f} m/s" if climb_ms is not None else "")
+    if climb_top_m is None and climb_ms is None: climbs = None
+    head = f"Best: {window}" if window else "Best: no clear window today"
+    line = head + (", " if window else "; ") + climbs if climbs else head
+    if best and best[0] != "thermals": line += f", helped by {best[2]}"            # thermals are already said in the climbs
+    out.append(line + ".")
+    out.append("Watch: " + (watch[2] + "." if watch else "nothing stands out."))
+    low_rules, high_rules = rules_pct is not None and rules_pct < 35, rules_pct is not None and rules_pct >= 65
+    if (high_rules and rating_word == "Poor") or (low_rules and rating_word in ("Good", "Great")):
+        up = low_rules; pick = next((r for r in (disagree_rs or []) if r[1] == up), None)
+        out.append(f"Creo is more {'upbeat' if up else 'cautious'} than the rules: " + (f"past days with {pick[2]} tended to go {'well' if up else 'badly'}." if pick else "it reads the whole day differently."))
+    return out

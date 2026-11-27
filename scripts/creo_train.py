@@ -24,7 +24,8 @@ def main():
         g = res[res["rating"] == w]; fl = g[g["flown"]]
         table.append(f"  {w:<6} {len(g):5d} days ({100 * len(g) / len(res):4.1f}%)   median actual best flight {g['best_km'].median() if len(g) else float('nan'):5.1f} km   flown {100 * len(fl) / max(len(g), 1):3.0f}%")
     versions = json.loads(meta.read_text())["versions"] if meta.exists() else {}
-    versions[hashlib.sha1(out.read_bytes()).hexdigest()[:8]] = dict(trained_through=df["date"].max(), first_day=df["date"].min(), days=len(df), rating_cuts_km=cuts, rating_bounds_km=[5, 20, 50, 100],
+    versions[hashlib.sha1(out.read_bytes()).hexdigest()[:8]] = dict(trained_through=df["date"].max(), first_day=df["date"].min(), days=len(df), rating_cuts_km=cuts, rating_bounds_km=[5, 20, 50],
+        xc_curve=creo.calibrate_share(res[res["xc_pct"] > 0]["creo_raw"], res[res["xc_pct"] > 0]["best_km"] >= 20),   # share of similar past days with a best flight of 20 km or more
         rating_counts={w: int((res["rating"] == w).sum()) for w in creo.RATINGS}, rating_basis="estimate at which the median actual best flight of past days with a similar leave-one-year-out estimate (101 nearest days, made non-decreasing) reaches 5/20/50/100 km")
     meta.write_text(json.dumps(dict(versions=versions), indent=1) + "\n")
     print("Rating words over the past days (leave-one-year-out estimates):"); print("\n".join(table))

@@ -71,6 +71,48 @@ class Panel(unittest.TestCase):
         self.assertIn("Otherwise a high cloud base", t); self.assertEqual(creo.describe([], nogo_lead="Strong S wind aloft"), "Strong S wind aloft rules the day out.")
 
 
+class Lines(unittest.TestCase):
+    F = Panel.F
+    R_GOOD = ("thermals", True, "decent thermals (about 1.8 m/s)", 0.3, True)
+    R_BAD = ("wind aloft", False, "a westerly wind aloft (22 km/h at about 2,200 m)", -0.4, False)
+
+    def test_four_short_lines(self):
+        r = creo.panel_lines("Good", 0.87, "12-3pm", [self.R_GOOD, self.R_BAD], 55, climb_top_m=2420, climb_ms=1.8)
+        self.assertEqual(r, ["Similar past days went XC (20 km+) about 9 times in 10.", "Best: 12-3pm, climbs to about 2,400 m at 1.8 m/s.", "Watch: a westerly wind aloft (22 km/h at about 2,200 m)."])      # thermals are not repeated as a helper
+        self.assertLessEqual(len(" ".join(r).split()), 50)
+        helper = ("wind at launch", True, "light wind at launch (6 km/h)", 0.4, False)
+        self.assertEqual(creo.panel_lines("Good", 0.5, "12-3pm", [helper, self.R_GOOD], 55, climb_top_m=2420, climb_ms=1.8)[1], "Best: 12-3pm, climbs to about 2,400 m at 1.8 m/s, helped by light wind at launch (6 km/h).")
+        self.assertEqual(creo.panel_lines("Poor", 0.02, None, [], 20, climb_top_m=2900, climb_ms=1.1)[:3], ["Similar past days rarely went XC (20 km+).", "Best: no clear window today; climbs to about 2,900 m at 1.1 m/s.", "Watch: nothing stands out."])
+        self.assertEqual(creo.panel_lines("Poor", 0.02, "12-3pm", [], 20)[1], "Best: 12-3pm.")                                       # no climb numbers: just the window
+        self.assertEqual(creo.panel_lines("Poor", 0.12, "12-3pm", [], 20)[0], "Similar past days went XC (20 km+) about 1 time in 10.")
+        self.assertEqual(creo.panel_lines("Great", 0.99, "11am-4pm", [self.R_GOOD], 90, climb_ms=2.6)[0], "Similar past days nearly always went XC (20 km+).")
+        self.assertEqual(creo.panel_lines("Great", 0.99, "11am-4pm", [self.R_GOOD], 90, climb_ms=2.6)[1], "Best: 11am-4pm, climbs at 2.6 m/s.")
+
+    def test_the_disagreement_line_only_when_clear(self):
+        dis_bad = [("height", False, "the low cloud base (about 1,900 m)", -0.3, False)]
+        t = creo.panel_lines("Poor", 0.3, "12-3pm", [self.R_GOOD], 80, dis_bad)               # rules say good, Creo says Poor
+        self.assertEqual(t[-1], "Creo is more cautious than the rules: past days with the low cloud base (about 1,900 m) tended to go badly.")
+        up = creo.panel_lines("Good", 0.8, "12-3pm", [self.R_GOOD], 20, [self.R_GOOD])        # rules say poor, Creo says Good
+        self.assertEqual(up[-1], "Creo is more upbeat than the rules: past days with decent thermals (about 1.8 m/s) tended to go well.")
+        self.assertEqual(len(creo.panel_lines("Fair", 0.5, "12-3pm", [self.R_GOOD], 80, dis_bad)), 3)      # Fair vs rules good: not clear enough
+        self.assertEqual(len(creo.panel_lines("Good", 0.8, "12-3pm", [self.R_GOOD], 55, dis_bad)), 3)
+        self.assertIn("reads the whole day differently", creo.panel_lines("Poor", 0.3, None, [], 80, [])[-1])
+
+    def test_no_go_keeps_the_deal_breaker_line(self):
+        self.assertEqual(creo.panel_lines("Poor", 0.1, "12-3pm", [self.R_GOOD], 0, nogo_text="Rain 3.2 mm in the window rules the day out."), ["Rain 3.2 mm in the window rules the day out."])
+
+    def test_wind_aloft_is_described_at_the_top_of_the_climbs(self):
+        winds = [dict(label="Launch", height_m=None, cells=[None]), dict(label="~1,500 m", height_m=1500, cells=[dict(kmh=10, deg=270)] * 3), dict(label="~3,000 m", height_m=3000, cells=[dict(kmh=40, deg=270)] * 3)]
+        a = creo.wind_at_height(winds, 2250); self.assertAlmostEqual(a["speed"], 25.0, places=3); self.assertAlmostEqual(a["deg"], 270, places=3)         # halfway up: halfway between
+        self.assertEqual(creo.wind_at_height(winds, 5000)["height"], 3000)                                                                                # held at the top level
+        rs = creo.reasons({"wind850_speed": -0.3, "wind700_speed": -0.4}, self.F, aloft=a); self.assertEqual(rs[0][2], "a westerly wind aloft (25 km/h at about 2,200 m)")
+        self.assertIn("3,000 m", creo.reasons({"wind700_speed": -0.4}, self.F)[0][2])                     # without it, the 3,000 m wording is what Creo had
+
+    def test_flown_curve(self):
+        est = list(range(1, 201)); fl = [e > 100 for e in est]; c = creo.calibrate_share(est, fl, k=21, points=10)
+        self.assertLess(creo.curve_share(c, 5), 0.1); self.assertGreater(creo.curve_share(c, 195), 0.9); self.assertTrue(all(b[1] >= a[1] for a, b in zip(c, c[1:])))
+
+
 class Walk(unittest.TestCase):
     def test_week_blocks_and_cluster_bootstrap(self):
         self.assertEqual(creo.week_start("2025-12-01", "2025-12-01"), "2025-12-01"); self.assertEqual(creo.week_start("2025-12-07", "2025-12-01"), "2025-12-01")

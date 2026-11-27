@@ -14,6 +14,7 @@ class T(unittest.TestCase):
         self.assertIn("rotate(180deg)", R.arrow(0, 10)); self.assertIn("#e24b4a", R.arrow(300, 40))        # wind from N points down; strong wind is red
     def test_creo_panel(self):
         h = R.creo_box({"rating": "Good", "text": "<script>alert(1)</script> helps."}); self.assertNotIn("<script>", h); self.assertIn("Creo (beta)", h); self.assertIn("Good", h)
+        two = R.creo_box({"rating": "Good", "lines": ["Similar past days were flown about 9 times in 10.", "Best: 12-3pm."], "text": "x"}); self.assertEqual(two.count("<p>"), 2); self.assertIn("Best: 12-3pm.", two)
         self.assertEqual(R.creo_box(None), ""); self.assertEqual(R.creo_box({"rating": None, "text": "x"}), "")
         self.assertNotIn(" km", R.creo_box({"rating": "Great", "text": "A westerly wind aloft (14 km/h at 1,500 m) helps."}).replace("km/h", ""))      # speeds in km/h are fine; no distances
 if __name__ == "__main__": unittest.main()

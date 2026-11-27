@@ -81,10 +81,10 @@ def ladder(rows, launch_m):
 CREO_TONE = {"Poor": "poor", "Fair": "marginal", "Good": "good", "Great": "good"}
 
 def creo_box(c):
-    """The Creo (beta) panel: a rating word and a short why. Never shows distances. Nothing if Creo had no estimate this update."""
+    """The Creo (beta) panel: the rating word, then up to four short lines. Never shows distances. Nothing if Creo had no estimate this update."""
     if not c or not c.get("rating"): return ""
-    col = TONE[CREO_TONE[c["rating"]]][1]
-    return f'<div class="ai"><div class="mu">{SPARK} Creo (beta)</div><b class="cr" style="color:{col}">{E(c["rating"])}</b><p>{E(c["text"])}</p></div>'
+    col = TONE[CREO_TONE[c["rating"]]][1]; lines = c.get("lines") or ([c["text"]] if c.get("text") else [])
+    return f'<div class="ai"><div class="mu">{SPARK} Creo (beta)</div><b class="cr" style="color:{col}">{E(c["rating"])}</b>' + "".join(f"<p>{E(x)}</p>" for x in lines) + "</div>"
 
 def front_line(f):
     if not f or not f.get("status"): return ""
