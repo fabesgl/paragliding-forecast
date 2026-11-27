@@ -26,12 +26,17 @@ WEATHER = [f"{w}_{s}" for w in ("wind10", "wind850", "wind700") for s in ("speed
 FEATURES = WEATHER + [f"rule_{k}" for k in creo.XC_RULES] + ["xc_pct", "doy", "free"]
 
 
-def forecast_features():
-    """One row per day: the models' flying-window features averaged (each model scored with the live rules first)."""
-    db = sqlite3.connect(ROOT / "data" / "forecast.sqlite")
-    cols = list(dict.fromkeys(M.VARS + EXTRA))
+def load_hist_raw():
+    """The short-lead archive (Historical Forecast API) for Mystic, flying-window hours only."""
+    db = sqlite3.connect(ROOT / "data" / "forecast.sqlite"); cols = list(dict.fromkeys(M.VARS + EXTRA))
     raw = pd.read_sql(f"SELECT model, time_utc, {','.join(cols)} FROM fc WHERE source='hist' AND lead_days=0 AND point_key='mystic_launch' AND model IN ({','.join('?' * len(M.MODELS))})", db, params=M.MODELS)
-    raw["time_utc"] = pd.to_datetime(raw["time_utc"]); raw = M.window(raw[raw["time_utc"] >= pd.Timestamp(M.FIRST) - pd.Timedelta(days=1)]); rows = []
+    raw["time_utc"] = pd.to_datetime(raw["time_utc"]); return M.window(raw[raw["time_utc"] >= pd.Timestamp(M.FIRST) - pd.Timedelta(days=1)])
+
+
+def features_from_raw(raw, blank=()):
+    """One row per day from a table with columns model, time_utc, date and the forecast variables (flying-window hours only): each model scored with the live rules, features
+    averaged over the models. `blank`: variables to treat as missing (to test with only what a forecast source offers); they are blanked after the gap-filling."""
+    cols = list(dict.fromkeys(M.VARS + EXTRA)); rows = []
     for date, g in raw.groupby("date"):
         hours = sorted(g["time_utc"].unique()); piv = {m: g[g["model"] == m].set_index("time_utc").reindex(hours) for m in M.MODELS if (g["model"] == m).any()}; per = []
         for m, p in piv.items():
@@ -44,16 +49,22 @@ def forecast_features():
                         vals = [o[i] for o in others if not pd.isna(o[i])]; x = sum(vals) / len(vals) if vals else None
                     col.append(None if x is None or pd.isna(x) else float(x))
                 h[v] = col
+            for v in blank: h[v] = [None] * len(hours)
             r = score_day(h, M.rules, M.LAUNCH)
             if r["xc"] is not None: per.append(creo.model_features(h, r, M.LAUNCH))
         if per: rows.append(dict(date=date, n_models=len(per), **creo.day_features(per)))
     return pd.DataFrame(rows)
 
 
-def dataset():
+def forecast_features():
+    return features_from_raw(load_hist_raw())
+
+
+def dataset(feats=None):
+    """Labelled usable days with their forecast features (default: the short-lead archive)."""
     lab, _, _ = M.labels()
     lab["free"] = [int(SB.is_free_day(d, M.HOLIDAYS)) for d in lab["date"]]
-    df = lab.merge(forecast_features(), on="date", how="inner")
+    df = lab.merge(forecast_features() if feats is None else feats, on="date", how="inner")
     df["year"] = df["date"].str[:4].astype(int); df["doy"] = pd.to_datetime(df["date"]).dt.day_of_year
     n0 = len(df); df = df[df["month_complete"] & df["best_km"].notna() & df["xc_pct"].notna()].reset_index(drop=True)
     df["xc_pct"] = df["xc_pct"].round(); df["y"] = np.log1p(df["best_km"])

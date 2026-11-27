@@ -35,6 +35,14 @@ class T(unittest.TestCase):
 if __name__ == "__main__": unittest.main()
 
 
+class Walk(unittest.TestCase):
+    def test_week_blocks_and_cluster_bootstrap(self):
+        self.assertEqual(creo.week_start("2025-12-01", "2025-12-01"), "2025-12-01"); self.assertEqual(creo.week_start("2025-12-07", "2025-12-01"), "2025-12-01")
+        self.assertEqual(creo.week_start("2025-12-08", "2025-12-01"), "2025-12-08"); self.assertEqual(creo.week_start("2026-01-03", "2025-12-01"), "2025-12-29")
+        rng = np.random.default_rng(0); truth = np.tile(np.arange(40.0), 2); good = truth + rng.normal(0, 3, 80); bad = rng.normal(0, 30, 80); days = np.tile(np.arange(40), 2)
+        d, lo, hi = creo.cluster_bootstrap_diff(days, truth, good, bad, n=200); self.assertGreater(d, 0); self.assertGreater(lo, 0)
+
+
 class Shadow(unittest.TestCase):
     def test_predict_day_builds_the_row_and_applies_the_hard_limit(self):
         try: import lightgbm as lgb

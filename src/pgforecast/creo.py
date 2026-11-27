@@ -98,3 +98,21 @@ def predict_day(booster, per_model, target_date, published_xc=None):
     rules_xc = published_xc if published_xc is not None else day["xc_pct"]
     no_go = rules_xc is not None and rules_xc <= 0
     return dict(creo_raw_km=raw, creo_km=0.0 if no_go else raw, no_go=bool(no_go), xc_feature=day["xc_pct"])
+
+
+def cluster_bootstrap_diff(groups, truth, score_a, score_b, n=1000, seed=1):
+    """Like bootstrap_diff, but resamples whole groups (e.g. dates), so a day that appears more than once (1 and 2 days ahead) is not counted as independent evidence.
+    Returns (difference, low, high) of spearman(score_a, truth) - spearman(score_b, truth)."""
+    g = np.asarray(groups); truth, a, b = (np.asarray(x, float) for x in (truth, score_a, score_b)); keys = np.unique(g)
+    idx = {k: np.flatnonzero(g == k) for k in keys}; rng = np.random.default_rng(seed); d = []
+    for _ in range(n):
+        pick = np.concatenate([idx[k] for k in rng.choice(keys, len(keys))])
+        x, y = spearman_fast(a[pick], truth[pick]), spearman_fast(b[pick], truth[pick])
+        if x is not None and y is not None: d.append(x - y)
+    return spearman_fast(a, truth) - spearman_fast(b, truth), float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))
+
+
+def week_start(date, first):
+    """Start (ISO date) of the 7-day block containing `date`, counting blocks from `first`."""
+    f = dt.date.fromisoformat(first); d = dt.date.fromisoformat(date)
+    return (f + dt.timedelta(days=7 * ((d - f).days // 7))).isoformat()
