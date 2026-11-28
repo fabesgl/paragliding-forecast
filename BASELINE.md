@@ -1,8 +1,12 @@
-# BASELINE.md — key results on 2026-11-28 and how to reproduce them
+# BASELINE.md — key results on 2026-11-28 (v2) and how to reproduce them
 
-Tag: `baseline-2026-11-28`. Code state before this documentation commit: `fda30df` ("ERA5 collector: one request at a time…"). All commands run from the project root. Numbers are rank correlation (Spearman) between a score and the day's best flown distance (nobody flew = 0 km; tandems excluded) unless stated. Higher is better; +1 is perfect.
+Tag: `baseline-2026-11-28-v2` (the first version, `baseline-2026-11-28`, is kept). v2 = the first baseline plus the fixes of the same day: the scoreboard now uses complete months only, `creo_review.py` and the dashboard track record ignore lead-0 rows, and three scripts no longer write into committed paths. Neither Creo's model nor the rules changed, so every Creo number below is identical to v1. All commands run from the project root. Numbers are rank correlation (Spearman) between a score and the day's best flown distance (nobody flew = 0 km; tandems excluded) unless stated. Higher is better; +1 is perfect.
 
-Everything below was rerun on 2026-11-28 from local data; nothing was copied from older reports. Each result was run twice where noted and reproduced exactly.
+## Headline number
+
+**Creo's walk-forward gain over the rules: +0.044 (95% range +0.006 to +0.085)**, Part A (day-ahead forecasts, full variables, 207 days, 2026-05-01 → 2026-11-25). The reduced-variable Part B gives +0.032 (−0.002 to +0.065) over 296 days. Walk-forward is the headline because it trains only on earlier days and tests on forecasts issued 1 and 2 days ahead, which is how Creo is used. The leave-one-year-out gain (+0.083) and the scoreboard (+0.64) are secondary: they use near-analysis "short lead" weather (leak L1 in `SPEC.md` §5.2, still open).
+
+Everything below was rerun on 2026-11-28 from local data. Creo results were run twice and reproduce exactly; the scoreboard is now deterministic (same file under a different hash seed).
 
 ## 0. State of the inputs (what the numbers depend on)
 
@@ -17,79 +21,60 @@ Everything below was rerun on 2026-11-28 from local data; nothing was copied fro
 | IGC flights | 1,140 flights, 2 pilots, to 2026-04-05 |
 | BARRA-C2 | 2008-01 → 2026-07 (so "B" scores stop at 2026-07) |
 | Single Runs | 237 runs, 2026-04-02 → 2026-11-24 |
-| Live record | forecast archive since 2026-11-25 (42 files); `creo_log.csv` 36 rows (24 from the current model version) |
+| Live record | forecast archive since 2026-11-25; `creo_log.csv` 30+ rows (current model version `ba547fb9`) |
 | Unit tests | 145 tests in 16 modules, all pass |
 
-The data files are local, so these numbers can only be reproduced on the laptop with the same files. If a flight page is added or a month's completeness changes, the numbers change.
+The data files are local, so these numbers can only be reproduced on the laptop with the same files.
 
 ---
 
 ## 1. Scoreboard: how well the rules' XC % predicted real flying
 
-Command (default start = 2024-01-01, about 3 s):
+Complete XContest months only (119 days from incomplete months, all "flown" by construction, are left out; this makes the scoreboard use the same days as Creo's tests). Command (about 3 s; writes `data/scoreboard/latest/report.md` and `days.csv`, never the saved reports in `data/scoreboard/`):
 
 ```
-.venv/bin/python scripts/scoreboard.py
+.venv/bin/python scripts/scoreboard.py                    # 2022-01-01 on (default)
+.venv/bin/python scripts/scoreboard.py --from 2024-01-01 --out data/scoreboard/latest_2024
 ```
 
-and from 2022 (this is the version that was on disk before the baseline, and `rule_tests.py` reads its `days.csv`):
+### 1.1 Overall (2022 on, 1,518 days: 711 flown, 807 not flown, 95 unknown skipped, 119 incomplete-month days left out)
 
-```
-.venv/bin/python scripts/scoreboard.py --from 2022-01-01
-```
+| Version | days | all days | flown days only |
+|---|---|---|---|
+| A: forecast (hist archive, each model scored then averaged) | 1,515 | **+0.64** | +0.57 |
+| B: BARRA-C2 (weather that actually happened) | 1,401 | +0.65 | +0.59 |
+| A on the same days as B | 1,401 | +0.64 | +0.56 |
 
-Outputs: `data/scoreboard/report.md`, `data/scoreboard/days.csv` (both overwrite the previous run; run the 2022 one last if you want the older state). Reproducibility: the 2022 report matched the saved one line for line (apart from the "Made" time); the "held back by" columns of `days.csv` change from run to run (tie-break, see SPEC §7 item 4); scores do not.
+From 2024-04 (2024 on, complete months only, 816 days): A **+0.65** (+0.62 flown only, 813 days); B +0.63 (+0.64, 699 days). Before the fix these were +0.68 and +0.70 (A, 2022 on and 2024 on).
 
-### 1.1 Overall
+### 1.2 Bands, 2022 on
 
-| Version | 2022 on: days | all days | flown days only | 2024 on: days | all days | flown days only |
+| XC % band | A: days | % flown | median best km | B: days | % flown | median best km |
 |---|---|---|---|---|---|---|
-| A: forecast (hist archive, each model scored then averaged) | 1,634 | **+0.68** | +0.58 | 911 | **+0.70** | +0.63 |
-| B: BARRA-C2 (weather that actually happened) | 1,520 | +0.69 | +0.61 | 797 | +0.69 | +0.67 |
-| A on the same days as B | 1,520 | +0.67 | +0.57 | 797 | +0.70 | +0.63 |
+| 0–20 | 675 | 20% | 3 | 891 | 27% | 5 |
+| 20–40 | 225 | 48% | 5 | 159 | 61% | 11 |
+| 40–60 | 255 | 64% | 15 | 140 | 79% | 28 |
+| 60–80 | 195 | 82% | 22 | 120 | 88% | 32 |
+| 80–100 | 165 | 88% | 49 | 91 | 95% | 66 |
 
-Days with a label: 1,637 (2022 on; 830 flown, 807 not; 95 unknown skipped; 7 flown days known only from a track) and 914 (2024 on; 508 flown, 406 not; 88 unknown).
+### 1.3 Splits, A, 2022 on (rank correlation)
 
-**Caveat found during this run:** the scoreboard keeps 119 days from months with incomplete XContest data, and every one of them is "flown" (days with no saved flights in such a month are "unknown"). Taken out, version A is **+0.644** (2022 on, 1,518 days) and **+0.652** (2024 on, 816 days). This second number is what the Creo test compares against. (Computed from `days.csv` with the same rank-correlation method; not a line of the script's own report.)
-
-### 1.2 Bands, version A (from the forecast)
-
-| XC % band | 2022 on: days | % flown | median best km (days flown) | 2024 on: days | % flown | median best km |
-|---|---|---|---|---|---|---|
-| 0–20 | 679 | 20% | 3 | 373 | 25% | 3 |
-| 20–40 | 232 | 50% | 6 | 136 | 56% | 5 |
-| 40–60 | 276 | 67% | 15 | 155 | 71% | 13 |
-| 60–80 | 234 | 85% | 22 | 134 | 89% | 22 |
-| 80–100 | 213 | 91% | 51 | 113 | 95% | 53 |
-
-### 1.3 Bands, version B (BARRA-C2)
-
-| XC % band | 2022 on: days | % flown | median best km | 2024 on: days | % flown | median best km |
-|---|---|---|---|---|---|---|
-| 0–20 | 906 | 28% | 5 | 456 | 33% | 4 |
-| 20–40 | 173 | 64% | 13 | 91 | 68% | 8 |
-| 40–60 | 162 | 82% | 28 | 85 | 82% | 20 |
-| 60–80 | 145 | 90% | 34 | 75 | 89% | 36 |
-| 80–100 | 134 | 96% | 69 | 90 | 97% | 65 |
-
-### 1.4 Splits, version A (2022 on / 2024 on rank correlation)
-
-| Group | 2022 on | 2024 on |
+| Group | days | rank correlation |
 |---|---|---|
-| all days | +0.68 | +0.70 |
-| summer | +0.54 | +0.64 |
-| autumn | +0.73 | +0.72 |
-| winter | +0.44 | +0.44 |
-| spring | +0.69 | +0.73 |
-| weekends / holidays | +0.73 | +0.77 |
-| weekdays | +0.66 | +0.67 |
-| Bright Open weeks only | +0.76 (31 days) | +0.80 (18 days) |
+| all days | 1,515 | +0.64 |
+| summer | 300 | +0.51 |
+| autumn | 399 | +0.70 |
+| winter | 460 | +0.44 |
+| spring | 356 | +0.69 |
+| weekends / holidays | 452 | +0.70 |
+| weekdays | 1,063 | +0.63 |
+| Bright Open weeks only | 14 | +0.84 |
 
-The full tables, including the biggest misses, are in `data/scoreboard/report.md`.
+Full tables, including the biggest misses, are in `data/scoreboard/latest/report.md`.
 
 ---
 
-## 2. Creo, leave-one-year-out (the first test)
+## 2. Creo, leave-one-year-out (secondary)
 
 Command (about 7 s; deterministic: LightGBM `seed=0`, `deterministic=True`; reproduced exactly on a second run):
 
@@ -122,15 +107,15 @@ Note: these inputs are "short lead" forecasts; see leak L1 in `SPEC.md` §5. The
 
 ---
 
-## 3. Creo, walk-forward (honest order in time, day-ahead inputs)
+## 3. Creo, walk-forward (HEADLINE: honest order in time, day-ahead inputs)
 
 Local data only; the whole run took **18 seconds**, so it was rerun (not copied). Command:
 
 ```
-.venv/bin/python scripts/creo_walkforward.py --out baseline_2026-11-28
+.venv/bin/python scripts/creo_walkforward.py --out baseline_2026-11-28_v2
 ```
 
-Output: `data/creo/baseline_2026-11-28.md` (the default name `walkforward.md` still holds the earlier run, made before the westerly revert and unknown-months change). Reproduced exactly on a second run. Every week from 2025-12-01 the model is retrained on days before that week only; the week is predicted from forecasts issued 1 and 2 days ahead. The 95 % ranges resample whole days.
+Output: `data/creo/baseline_2026-11-28_v2.md` (identical to `baseline_2026-11-28.md` from v1; the default name `walkforward.md` still holds the earlier run, made before the westerly revert and unknown-months change). Reproduced exactly on a second run. Every week from 2025-12-01 the model is retrained on days before that week only; the week is predicted from forecasts issued 1 and 2 days ahead. The 95 % ranges resample whole days.
 
 ### 3.1 Part A: Single Runs API, full variables, 207 days (2026-05-01 → 2026-11-25), 414 predictions, 31 retrainings
 
@@ -161,12 +146,12 @@ Incomplete months skipped: 2026-04 (A); 2026-01, 2026-04 (B).
 | Check | Result | Command |
 |---|---|---|
 | Unit tests | 145 tests, all pass | `for t in tests/test_*.py; do PYTHONPATH=src .venv/bin/python -m unittest tests.$(basename $t .py); done` |
-| Live Creo review | Not yet meaningful: 24 log rows from the current model; flights for those days not imported | `.venv/bin/python scripts/creo_review.py` (planned ~2026-12-28) |
+| Live Creo review | Not yet meaningful: flights for the logged days are not imported; lead 0 rows are now ignored | `.venv/bin/python scripts/creo_review.py` (planned ~2026-12-28) |
 | Bias corrections | 154 bins, 2 days of data each, 0 active | read `corrections/corrections.json` |
 | Model weighting | `equal` published; `weighted` and the old average logged in `predictions/weighting_log.csv` (42 rows) | review ~2026-12-26 |
 | Valley-wind calibration | not ready (fewer than 30 usable days) | `corrections/valley_wind_calibration.json` |
 
 ## 5. What was not rerun
 
-- `scripts/creo_train.py` (would overwrite the deployed model), `scripts/creo_review.py` (nothing to score yet), `scripts/rule_tests.py`, `scripts/forecast_error*.py`, `scripts/model_weights.py` (they write into the committed `sites/bright/priors.json` / `model_weights.json` or are outside the request), and anything that downloads data.
-- The pre-existing `data/creo/report.md` was replaced by the new run; the old one differed only because it predated the westerly revert (2026-11-27 14:23) and the unknown-months change (14:47).
+- `scripts/creo_train.py` (would overwrite the deployed model), `scripts/rule_tests.py`, `scripts/forecast_error*.py`, `scripts/model_weights.py`, and anything that downloads data.
+- `scripts/creo_review.py` was run and has nothing to score yet.

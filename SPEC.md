@@ -16,7 +16,7 @@ The pre-commit hook (`.git/hooks/pre-commit`) blocks laptop commits that touch t
 
 | Path | Format | One row / file means | Time zone and moment | Range (2026-11-28) | Updated by |
 |---|---|---|---|---|---|
-| `observations/<station>.csv` (94884 Benalla, 94889 Wangaratta, 94903 Falls Creek, 94905 Hotham Airport, 94906 Mount Hotham, 94908 Omeo) | CSV. Columns: `obs_time_utc` (ISO `…Z`), `local_time` (BOM `YYYYMMDDHHMMSS`, local), `air_temp` °C, `apparent_t` °C, `dewpt` °C, `rel_hum` %, `wind_dir` (compass word), `wind_spd_kmh`, `gust_kmh`, `press_qnh`, `press_msl` hPa, `rain_trace` (BOM's value, stored as text), `cloud`, `vis_km` | One BOM half-hourly observation (Benalla: about one a day) | The instant of the observation, UTC key; `local_time` is Australian local as BOM prints it | 2026-11-22 → now (365–429 rows per station; BOM's feed only goes back ~72 h, so history starts at the first run on 2026-11-25) | `scripts/collect_bom.py` (2 s pause per station; de-duplicated on `obs_time_utc`, rewritten whole). **Also writes to `observations/` when run from the laptop** (no `data/local_out` redirect). |
+| `observations/<station>.csv` (94884 Benalla, 94889 Wangaratta, 94903 Falls Creek, 94905 Hotham Airport, 94906 Mount Hotham, 94908 Omeo) | CSV. Columns: `obs_time_utc` (ISO `…Z`), `local_time` (BOM `YYYYMMDDHHMMSS`, local), `air_temp` °C, `apparent_t` °C, `dewpt` °C, `rel_hum` %, `wind_dir` (compass word), `wind_spd_kmh`, `gust_kmh`, `press_qnh`, `press_msl` hPa, `rain_trace` (BOM's value, stored as text), `cloud`, `vis_km` | One BOM half-hourly observation (Benalla: about one a day) | The instant of the observation, UTC key; `local_time` is Australian local as BOM prints it | 2026-11-22 → now (365–429 rows per station; BOM's feed only goes back ~72 h, so history starts at the first run on 2026-11-25) | `scripts/collect_bom.py` (2 s pause per station; de-duplicated on `obs_time_utc`, rewritten whole). On the laptop it writes to `data/local_out/observations/` instead (only the GitHub job writes `observations/`). |
 | `forecast_archive/<UTC fetch time>.json.gz` (`YYYY-MM-DDTHHMMZ`) | gzip JSON: `fetched_utc`, `model_runs` (from `model_runs/latest.json`), `models_ok`, `models_failed`, `fronts`, `points` (order of the 7 points), `response[i].hourly` = `time` + `<variable>_<model>` lists for point *i* | One whole 7-day Open-Meteo forecast for all points and models, **raw (before bias correction)** | `time` strings are **local** (Open-Meteo asked with `timezone=Australia/Melbourne`), naive `YYYY-MM-DDTHH:MM`, hourly; `fetched_utc` is UTC | 42 files, 2026-11-25 → now. **Only 4 days of live archive exist.** | `scripts/daily_forecast.py` step 1 |
 | `predictions/log.csv` | CSV: `made_at_utc, target_date, lead_days, xc_pct, acro_pct, method, models, front_status, front_kind, front_time` | The published XC % and acro % for one target day from one run | `made_at_utc` UTC; `target_date` local date; `lead_days` = target local date − local date of the run (0–5) | 239 rows, 2026-11-25 → now; `method` = `rules-v1`/`v2`/`v3` (code writes `rules-v3`, `daily_forecast.py:203`) | `daily_forecast.py` step 3 (rewritten whole each run) |
 | `predictions/weighting_log.csv` | CSV: `made_at_utc, target_date, lead_days, setting, xc_avg_of_models, acro_avg_of_models, xc_blend_equal, acro_blend_equal, xc_blend_weighted, acro_blend_weighted, models` | The three ways of combining the models, side by side, per target day | as above | 42 rows (since 2026-11-26) | `daily_forecast.py` (append) |
@@ -38,7 +38,7 @@ The pre-commit hook (`.git/hooks/pre-commit`) blocks laptop commits that touch t
 | `sites/bright/calendar.yaml` | `public_holidays`, `bright_open` comp weeks, `comp_distance_weight`, `unknown_months` | Used only by scoreboard / Creo training. Holidays "typed from memory" (file header, TODO #8) |
 | `sites/bright/notes.md` | Local pilot knowledge | Not used by scoring |
 | `sites/bright/model_weights.json` | Per-variable model weights (`models`, `weights`, `dropped`, `provisional`, `status`, `version`) | Written by `model_weights.py --publish`; read by the job (used only if `model_weighting: weighted`) |
-| `sites/bright/priors.json` | BARRA-based corrections (150 KB) | Reference only; **do not apply**. `scripts/forecast_error.py:179` overwrites it when run. |
+| `sites/bright/priors.json` | BARRA-based corrections (150 KB) | Reference only; **do not apply**. `forecast_error.py` now writes its slim set to `data/forecast_error/priors_slim.json`, so nothing overwrites this file. |
 | `sites/bright/creo_model.txt` | LightGBM model text (SHA-1 prefix `ba547fb9`) | Written by `creo_train.py` |
 | `sites/bright/creo_model.json` | `versions{<sha8>: trained_through, first_day, days, rating_cuts_km, rating_bounds_km, xc_curve, rating_counts, rating_basis}` | Current version `ba547fb9`: trained through 2026-11-22, first day 2022-01-01, 1510 days, cuts `[5.838, 13.632, 49.344]` km. Two older versions (`8a7f80f5`, `cef1315c`) are kept; the shadow log still has their rows. |
 | `sites/launches.yaml` | Launch list for IGC matching (id, site, lat/lon, `radius_m`, kind, tz) | Never rename an `id` after import |
@@ -80,7 +80,7 @@ The pre-commit hook (`.git/hooks/pre-commit`) blocks laptop commits that touch t
 | `data/bom_dwo/IDCJDW<id>.<yyyymm>.csv` | BOM Daily Weather Observations (9 am, 3 pm, daily max gust); stations 3027, 3055, 3056, 3081 | 2025-10 → 2026-11 | `fetch_bom_dwo.py` |
 | `data/ffwx/mystic.csv` (4,487 rows) | Mystic station, 10-minute averages: `time_utc, time_local, resolution (full/thinned), n_readings, wind_min_kmh, wind_avg_kmh, wind_max_kmh, wind_dir_deg, temp_c, dew_point_c, pressure_hpa` | 2026-10-27 → now | `fetch_ffwx.py` (systemd user timer 12:00). **Wind max/min of `thinned` rows understate gusts.** Not used by any model yet. |
 
-**Analysis outputs (local, regenerated by their scripts):** `data/forecast_error/` (`error_summary.csv`, `pairs.sqlite`, `barra_points.pkl`, `elevations.json`, `orog.nc`, `priors.json`, `model_weights.json`, `station_pairs.pkl`, `station_summary.csv`, `station_vs_barra.csv`, `barra_vs_station.csv`, `correction_validation.csv`, `report.md`); `data/scoreboard/` (`report.md`, `days.csv`, `report_d1.md`, `days_d1.csv`, `barra_mystic.pkl` + `.stamp`, older reports, `rule_tests*.md`, `misses.md`); `data/creo/` (`report.md`, `walkforward.md`, `wf_*.md`, `baseline_2026-11-28.md`, `review.md` when run); `data/thermal_zones/{2d,ew,ring}/`; `data/local_out/` (laptop runs of the daily job: `docs`, `forecast_archive`, `predictions`, `corrections`, `model_runs`); `data/*.log`, `igc_failed.txt`, `unknown_launches.txt`. `data/chat_salt` is the hashing salt (secret; never print or commit).
+**Analysis outputs (local, regenerated by their scripts):** `data/forecast_error/` (`error_summary.csv`, `pairs.sqlite`, `barra_points.pkl`, `elevations.json`, `orog.nc`, `priors.json`, `model_weights.json`, `station_pairs.pkl`, `station_summary.csv`, `station_vs_barra.csv`, `barra_vs_station.csv`, `correction_validation.csv`, `report.md`); `data/scoreboard/` (saved older reports `report.md`, `days.csv`, `report_2024on.md`, …, `barra_mystic.pkl` + `.stamp`; new runs go to `data/scoreboard/latest/`: `report.md`, `days.csv`, `report_d1.md`, `days_d1.csv`, `rule_tests*.md`); `data/creo/` (`report.md`, `walkforward.md`, `wf_*.md`, `baseline_2026-11-28.md`, `review.md` when run); `data/thermal_zones/{2d,ew,ring}/`; `data/local_out/` (laptop runs of the daily job: `docs`, `forecast_archive`, `predictions`, `corrections`, `model_runs`); `data/*.log`, `igc_failed.txt`, `unknown_launches.txt`. `data/chat_salt` is the hashing salt (secret; never print or commit).
 
 `data/scoreboard/days.csv` columns: `date, flown, n_flights, best_km, median_km, source (xcontest/igc/none), flyable, month_complete, comp, count_weight, distance_weight, xc_a, n_models, limit_a, xc_b, limit_b, season, free, bright_open, weekday`. One row = one local day that could be judged; `xc_a` = rules' XC % from the archived (hist) forecast, `xc_b` = from BARRA-C2.
 
@@ -103,7 +103,7 @@ The pre-commit hook (`.git/hooks/pre-commit`) blocks laptop commits that touch t
 | 7 | `scripts/daily_forecast.py bright` | Fetch 4 models × 7 points (7 days), archive raw, apply corrections, score each model and day with the rules, blend (equal/weighted), detect fronts, run Creo, log, render dashboard | Open-Meteo forecast API; `sites/`, `corrections/`, `model_runs/latest.json`, `creo_model.txt/json`, `model_weights.json` | `forecast_archive/`, `predictions/{log,weighting_log,creo_log}.csv`, `docs/` | Step `fc` is `continue-on-error`, then the job fails at the end if `bom` or `fc` failed. Output root = repo when `GITHUB_ACTIONS` is set, else `data/local_out/`. |
 | 8 | commit step | `git add observations forecast_archive predictions model_runs corrections docs`; commit "Daily update <date>"; pull --rebase; push | — | git | Cron `45 20 * * *` and `45 8 * * *` UTC (07:45 and 19:45 AEDT; one hour earlier local in AEST) plus manual dispatch |
 
-`daily_forecast.py` internals worth knowing: scoring is done **per model** on the window hours, then averaged ("old way") and, in parallel, on a per-variable blend of the models ("equal" and "weighted"); the published numbers come from the blend named by `MODEL_WEIGHTING` env var → `sites/bright.yaml` `model_weighting` → fallback `"weighted"` (`daily_forecast.py:31`). Gaps in one model (e.g. ECMWF has no boundary-layer height) are filled with the mean of the other models (`fill()`, line 85). Corrections modify the hourly lists **in place after the raw archive is written** (lines 69–77), so scoring and Creo see corrected values, the archive keeps raw ones. Creo step is wrapped in try/except: any failure drops the panel and the job carries on.
+`daily_forecast.py` internals worth knowing: scoring is done **per model** on the window hours, then averaged ("old way") and, in parallel, on a per-variable blend of the models ("equal" and "weighted"); the published numbers come from the blend named by `MODEL_WEIGHTING` env var → `sites/bright.yaml` `model_weighting` → fallback `"equal"` (`daily_forecast.py:31`). Gaps in one model (e.g. ECMWF has no boundary-layer height) are filled with the mean of the other models (`fill()`, line 85). Corrections modify the hourly lists **in place after the raw archive is written** (lines 69–77), so scoring and Creo see corrected values, the archive keeps raw ones. Creo step is wrapped in try/except: any failure drops the panel and the job carries on.
 
 ### 2.2 Source modules (`src/pgforecast/`)
 
@@ -152,13 +152,13 @@ The pre-commit hook (`.git/hooks/pre-commit`) blocks laptop commits that touch t
 | Script | Purpose / outputs |
 |---|---|
 | `barra_terrain.py` | BARRA orography vs Open-Meteo elevation → `data/forecast_error/elevations.json` (downloads `orog.nc` once) |
-| `forecast_error.py [site]` | Archive vs BARRA-C2 at 11–16 local → `data/forecast_error/{error_summary.csv,pairs.sqlite,priors.json,barra_points.pkl}` **and overwrites committed `sites/<site>/priors.json`** |
+| `forecast_error.py [site]` | Archive vs BARRA-C2 at 11–16 local → `data/forecast_error/{error_summary.csv,pairs.sqlite,priors.json,barra_points.pkl}` and `priors_slim.json` (nothing in `sites/`) |
 | `forecast_error_report.py` | → `data/forecast_error/report.md` |
 | `forecast_error_stations.py [--hour 15]` | Archive vs BOM DWO readings → `station_*.csv`, `station_pairs.pkl` |
 | `model_weights.py [--publish]` | Weights = 1/(error after best bias fix)² per variable → `data/forecast_error/model_weights.json`; `--publish` writes committed `sites/<site>/model_weights.json` |
 | `validate_corrections.py` | Tests BARRA priors and station-learned corrections against station readings → `correction_validation.csv` |
-| `scoreboard.py [--from D] [--lead hist|d1|d2] [--launch id] [--rebuild-barra]` | Rules' XC % (A: archive, B: BARRA-C2) vs flown/best distance → `data/scoreboard/{report,days}[_d1].md/csv`. **Default `--from 2024-01-01`.** |
-| `rule_tests.py [--variants …]` | Leave-one-year-out test of candidate XC rule changes using `days.csv` → `data/scoreboard/rule_tests.md` |
+| `scoreboard.py [--from D] [--lead hist|d1|d2] [--launch id] [--out DIR] [--rebuild-barra]` | Rules' XC % (A: archive, B: BARRA-C2) vs flown/best distance → `<--out>/{report,days}[_d1].md/csv`. **Default `--from 2022-01-01`; scores complete XContest months only; default `--out data/scoreboard/latest/`** (never overwrites the saved reports in `data/scoreboard/`; the BARRA cache stays in `data/scoreboard/`). |
+| `rule_tests.py [--variants …]` | Leave-one-year-out test of candidate XC rule changes using `days.csv` → `<scoreboard out folder>/rule_tests.md` (default `data/scoreboard/latest/`) |
 | `thermal_zones.py [--split ring|ew|2d]` | East/west thermals vs BARRA weather (pilot1) → `data/thermal_zones/` |
 
 **Creo**
@@ -166,7 +166,7 @@ The pre-commit hook (`.git/hooks/pre-commit`) blocks laptop commits that touch t
 |---|---|
 | `creo_test.py` | Leave-one-year-out LightGBM test → `data/creo/report.md`. Defines `PARAMS`, `FEATURES`, `dataset()`, `loyo()` reused by the others. Not in the job. |
 | `creo_train.py` | Trains on every usable day, **overwrites `sites/bright/creo_model.txt`**, appends a version to `creo_model.json` (cuts, curve, counts). Not run for this baseline. |
-| `creo_review.py [--log]` | Scores `predictions/creo_log.csv` against imported flights (days the model trained on excluded) → `data/creo/review.md` |
+| `creo_review.py [--log]` | Scores `predictions/creo_log.csv` (rows with lead ≥ 1 only) against imported flights (days the model trained on excluded) → `data/creo/review.md` |
 | `creo_walkforward.py [--embargo-days N] [--old-westerly] [--out NAME]` | Weekly retrain from 2025-12-01, test on forecasts issued 1 and 2 days ahead (A: Single Runs; B: Previous Runs) → `data/creo/<NAME>.md` |
 
 **Other:** `make_icons.py` (Pillow → `pwa/icons/`), `commit.sh` (add code paths, commit with the Claude co-author trailer, pull --rebase --autostash, push), `tests/` (16 `unittest` files; see §7).
@@ -191,7 +191,7 @@ Which script reads and writes what. `Committed` stores are marked (c); everythin
 | `fetch_single_runs.py` | Open-Meteo Single Runs API | `data/single_runs/` |
 | `fetch_barra2.py` | NCI THREDDS | `data/barra2/` |
 | `barra_terrain.py` | NCI orography file; Open-Meteo elevation | `data/forecast_error/{orog.nc,elevations.json}` |
-| `forecast_error.py` | `forecast.sqlite`, `barra2/`, `elevations.json`, `sites/bright.yaml` | `data/forecast_error/{barra_points.pkl,error_summary.csv,pairs.sqlite,priors.json}`; **`sites/bright/priors.json` (c)** |
+| `forecast_error.py` | `forecast.sqlite`, `barra2/`, `elevations.json`, `sites/bright.yaml` | `data/forecast_error/{barra_points.pkl,error_summary.csv,pairs.sqlite,priors.json}`; `data/forecast_error/priors_slim.json` |
 | `forecast_error_report.py` | `error_summary.csv`, `pairs.sqlite` | `data/forecast_error/report.md` |
 | `fetch_bom_dwo.py` | BOM climate pages | `data/bom_dwo/` |
 | `forecast_error_stations.py` | `forecast.sqlite`, `barra_points.pkl`, `data/bom_dwo/` | `data/forecast_error/{station_pairs.pkl,station_summary.csv,station_vs_barra.csv,barra_vs_station.csv}` |
@@ -200,8 +200,8 @@ Which script reads and writes what. `Committed` stores are marked (c); everythin
 | `import_xcontest.py` | `xcontest_pages/*/`; `data/chat_salt` | `data/xcontest_flights.sqlite` |
 | `import_igc.py` | `igc_files/<pilot>/`; `sites/launches.yaml`, `timezones.yaml`; `data/chat_salt` | `data/igc_flights.sqlite` |
 | `import_chats.py` | chat exports; `sites/bright.yaml`; local or Anthropic model; `data/chat_salt` | `data/chat_labels.sqlite` |
-| `scoreboard.py` | `forecast.sqlite` (`fc`), `xcontest_flights.sqlite`, `igc_flights.sqlite`, `chat_labels.sqlite` (columns only), `barra2/`, `elevations.json`, `sites/bright.yaml`, `rules.yaml`, `calendar.yaml` | `data/scoreboard/{report,days}[_d1].md/csv`, `barra_mystic.pkl/.stamp` |
-| `rule_tests.py` | `data/scoreboard/days.csv`, `forecast.sqlite`, `rules.yaml` | `data/scoreboard/rule_tests*.md` |
+| `scoreboard.py` | `forecast.sqlite` (`fc`), `xcontest_flights.sqlite`, `igc_flights.sqlite`, `chat_labels.sqlite` (columns only), `barra2/`, `elevations.json`, `sites/bright.yaml`, `rules.yaml`, `calendar.yaml` | `<--out>/{report,days}[_d1].md/csv`, `barra_mystic.pkl/.stamp` |
+| `rule_tests.py` | `data/scoreboard/latest/days.csv`, `forecast.sqlite`, `rules.yaml` | `data/scoreboard/latest/rule_tests*.md` |
 | `creo_test.py` | as `scoreboard.py` (runs its code with `--from 2022-01-01`) | `data/creo/report.md` |
 | `creo_train.py` | as `creo_test.py` | `sites/bright/creo_model.txt`, `creo_model.json` (c) |
 | `creo_review.py` | `predictions/creo_log.csv`, `creo_model.json`, labels (as scoreboard) | `data/creo/review.md` |
@@ -215,20 +215,20 @@ Chain for the live product: `collect_bom` → `update_corrections` → `daily_fo
 
 ---
 
-## 4. Hard-coded definitions (candidates to move into Receta)
+## 4. Hard-coded definitions
 
 ### 4.1 Flying window, hours and heights
 
 | Definition | Value | Where |
 |---|---|---|
 | Flying window (config) | `["11:00", "16:00"]` inclusive = 6 hourly values | `sites/bright.yaml:5` |
-| Same, as code fallback | `["11:00","16:00"]` | `scripts/daily_forecast.py:81`, `scripts/scoreboard.py:27` |
+| Same, as code fallback | `["11:00","16:00"]` | `scripts/daily_forecast.py:81`, `scripts/scoreboard.py:28` |
 | Same, as integer hours | `range(11, 17)` | `src/pgforecast/forecast_error.py:14`, `scripts/weighting_review.py:17` |
 | Valley-wind window | forecast side 12:00–16:00 inclusive (`calibrate_valley_wind.py:22`); observation side `12 <= hour < 16` (`:49`) | `scripts/calibrate_valley_wind.py:22, 49` |
 | Bias-correction hours | 09:00–17:00 local, `range(9, 18)` | `src/pgforecast/corrections.py:17` |
 | Dashboard hourly strip | 09:00–17:00, `range(9, 18)` | `scripts/daily_forecast.py:161, 188` |
 | Hours shown in the wind table | 11:00, 13:00, 15:00 | `scripts/daily_forecast.py:107` |
-| Minimum hours with data for a day to be scored | 4 of 6 | `scripts/scoreboard.py:33` (used by creo_test, rule_tests) |
+| Minimum hours with data for a day to be scored | 4 of 6 | `scripts/scoreboard.py:35` (used by creo_test, rule_tests) |
 | Days published | next 6 (`[:6]` from today); 7 requested from Open-Meteo | `daily_forecast.py:137, 44` |
 | Days shown open on the page | 3 | `src/pgforecast/render.py:151` |
 | Launch height | 797 m ASL (config); Open-Meteo elevation of the point in the DB is 786 m; ECMWF 9 km grid ≈ 709 m (`PHASE3_NOTES.md`) | `sites/bright.yaml:20`; `forecast.sqlite point` |
@@ -236,7 +236,7 @@ Chain for the live product: `collect_bom` → `update_corrections` → `daily_fo
 | Nominal height of pressure levels | 900 hPa ≈ 1,000 m, 850 ≈ 1,500 m, 800 ≈ 2,000 m, 700 ≈ 3,000 m (labels only) | `daily_forecast.py:23` |
 | "Acro height" levels | 900, 850, 800 hPa | `rules.yaml:60` |
 | Height words in Creo text | "1,500 m" for 850 hPa, "3,000 m" for 700 hPa | `src/pgforecast/creo.py` (`_phrase`) |
-| Models used and their order | `gfs_seamless, ecmwf_ifs025, icon_seamless, bom_access_global`; GFS is the "best model" for wording | `daily_forecast.py:18, 149`; `scoreboard.py:30`; `model_weights.py:20`; `calibrate_valley_wind.py:16`; `wait_for_models.py:9` |
+| Models used and their order | `gfs_seamless, ecmwf_ifs025, icon_seamless, bom_access_global`; GFS is the "best model" for wording | `daily_forecast.py:18, 149`; `scoreboard.py:32`; `model_weights.py:20`; `calibrate_valley_wind.py:16`; `wait_for_models.py:9` |
 | Forecast points | 7 (`sites/bright.yaml:9-15`) | |
 | Day label time-zone | `Australia/Melbourne` | `sites/bright.yaml:4` |
 
@@ -281,7 +281,7 @@ Score of a rule: 100 % comfortably inside the limit, ≈ 90 % at the limit, 0 % 
 | Short flight for the miss list | < 20 km | `src/pgforecast/scoreboard.py:10` |
 | Low / high % for splits | < 40 / ≥ 60 | `src/pgforecast/scoreboard.py:11` |
 | Bands | 0–20, 20–40, 40–60, 60–80, 80–100 | `src/pgforecast/scoreboard.py:8` |
-| Scoreboard start | `--from 2024-01-01` default | `scripts/scoreboard.py:23` |
+| Scoreboard start | `--from 2022-01-01` default | `scripts/scoreboard.py:24` |
 | Creo training start | 2022-01-01 (`creo_test.py` sets `--from 2022-01-01`) | `scripts/creo_test.py:13` |
 | Chat label weight | 0.3 | `chatlog/store.py:26` |
 | Pilot hash | SHA-256 of salt + name, 16 hex chars | `chatlog/store.py` |
@@ -329,7 +329,6 @@ Score of a rule: 100 % comfortably inside the limit, ≈ 90 % at the limit, 0 % 
 | Chat prompt version | `chat-v3` | `chatlog/extract.py:5` |
 | AI opinion model | `claude-haiku-5-5` (retired) | `ai_opinion.py:6` |
 | Chat importer price table | USD per M tokens for `claude-haiku-5-5` | `chatlog/llm.py:30` |
-| Sites to be added | Organyà, Flowerdale, Dandenongs, Manilla (launch list only) | `sites/launches.yaml` |
 
 ---
 
@@ -341,8 +340,8 @@ Score of a rule: 100 % comfortably inside the limit, ≈ 90 % at the limit, 0 % 
 |---|---|
 | `daily_forecast.py:17, 44` | Open-Meteo is asked for `timezone=Australia/Melbourne`; `hourly.time` are **naive local strings**. The window is selected by comparing strings (`"11:00" <= t[11:16] <= "16:00"`, line 140). `now` is UTC; `local_now` is local; `lead_days` = target local date − local date of the run (line 202). Archive file name is UTC. |
 | `fetch_forecasts.py:33`, `fetch_single_runs.py:27` | `timezone=UTC`; `fc.time_utc` and `data/single_runs` hours are UTC. Values stamped at the hour; Open-Meteo's accumulated or averaged variables (precipitation, radiation) cover the **preceding** hour. |
-| `scoreboard.py:44-45` (`window`) | `time_utc` → `tz_localize("UTC")` → `tz_convert(Australia/Melbourne)`; keep local hours 11–16; local date. Used by creo_test, creo_walkforward, rule_tests. |
-| `scoreboard.py:99` | BARRA hourly means are stamped at HH:30 UTC; shifted by +30 min so the label is the hour they end (same convention as the forecasts). |
+| `scoreboard.py:46-47` (`window`) | `time_utc` → `tz_localize("UTC")` → `tz_convert(Australia/Melbourne)`; keep local hours 11–16; local date. Used by creo_test, creo_walkforward, rule_tests. |
+| `scoreboard.py:101` | BARRA hourly means are stamped at HH:30 UTC; shifted by +30 min so the label is the hour they end (same convention as the forecasts). |
 | `forecast_error.py` (script) `:81`, `forecast_error_stations.py:40` | UTC → local for the 11–16 window / station hour. |
 | `update_corrections.py:20-21, 45, 49, 60` | BOM UTC half-hours are bucketed to the nearest hour (obs at 10:30 and 11:00 → hour 11:00); archive local strings get the local zone via `replace(tzinfo=…)` and are converted to UTC for the observation lookup. A forecast file "made on day X covers day X+1"; the **last file of local day D−1** is the forecast for day D. |
 | `calibrate_valley_wind.py:48-49, 56`, `weighting_review.py:54, 62-67` | Same pattern; lead = local target date − local run date. |
@@ -361,16 +360,31 @@ Score of a rule: 100 % comfortably inside the limit, ≈ 90 % at the limit, 0 % 
 
 | # | Suspected leak | Where | Why it matters |
 |---|---|---|---|
-| L1 | **Training inputs are near-analysis, serving inputs are day-ahead.** Creo, the scoreboard (A) and the model weights are built from the Historical Forecast API (`source='hist'`: the first hours of each model run, stitched). For the 11:00–16:00 window those hours are 0–12 h after the run starts, so they contain the day's actual weather almost as analysed. The live job feeds Creo forecasts 0–5 days ahead. `PHASE3_NOTES.md` and `forecast_error_report.py` already call this "near-analysis, slightly optimistic". | `creo_test.py:29-33`, `creo_train.py`, `scoreboard.py:56-78`, `creo_walkforward.py` training pool | Leave-one-year-out numbers (diff +0.083) are probably optimistic about real day-ahead use; the walk-forward test (day-ahead test inputs, same training) gives +0.044 (A) and +0.032 (B). |
+| L1 | **Training inputs are near-analysis, serving inputs are day-ahead.** Creo, the scoreboard (A) and the model weights are built from the Historical Forecast API (`source='hist'`: the first hours of each model run, stitched). For the 11:00–16:00 window those hours are 0–12 h after the run starts, so they contain the day's actual weather almost as analysed. The live job feeds Creo forecasts 0–5 days ahead. `PHASE3_NOTES.md` and `forecast_error_report.py` already call this "near-analysis, slightly optimistic". | `creo_test.py:29-33`, `creo_train.py`, `scoreboard.py:58-80`, `creo_walkforward.py` training pool | Leave-one-year-out numbers (diff +0.083) are probably optimistic about real day-ahead use; the walk-forward test (day-ahead test inputs, same training) gives +0.044 (A) and +0.032 (B). |
 | L2 | **Leave-one-year-out trains on later years to predict earlier ones** (e.g. test 2022 with a model trained on 2023–2026). | `creo_test.py:74-84` | Not a real forecasting order; the walk-forward test is the honest one. |
 | L3 | **Rules were adjusted after seeing the flights they are scored on.** The XC thresholds, the westerly rule (tried 2026-11-26/27 and reverted), `unknown_months`, the comp weight and the model weights were chosen with 2024–2026 flights and BARRA/BOM errors in view; `xc_pct` and the eight rule factors are also Creo's top features (24 % + ~20 % of gain). | `rules.yaml`, `rule_tests.py`, `creo_test.py:26` | "Rules vs flights" and "Creo vs rules" are in-sample for the rules. `creo_walkforward.py --old-westerly` was a partial check. |
-| L4 | **Lead-0 log rows can be made after the weather happened.** The log has runs at 01–06 UTC (12:00–17:00 local) and 09–10 UTC; `daily_forecast.py` scores every day from today on and writes `lead_days=0` for today even when the window is over (Open-Meteo returns analysis-like values for past hours of today). `creo_review.py` keeps "the LATEST row per (date, lead)" and the dashboard's last-14-days table keeps "the last prediction made for each past day". | `predictions/log.csv` (lead 0 at 12–17 h local), `creo_review.py:30`, `daily_forecast.py:250-254` | Lead-0 scores and the dashboard's track record can include forecasts made during or after the flying window. Lead ≥ 1 rows are safe. |
-| L5 | **Label-quality selection uses later information.** Which months/days enter scoreboard and training depends on XContest monthly totals read after the fact (`month_complete`, `xc_day_status`) and on hand-picked `unknown_months`. | `scoreboard.py:141`, `xcontest.py:62-80`, `calendar.yaml:49` | Selects days with hindsight; modest, but also changes results between reruns when pages are added. |
+| L4 | **Lead-0 log rows can be made after the weather happened.** The log has runs at 01–06 UTC (12:00–17:00 local) and 09–10 UTC; `daily_forecast.py` scores every day from today on and writes `lead_days=0` for today even when the window is over (Open-Meteo returns analysis-like values for past hours of today). `creo_review.py` keeps "the LATEST row per (date, lead)" and the dashboard's last-14-days table keeps "the last prediction made for each past day". | `predictions/log.csv` (lead 0 at 12–17 h local), `creo_review.py:31`, `daily_forecast.py:249-254` | Lead-0 scores and the dashboard's track record can include forecasts made during or after the flying window. Lead ≥ 1 rows are safe. |
+| L5 | **Label-quality selection uses later information.** Which months/days enter scoreboard and training depends on XContest monthly totals read after the fact (`month_complete`, `xc_day_status`) and on hand-picked `unknown_months`. | `scoreboard.py:143`, `xcontest.py:62-80`, `calendar.yaml:49` | Selects days with hindsight; modest, but also changes results between reruns when pages are added. |
 | L6 | **Walk-forward has no label delay.** Week W is trained on every day before W (embargo 0 by default), but XContest flights are uploaded days later, so the labels of the last days before W would not exist yet in real use. `--embargo-days 14` exists; results in `data/creo/wf_embargo14.md` (older rules). | `creo_walkforward.py:25, 67` | Slightly optimistic walk-forward. |
-| L7 | **Scoreboard includes days from incomplete months.** 119 days (all "flown" by construction, because days with no saved flights are `unknown`) from 2023-02, 2024-01..03, 2026-01, 2026-04 stay in `days.csv`; Creo training drops them. Not a time leak but a selection bias that raises the scoreboard correlation (2022-on: +0.677 with them, +0.644 without; 2024-on: +0.701 vs +0.652). | `scoreboard.py:141`, `src/pgforecast/scoreboard.py:57` | The scoreboard headline and the Creo report's "rules" column are not computed on the same days. |
+| L7 | **Scoreboard includes days from incomplete months.** 119 days (all "flown" by construction, because days with no saved flights are `unknown`) from 2023-02, 2024-01..03, 2026-01, 2026-04 stay in `days.csv`; Creo training drops them. Not a time leak but a selection bias that raises the scoreboard correlation (2022-on: +0.677 with them, +0.644 without; 2024-on: +0.701 vs +0.652). | `scoreboard.py:143`, `src/pgforecast/scoreboard.py:57` | The scoreboard headline and the Creo report's "rules" column are not computed on the same days. |
 | L8 | **Bias corrections applied live but not in training.** Not a leak (the corrections use only past days), but a train/serve mismatch: the live job corrects forecasts in place before scoring and before Creo; training uses uncorrected `hist` data. No bin is active yet, so no effect today. | `daily_forecast.py:71-77`, `corrections.json` | Matters once any bin becomes active. |
-| L9 | **Reanalysis as truth.** BARRA-C2 (B scores) and ERA5 include observations of the day itself; they must never be inputs to anything that is used before the day. Currently they are only used for B scores, error statistics and weights. | `scoreboard.py:84-127`, `forecast_error.py`, `model_weights.py` | Guard for the planned ERA5 work. |
+| L9 | **Reanalysis as truth.** BARRA-C2 (B scores) and ERA5 include observations of the day itself; they must never be inputs to anything that is used before the day. Currently they are only used for B scores, error statistics and weights. | `scoreboard.py:86-129`, `forecast_error.py`, `model_weights.py` | Guard for the planned ERA5 work. |
 | L10 | **Rating cut points and the "went XC" curve** are fitted on leave-one-year-out estimates of all past days, including the days later used on the dashboard's track record. `creo_review.py` excludes days ≤ `trained_through`, so the review itself is clean. | `creo_train.py:19-29` | Descriptive only. |
+
+**Status of each suspected leak after the 2026-11-28 fixes** (what is still open is listed first):
+
+| # | Status |
+|---|---|
+| L1 | **Open.** Training still uses the short-lead archive. The walk-forward test (day-ahead test inputs) is the honest number. |
+| L2 | **Open** (by design of the leave-one-year-out test). |
+| L3 | **Open.** The rules were not changed. |
+| L5 | **Open.** |
+| L6 | **Open.** `--embargo-days` exists but is off by default. |
+| L8 | **Open** (no bin is active, so no effect today). |
+| L9 | **Open** as a guard for future ERA5/BARRA use; nothing currently breaks it. |
+| L10 | **Open** (descriptive only). |
+| L4 | **Fixed for the readers**: `creo_review.py` and the dashboard's last-14-days table use only rows with `lead_days ≥ 1`. **Still open at the source**: `daily_forecast.py` still writes lead-0 rows to `predictions/log.csv` and `creo_log.csv`, and the schedule still fires during the flying window (see §7). |
+| L7 | **Fixed**: `scoreboard.py` scores complete months only, the same days as the Creo tests. |
 
 Checked and found clean: `update_corrections.py` and `weighting_review.py` only use observations of days before today and the last forecast issued the evening before; `daily_forecast.py` writes the raw archive before applying corrections; `creo_walkforward.py` asserts that training days all precede the test week (`:68`).
 
@@ -395,19 +409,14 @@ Checked and found clean: `update_corrections.py` and `weighting_review.py` only 
 
 ---
 
-## 7. Known inconsistencies found while writing this file
+## 7. Known inconsistencies
 
-(Also reported in the hand-over message. Not fixed.)
+Fixed on 2026-11-28: pytest vs unittest wording and the stale CLAUDE.md Status/scoreboard start (CLAUDE.md); scoreboard tie-break order, default start year and overwriting of saved reports (`scoreboard.py`); `collect_bom.py` and `forecast_error.py` writing into committed paths; the `"weighted"` fallback in `daily_forecast.py`; lead-0 rows in `creo_review.py` and the dashboard's last-14-days table.
 
-1. `CLAUDE.md` says tests run with `.venv/bin/python -m pytest tests`; pytest is **not installed** and the tests are `unittest` files. They pass with `PYTHONPATH=src .venv/bin/python -m unittest tests.<module>` (145 tests in 16 modules; `test_fronts` needs `PYTHONPATH=src`).
-2. `CLAUDE.md` Status block still says "Creo not started" although Creo (beta) is live.
-3. `CLAUDE.md` calls the scoreboard "2024 on", but `data/scoreboard/report.md` and `days.csv` on disk were made with `--from 2022-01-01` (and `rule_tests.py` reads that `days.csv`). The script default is 2024-01-01.
-4. `scoreboard.py` `weakest()` breaks ties by set order, so `limit_a`/`limit_b` ("held back by") change between runs (51 and 84 of 1637 rows differed in the baseline rerun; scores did not).
-5. `data/creo/report.md` and `walkforward.md` on disk before the baseline predated the westerly revert and the unknown-months change; they are superseded by the baseline run.
-6. `daily_forecast.py:31` falls back to `"weighted"` when neither the env var nor the YAML sets a mode; the project's stated mode is `equal` (set in YAML, so no effect today).
-7. `collect_bom.py` and `check_observations.py` always use the repo's `observations/`, unlike other job scripts (`data/local_out/` off GitHub), so running them on the laptop dirties a committed folder.
-8. `scripts/forecast_error.py` overwrites the committed `sites/bright/priors.json`, which CLAUDE.md says is "reference only".
-9. `launch_height_m` 797 m vs 786 m in the `point` table vs ECMWF grid ~709 m; the rules use 797.
-10. The duplicated 35 / 65 % cut-offs: `rules.yaml:115-116` and `creo.py:286`.
-11. `predictions/log.csv` holds many more runs per day than the two scheduled ones (manual dispatches and delayed cron); see L4.
-12. `data/xcontest_flights.before_2022_23.sqlite` and `creo_model.json` versions `8a7f80f5`, `cef1315c` are stale but still present.
+Still open:
+
+1. **Which runs produce `predictions/log.csv` rows.** 42 distinct run times from 2026-11-25 to 2026-11-28; 31 fall between 12:00 and 17:00 local. GitHub shows 36 `workflow_dispatch` runs (manual, 32 of them on 2026-11-25 and 3 on 2026-11-27 while building) and 6 `schedule` runs. The scheduled runs start at about 18:30 UTC (05:30 local) and 03:00 UTC (14:00 local); **none has ever started at the 20:45 and 08:45 UTC the current `daily.yml` asks for.** 18:30 UTC is the cron of the first workflow version (removed in `c638c64`, 2026-11-25), which suggests GitHub is still firing it. The ~03:00 UTC runs are not explained by any cron in the file's history. No local cron or timer runs the forecast (`crontab` empty; user timers are only `ffwx.timer` and `era5.service`).
+2. `launch_height_m` 797 m vs 786 m in the `point` table vs ECMWF grid ~709 m; the rules use 797.
+3. The duplicated 35 / 65 % cut-offs: `rules.yaml:115-116` and `creo.py:286`.
+4. `data/xcontest_flights.before_2022_23.sqlite` and `creo_model.json` versions `8a7f80f5`, `cef1315c` are stale but still present.
+5. `data/scoreboard/report.md`, `days.csv` and `report_2024on.md` are saved older reports (before the complete-months-only change); `data/creo/walkforward.md` and `wf_*.md` predate the unknown-months change.

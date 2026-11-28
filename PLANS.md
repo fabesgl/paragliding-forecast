@@ -9,16 +9,16 @@ Status words: **Built** (works and is in use), **Partly built** (some of it work
 | Part | Status |
 |---|---|
 | 1. Raw data | Partly built |
-| 2. Source tables | Partly built |
-| 3. Receta | Not built yet |
+| 2. Source tables (time-stamped) | **PLANNED, NOT BUILT** (today: separate local databases, not time-stamped to this definition) |
+| 3. Receta | **PLANNED, NOT BUILT** |
 | 4. Correction | Built, but switched off for now |
 | 5. Rules | Built |
-| 6. Pattern hunter | Not built yet |
+| 6. Pattern hunter | **PLANNED, NOT BUILT** |
 | 7. Creo | Beta, running beside the rules |
 | 8. Dashboard | Built |
 | 9. Check | Partly built |
 
-Where this file says what a part is *meant* to be (Receta, Pattern hunter), it is my reading of your notes. Please correct it if it is wrong.
+Parts marked **PLANNED, NOT BUILT** do not exist in the code. Their definitions below are the agreed plan; `SPEC.md` describes only what exists today.
 
 ---
 
@@ -39,29 +39,25 @@ Where this file says what a part is *meant* to be (Receta, Pattern hunter), it i
 
 ---
 
-## 2. Source tables — Partly built
+## 2. Source tables (time-stamped) — PLANNED, NOT BUILT
 
-**What it does.** Turns the raw files into tidy tables the other parts can read without caring where the data came from: one row per hour per model, one row per flight, one row per day with "was it flown, how far".
+**Definition.** One raw table per data source: forecasts, ERA5, BARRA, stations, flights. Every row is stamped with when it happened. Forecast rows carry two stamps: **made-time** (when the forecast was issued) and **valid-time** (the moment it is about).
 
-**What exists now.** The tables are there, but they are separate databases made for particular jobs, not one agreed set:
-- a forecast table (`fc`), a flights table for XContest, one for pilot tracks, one for chat labels;
-- a "day table" that is rebuilt every time the scoreboard runs (`days.csv`) and is not stored anywhere permanent.
+**Time gate (part of the plan).** Each script only sees rows stamped before the time it is predicting for. For a forecast made at time T, a script may read rows with made-time and event time before T and nothing later. This is what removes the leaks listed in `SPEC.md` section 5.2.
 
-**What is missing.** ERA5 and BARRA-C2 are still raw files, not tables. The Mystic station is not joined to anything. There is no single table of "one row per day with the weather the forecast gave and what happened".
+**What exists today instead.** Separate local databases made for particular jobs: a forecast table (`fc`, valid-time only, and "short lead" rows have no true made-time), flights from XContest and from pilots' tracks, chat labels, and raw ERA5/BARRA/station files. A per-day table is rebuilt each time the scoreboard runs. None of it has the stamps or the gate described above.
 
-**Reads:** raw data. **Writes:** local databases in `data/`.
+**Reads (planned):** raw data. **Writes (planned):** one table per source.
 
 ---
 
-## 3. Receta — Not built yet
+## 3. Receta — PLANNED, NOT BUILT
 
-**What it is meant to be.** The one place where every *definition* lives: the flying window, heights, which days are competition days, which months are unknown, how a month counts as complete, the Poor/Fair/Good/Great cut points, and the rule limits.
+**Definition.** One shared file of definitions that every script reads: flying window, heights, comp days, unknown months, weather types. No script keeps its own copy.
 
-**Where things are today.** These are written into the code and settings files in dozens of places (listed in `SPEC.md` section 4). Some are repeated: the flying window appears in at least six places with slightly different forms, the 35% / 65% cut points in two. A few are guesses (the competition-day weight of 0.5, the 2026 holidays).
+**What exists today instead.** The same definitions are written into code and settings files in dozens of places, some repeated and slightly different (list in `SPEC.md` section 4). A few are guesses (the comp-day weight of 0.5, the 2026 holidays).
 
-**Plan.** Move them into Receta one at a time, with no change to any result, and check each move against `BASELINE.md`.
-
-**Reads / writes:** nothing yet.
+**Plan.** Move them into Receta one at a time with no change to any result, checking each move against `BASELINE.md`.
 
 ---
 
@@ -81,21 +77,24 @@ Where this file says what a part is *meant* to be (Receta, Pattern hunter), it i
 
 **What it does.** Your and your brother's flying limits, written as numbers. Each rule gives 0–100%; a day's score is its weakest rule. There is an XC score and an acro score, with hard no-go limits (for example a strong southerly aloft) that nothing else may override. Front detection (cold/warm) is shown as information only.
 
-**State.** Live and stable since the westerly-wind change was reverted on 2026-11-27. How well it does against real flying is in `BASELINE.md` (rank correlation about +0.64 to +0.70 depending on the days counted).
+**State.** Live and stable since the westerly-wind change was reverted on 2026-11-27. How well it does against real flying is in `BASELINE.md` (rank correlation +0.64 on complete months since 2022).
 
-**Known weak spots.** Winter ranks worst (rank correlation +0.44 in winter against +0.64 to +0.73 in the other seasons). Valley-wind strength is a default (6 km/h per m/s of thermal), not yet checked against real readings (needs 30 days from a station near Bright).
+**Known weak spots.** Winter ranks worst (rank correlation +0.44 in winter against +0.51 to +0.70 in the other seasons). Valley-wind strength is a default (6 km/h per m/s of thermal), not yet checked against real readings (needs 30 days from a station near Bright).
 
 **Reads:** `sites/bright/rules.yaml` and the forecast. **Writes:** nothing itself; the daily job publishes the scores.
 
 ---
 
-## 6. Pattern hunter — Not built yet
+## 6. Pattern hunter — PLANNED, NOT BUILT
 
-**What it is meant to be.** A tool that goes looking for patterns in the data that nobody told it about: for example days that score high but nobody flew, or conditions that fly far when the rules say they should not.
+**Definition.** A script that finds weather setups in the days before rule-good days, using ERA5, BARRA and station tables. Its rules:
+- a pattern needs at least 30 days;
+- the pattern must hold in other years;
+- every clue must have a live stand-in from forecasts;
+- it reruns whenever the rules change;
+- it never uses flights (flights are left to Creo).
 
-**What exists that is close.** One-off analyses, run by hand: the scoreboard's "biggest misses", a tester for possible rule changes (`rule_tests.py`), and the east-vs-west thermal study at Mystic. None of them runs on a schedule or writes down what it found in a standard way.
-
-**Reads / writes:** nothing yet.
+**What exists today instead.** One-off analyses run by hand, none of which meets the rules above: the scoreboard's "biggest misses", `rule_tests.py` (which does use flights), and the east-vs-west thermal study.
 
 ---
 
@@ -106,7 +105,7 @@ Where this file says what a part is *meant* to be (Receta, Pattern hunter), it i
 **State.**
 - Trained on 1,510 days (2022 to 2026-11-22, complete months only). Model file `sites/bright/creo_model.txt`.
 - In the daily job since 2026-11-27, logging every prediction next to the rules' % in `predictions/creo_log.csv` (36 rows so far, from 3 model versions; 24 from the current one). The review script needs about a month of flights to judge it (planned around 2026-12-28).
-- Tests (numbers in `BASELINE.md`): Creo beats the rules on every year in leave-one-year-out (+0.083 overall). On honest day-ahead forecasts, by walk-forward test, the gain is smaller (+0.044 with full variables, +0.032 with fewer) and the lower end of the range touches zero in places.
+- Tests (numbers in `BASELINE.md`; the headline is the walk-forward gain): Creo beats the rules on every year in leave-one-year-out (+0.083 overall). On honest day-ahead forecasts, by walk-forward test, the gain is smaller (+0.044 with full variables, +0.032 with fewer) and the lower end of the range touches zero in places.
 
 **Cautions** (details in `SPEC.md` section 5): the training weather is "short lead", which is more accurate than a day-ahead forecast; Creo uses the rules' scores as inputs, and those rules were set after you had seen the flights.
 
@@ -137,9 +136,9 @@ Where this file says what a part is *meant* to be (Receta, Pattern hunter), it i
 
 **Not built / weak**
 - Nothing watches the daily job for silent failure beyond GitHub's own red cross.
-- No single check that the same flying-window and cut-off definitions are used everywhere (this is what Receta is for).
+- No single check that the same flying-window and cut-off definitions are used everywhere (Receta is planned for this).
 - Several known ways a test can look better than it is (list of suspected leaks in `SPEC.md` section 5). None has been fixed or measured yet.
-- The scoreboard counts days from months with incomplete XContest data and Creo's tests do not, so their "rules" numbers differ (+0.68 vs +0.64).
+- The scoreboard and Creo's tests now use the same days (complete months only), so their "rules" numbers agree (+0.64).
 
 **Reads:** nearly everything. **Writes:** reports in `data/` and two JSON files in `corrections/`.
 

@@ -1,11 +1,11 @@
-"""Save BOM half-hourly observations to observations/<station>.csv (append, de-duplicated).
+"""Save BOM half-hourly observations to observations/<station>.csv (append, de-duplicated). Run by the GitHub job; on the laptop it writes to data/local_out/observations/ instead.
 Usage: python scripts/collect_bom.py [site_id]. Safe to re-run any time."""
-import csv, sys, time, requests, yaml
+import csv, os, sys, time, requests, yaml
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 site = sys.argv[1] if len(sys.argv) > 1 else "bright"
 stations = yaml.safe_load((ROOT / "sites" / f"{site}.yaml").read_text())["bom_stations"]
-OUT = ROOT / "observations"; OUT.mkdir(exist_ok=True)
+OUT = (ROOT if os.environ.get("GITHUB_ACTIONS") else ROOT / "data" / "local_out") / "observations"; OUT.mkdir(parents=True, exist_ok=True)      # only the GitHub job writes the committed observations/
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
 COLS = ["obs_time_utc", "local_time", "air_temp", "apparent_t", "dewpt", "rel_hum", "wind_dir",
         "wind_spd_kmh", "gust_kmh", "press_qnh", "press_msl", "rain_trace", "cloud", "vis_km"]

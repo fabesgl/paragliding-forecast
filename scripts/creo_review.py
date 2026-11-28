@@ -12,6 +12,7 @@ args = sys.argv[1:]
 LOG = Path(args[args.index("--log") + 1]) if "--log" in args else ROOT / "predictions" / "creo_log.csv"
 if not LOG.exists(): sys.exit(f"No Creo log at {LOG}. The daily job writes it; run `git pull` first (it appears after the first job run with Creo shadow mode on).")
 log = pd.read_csv(LOG)
+log = log[log["lead_days"] >= 1].reset_index(drop=True)      # lead 0 rows can be made during or after the flying window: only forecasts made the day before or earlier count
 if log.empty: sys.exit("The Creo log is empty.")
 sys.argv = ["scoreboard", "--from", log["target_date"].min()]       # the scoreboard script reads its start date from the command line
 sys.path.insert(0, str(ROOT / "src"))

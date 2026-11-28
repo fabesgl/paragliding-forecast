@@ -28,7 +28,7 @@ from pgforecast import summary as _summary
 _summary.configure(cfg["rules"])
 # Model weighting: 'weighted' = per-variable weights from sites/<site>/model_weights.json (ACCESS-G dropped); 'equal' = the plain average of the models, as before.
 # Set it in sites/<site>.yaml (model_weighting) or, without a commit, with the GitHub variable MODEL_WEIGHTING. Both blends are always logged side by side.
-WEIGHTING = (os.environ.get("MODEL_WEIGHTING") or cfg.get("model_weighting") or "weighted").strip().lower()
+WEIGHTING = (os.environ.get("MODEL_WEIGHTING") or cfg.get("model_weighting") or "equal").strip().lower()
 WTABLE = blend.load(ROOT / "sites" / site / "model_weights.json")
 if WEIGHTING not in ("weighted", "equal"): print("unknown model_weighting", WEIGHTING, "- using equal"); WEIGHTING = "equal"
 if WEIGHTING == "weighted" and not WTABLE: print("model_weights.json missing or unreadable - using equal weights"); WEIGHTING = "equal"
@@ -250,7 +250,7 @@ track_rows = []
 if logf.exists():
     seen = {}
     for r_ in csv.DictReader(logf.open()):
-        if r_["target_date"] < today: seen[r_["target_date"]] = r_   # last prediction made for each past day
+        if r_["target_date"] < today and int(r_["lead_days"]) >= 1: seen[r_["target_date"]] = r_   # last prediction made for each past day, from forecasts made the day before or earlier (lead 0 rows can be made during or after the flying window)
     track_rows = [f'<tr><td>{d}</td><td>{r_["xc_pct"]}%</td><td>{r_["acro_pct"]}%</td><td>{r_["lead_days"]} d</td></tr>' for d, r_ in sorted(seen.items())[-14:]]
 (docs/"index.html").write_text(render.render_page(out_days, cfg, local_now, local_now.date(), cstate, runs, track_rows, generated_utc=now, failed_models=failed_models, calib=(json.loads((OUT/"corrections"/"valley_wind_calibration.json").read_text()) if (OUT/"corrections"/"valley_wind_calibration.json").exists() else None)))
 import shutil

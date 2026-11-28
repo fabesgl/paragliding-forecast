@@ -143,7 +143,7 @@ def main():
     print(f"wrote {len(res):,} summary rows to {OUT}")
 
 
-# Cells left out of the committed priors (sites/<site>/priors.json); the full set stays in data/forecast_error/priors.json
+# Cells left out of the slim priors (priors_slim.json); the full set stays in data/forecast_error/priors.json
 SLIM_DROP_MODELS = {"bom_access_global"}                                   # dropped from the weights too (Fabian, 2026-11-26)
 SLIM_DROP_CELLS = {("wind_gusts_10m", "gfs_seamless"): "GFS gusts are left out",
                    ("cape", None): "BARRA-C2's CAPE definition is not checked yet",
@@ -164,7 +164,7 @@ def slim_priors(res):
 def write_priors(res):
     """Priors for the correction layer: one entry per model|point|variable|lead|sector, only cells with enough data.
     'mul' = multiply the forecast by corr; 'add' = add corr. BARRA-C2 is the reference, NOT real observations.
-    Full set -> data/forecast_error/priors.json (local); slim set -> sites/<site>/priors.json (committed)."""
+    Full set -> data/forecast_error/priors.json (local); slim set -> data/forecast_error/priors_slim.json (local; copy it to sites/<site>/priors.json by hand if the committed reference should change)."""
     def doc(r, note):
         bins = {f"{x.model}|{x.point}|{x.variable}|{x.lead}|{x.value}": dict(kind="mul" if x.kind == "speed" else "add", corr=round(float(x.prior), 3), n_days=int(x.n_days))
                 for x in r.itertuples()}
@@ -176,8 +176,8 @@ def write_priors(res):
     why = "; ".join(f"{k[0]}{'/' + k[1] if k[1] else ''}: {v}" for k, v in SLIM_DROP_CELLS.items())
     d = doc(slim, "DO NOT APPLY TO FORECASTS: checked 2026-11-26 against the Wangaratta station (fitted before 2025-10, tested after), these BARRA-based corrections made the real error 11-20% WORSE for temperature, dew point and 10 m wind (scripts/validate_corrections.py). Kept for reference; use corrections learned from real station readings instead. mul -> forecast*corr, add -> forecast+corr. Left out: ACCESS-G; " + why +
             "; 2 m temperature, dew point and cloud base at the mountain points (BARRA terrain far below the ridges). Dew point and cloud base are NOT height-adjusted anywhere. Not read by the daily job yet.")
-    (ROOT / "sites" / site / "priors.json").write_text(json.dumps(d, separators=(",", ":"), sort_keys=True))
-    print(f"priors: {len(full)} cells (local), {len(slim)} cells (sites/{site}/priors.json)")
+    (OUT / "priors_slim.json").write_text(json.dumps(d, separators=(",", ":"), sort_keys=True))
+    print(f"priors: {len(full)} cells (local), {len(slim)} cells (data/forecast_error/priors_slim.json)")
 
 
 if __name__ == "__main__":

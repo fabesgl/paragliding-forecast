@@ -11,7 +11,7 @@ Variants (pick with --variants, comma separated; default baseline,west_off,west)
   west+rain    both of those (west = the full removal)
 Leave-one-year-out: only the rain settings (t in 0.1/0.3/1.0 mm, s in 3/4/5 hours) are tuned, on two years and applied to the third. The westerly variants have nothing to
 tune (they use the rules' own valley-wind numbers), so they are simply scored year by year. Scores: rank correlation of XC % with best distance (nobody flew = 0 km).
-Usage: python scripts/rule_tests.py [--variants a,b,c] [--out name]      Writes data/scoreboard/<name>.md (default rule_tests). Needs data/scoreboard/days.csv (run scripts/scoreboard.py first)."""
+Usage: python scripts/rule_tests.py [--variants a,b,c] [--out name]      Writes <scoreboard out folder>/<name>.md (default data/scoreboard/latest/rule_tests.md). Needs days.csv there (run scripts/scoreboard.py first)."""
 import importlib.util, sqlite3, sys
 from pathlib import Path
 import numpy as np, pandas as pd

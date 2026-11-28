@@ -3,8 +3,9 @@ For every day with flight data (days with incomplete XContest data are skipped),
   A = from the archived historical forecasts (what the dashboard would have said; each model scored, then averaged, like the live 'equal' method)
   B = from BARRA-C2 (what the rules say given the weather that actually happened; BARRA ends where data/barra2 ends)
 and compared with what pilots did (flown or not, best distance; tandems excluded). A vs B shows whether misses come from the forecast or the rules.
-Read-only on all data. Writes data/scoreboard/ (report.md, days.csv; report_d1.md for --lead d1); local only.
-Usage: python scripts/scoreboard.py [site_id] [--from 2024-01-01] [--lead hist|d1|d2] [--launch mystic] [--rebuild-barra]
+Only days in complete months are scored (same days as the Creo tests): in an incomplete month only flown days survive, which would inflate the score.
+Read-only on all data. Writes report.md and days.csv (report_d1.md / days_d1.csv for --lead d1) into --out (default data/scoreboard/latest/), so a run never overwrites the saved reports in data/scoreboard/; local only.
+Usage: python scripts/scoreboard.py [site_id] [--from 2022-01-01] [--lead hist|d1|d2] [--launch mystic] [--out DIR] [--rebuild-barra]
   --lead: which archived forecast: hist (default, short lead, all four models) or d1/d2 (1 or 2 days ahead; GFS, ECMWF, ACCESS-G only).
 Needs data/xcontest_flights.sqlite, data/igc_flights.sqlite (optional), data/forecast.sqlite, data/barra2/ (optional), data/chat_labels.sqlite (optional)."""
 import datetime as dt, json, sqlite3, sys, yaml
@@ -19,13 +20,14 @@ from pgforecast import forecast_error as FE, scoreboard as SB
 args = sys.argv[1:]
 def opt(name, default):
     return args[args.index(name) + 1] if name in args else default
-site = next((a for i, a in enumerate(args) if not a.startswith("-") and (i == 0 or args[i - 1] not in ("--from", "--lead", "--launch"))), "bright")
-FIRST, LEAD, LAUNCH_ID = opt("--from", "2024-01-01"), opt("--lead", "hist"), opt("--launch", "mystic")
+site = next((a for i, a in enumerate(args) if not a.startswith("-") and (i == 0 or args[i - 1] not in ("--from", "--lead", "--launch", "--out"))), "bright")
+FIRST, LEAD, LAUNCH_ID = opt("--from", "2022-01-01"), opt("--lead", "hist"), opt("--launch", "mystic")
 cfg = yaml.safe_load((ROOT / "sites" / f"{site}.yaml").read_text()); rules = load_rules(site)
 cal = yaml.safe_load((ROOT / "sites" / site / "calendar.yaml").read_text()) if (ROOT / "sites" / site / "calendar.yaml").exists() else {}
 HOLIDAYS = [str(d) for d in cal.get("public_holidays", [])]; EVENTS = cal.get("bright_open", [])
 TZ, LAUNCH = cfg["timezone"], cfg["launch_height_m"]; WIN = [int(x[:2]) for x in cfg.get("flying_window_local", ["11:00", "16:00"])]
-OUT = ROOT / "data" / "scoreboard"; OUT.mkdir(parents=True, exist_ok=True)
+CACHE = ROOT / "data" / "scoreboard"; CACHE.mkdir(parents=True, exist_ok=True)           # BARRA cache only
+OUT = Path(opt("--out", str(CACHE / "latest"))); OUT = OUT if OUT.is_absolute() else ROOT / OUT; OUT.mkdir(parents=True, exist_ok=True)
 SUFFIX = "" if LEAD == "hist" else f"_{LEAD}"          # report_d1.md etc. so a different forecast lead never overwrites the main report
 MODELS = ["gfs_seamless", "ecmwf_ifs025", "icon_seamless", "bom_access_global"]       # the dashboard's models
 VARS = ["wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "wind_speed_850hPa", "wind_direction_850hPa", "wind_speed_700hPa", "temperature_2m",
@@ -47,9 +49,9 @@ def window(df):
 
 def weakest(factors_list):
     """The rule with the lowest average factor over several scorings (the rule that held the day back)."""
-    keys = {k for f in factors_list for k in f}
+    keys = sorted({k for f in factors_list for k in f})                       # sorted, so a tie always goes to the first name alphabetically
     avg = {k: np.mean([f[k] for f in factors_list if k in f]) for k in keys}
-    return min(avg, key=avg.get) if avg else None
+    return min(avg, key=lambda k: (avg[k], k)) if avg else None
 
 
 # ---------- A: archived forecasts ----------
@@ -86,7 +88,7 @@ def barra_mystic():
     import xarray as xr
     p = cfg["points"]["mystic_launch"]; folder = ROOT / "data" / "barra2"
     files = sorted(folder.glob("bright_area__*__*.nc")) if folder.exists() else []
-    cache, stamp = OUT / "barra_mystic.pkl", OUT / "barra_mystic.stamp"
+    cache, stamp = CACHE / "barra_mystic.pkl", CACHE / "barra_mystic.stamp"
     if cache.exists() and stamp.exists() and stamp.read_text() == str(len(files)) and "--rebuild-barra" not in args: return pd.read_pickle(cache)
     if not files: return None
     cols = {}
@@ -145,8 +147,8 @@ def season(date): return FE.season_of(int(date[5:7]))
 
 
 def main():
-    lab, _, n_unknown = labels()
-    print(f"labelled days: {len(lab)} (skipped unknown: {n_unknown})"); a = score_forecasts(); b = score_barra()
+    lab, _, n_unknown = labels(); n_incomplete = int((~lab["month_complete"]).sum()); lab = lab[lab["month_complete"]].reset_index(drop=True)
+    print(f"labelled days: {len(lab)} (skipped unknown: {n_unknown}; left out, incomplete month: {n_incomplete})"); a = score_forecasts(); b = score_barra()
     df = lab.merge(a, on="date", how="left").merge(b, on="date", how="left")
     df["season"] = df["date"].map(season); df["free"] = df["date"].map(lambda d: SB.is_free_day(d, HOLIDAYS)); df["bright_open"] = df["date"].map(lambda d: SB.in_events(d, EVENTS))
     df["weekday"] = df["date"].map(lambda d: dt.date.fromisoformat(d).strftime("%a"))
@@ -157,7 +159,7 @@ def main():
          f"Made {dt.datetime.now():%Y-%m-%d %H:%M}. Rules: `sites/{site}/rules.yaml` as they are now. Forecast archive: `{LEAD}` (each model scored, then averaged; no live bias correction).",
          "Days with incomplete XContest data are skipped, not counted as 'nobody flew'. Tandems are excluded. No pilot names appear here.", ""]
     L += ["## Data", "",
-          f"- Days scored with a label: **{len(df)}** ({df['date'].min()} to {df['date'].max()}); {int(df['flown'].sum())} flown, {int((~df['flown']).sum())} not flown; {n_unknown} unknown days skipped.",
+          f"- Days scored with a label: **{len(df)}** ({df['date'].min()} to {df['date'].max()}); {int(df['flown'].sum())} flown, {int((~df['flown']).sum())} not flown; {n_unknown} unknown days skipped; {n_incomplete} days in incomplete XContest months left out.",
           f"- Flown days judged only by an IGC track (distance unknown, left out of distance stats): {int((df['source'] == 'igc').sum())}.",
           f"- A (forecast) available on {int(df['xc_a'].notna().sum())} days (models per day: {df['n_models'].min():.0f} to {df['n_models'].max():.0f}); B (BARRA-C2) on {int(df['xc_b'].notna().sum())} days; both on {len(both)}.",
           f"- Free days (weekend or public holiday): {int(df['free'].sum())}; Bright Open days: {int(df['bright_open'].sum())}. Holiday and Bright Open dates come from `sites/{site}/calendar.yaml`.", ""]
@@ -190,7 +192,7 @@ def main():
           "*A held back by* / *B held back by* = the rule with the lowest score that day. If A and B disagree, the forecast was wrong; if both agree with a high %, the rules missed something.", ""]
     ok, why = SB.acro_status(*acro_inputs())
     L += ["## Acro", "", ("Acro labels exist but acro scoring is not built yet: " if ok else "Not scored: ") + why + ".", ""]
-    (OUT / f"report{SUFFIX}.md").write_text("\n".join(L)); print("\n".join(L)); print(f"\nWritten: {OUT / 'report.md'}, {OUT / 'days.csv'}")
+    (OUT / f"report{SUFFIX}.md").write_text("\n".join(L)); print("\n".join(L)); print(f"\nWritten: {OUT / ('report' + SUFFIX + '.md')}, {OUT / ('days' + SUFFIX + '.csv')}")
 
 
 def acro_inputs():
