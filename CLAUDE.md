@@ -74,6 +74,7 @@ Owner: Fabian. Plain, short explanations; he is technical but not a data scienti
 - The rules' **deal-breakers are hard limits**: no model (including Creo) may override them.
 - Months listed under `unknown_months` in `sites/bright/calendar.yaml` (2025-09, 2025-10, 2025-11: possible site closure) are left out of the scoreboard and Creo's training completely, flown days included.
 - Months where saved XContest flights are more than 2 short of XContest's total are **incomplete** (a month short by 1–2 counts as complete; `xcontest.MONTH_TOLERANCE`); for Creo training every day of an incomplete month is dropped, flown days included (they would make the month look 100% flown); days with no saved flights there are **unknown**, not "nobody flew" (`xc_day_status`). Tandem (class T) is stored but excluded from XC grading (`xc_flight_graded`).
+- Every change must update SPEC.md and PLANS.md in the same commit.
 - Keep this file, the README-style notes and the tests current when behaviour changes. Log decisions in `DECISIONS.md`; tick `TODO.md`.
 
 ## Working style
